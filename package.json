@@ -2,7 +2,7 @@
     "name": "beeb-vsc",
     "displayName": "Beeb VSC",
     "description": "6502/BeebAsm BBC Micro syntax highlighting",
-    "version": "0.0.1",
+    "version": "0.0.3",
     "icon": "images/icon.png",
     "galleryBanner": {
         "color": "#5c2d91",
