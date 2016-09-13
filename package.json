@@ -1,0 +1,43 @@
+{
+    "name": "beeb-vsc",
+    "displayName": "Beeb VSC",
+    "description": "6502/BeebAsm BBC Micro syntax highlighting",
+    "version": "0.0.1",
+    "icon": "images/icon.png",
+    "galleryBanner": {
+        "color": "#5c2d91",
+        "theme": "dark"
+    },
+    "publisher": "simondotm",
+    "license": "MIT",
+    "bugs": {
+        "url": "https://github.com/simondotm/beeb-vsc/issues"
+    },
+    "homepage": "https://github.com/simondotm/beeb-vsc/",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/simondotm/beeb-vsc.git"
+    },
+    "engines": {
+        "vscode": "^1.0.0"
+    },
+    "categories": [
+        "Languages"
+    ],
+    "keywords": [
+        "6502", "bbc", "micro", "beebasm", "assembly"
+    ],
+    "contributes": {
+        "languages": [{
+            "id": "6502",
+            "aliases": ["6502/BeebAsm Assembly"],
+            "extensions": [".asm", ".6502", ".s"],
+            "configuration": "./beeb-vsc.configuration.json"
+        }],
+        "grammars": [{
+            "language": "6502",
+            "scopeName": "source.asm.6502",
+            "path": "./syntaxes/6502.tmLanguage"
+        }]
+    }
+}
