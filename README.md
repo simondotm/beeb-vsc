@@ -40,3 +40,16 @@ Have fun!
 0.0.3 - Initial version
 
 
+# Footnotes
+
+## Syntax parsing
+The language syntax system VSC uses is based on TextMate, which basically a bunch of regular expressions.
+For your sanity when messing with these, I highly recommend [this site](https://regex101.com/) to help make sense of those regexes!
+
+## Building VSC extensions
+If you are looking at this repo to help you write your own VSC extension, great!, that's exactly how I figured it out too, so here's some tips for you, (as well as a future reference for me!)
+
+To build [VSC extensions](https://code.visualstudio.com/docs/extensions/overview), you'll need to install node.js (I used [chocolatey](https://chocolatey.org/) on Windows for this), and setup an account on Microsoft team services site so you can publish the extension to their [marketplace](https://code.visualstudio.com/docs/editor/extension-gallery).
+
+Finally, use the [vsce tool to publish](https://code.visualstudio.com/docs/tools/vscecli).
+
