@@ -2,7 +2,7 @@
     "name": "beeb-vsc",
     "displayName": "Beeb VSC",
     "description": "6502/BeebAsm BBC Micro syntax highlighting",
-    "version": "0.0.3",
+    "version": "0.0.4",
     "icon": "images/icon.png",
     "galleryBanner": {
         "color": "#5c2d91",
@@ -27,6 +27,10 @@
     "keywords": [
         "6502", "bbc", "micro", "beebasm", "assembly"
     ],
+    "activationEvents": [
+        "onCommand:extension.sayHello"
+    ],
+    "main": "./extension",    
     "contributes": {
         "languages": [{
             "id": "6502",
@@ -38,6 +42,16 @@
             "language": "6502",
             "scopeName": "source.asm.6502",
             "path": "./syntaxes/6502.tmLanguage"
+        }],
+        "commands": [{
+            "command": "extension.sayHello",
+            "title": "Hello World"
         }]
-    }
+    },
+    "scripts": {
+        "postinstall": "node ./node_modules/vscode/bin/install"
+    },
+    "devDependencies": {
+        "vscode": "^0.11.0"
+    }        
 }
