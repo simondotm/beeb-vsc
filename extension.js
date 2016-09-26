@@ -96,12 +96,22 @@ function getEmulatorPath()
     return emulatorPath;         
 }
 
+
+//----------------------------------------------------------------------------------------
+// returns the full path to the .vscode directory in the current workspace
+//----------------------------------------------------------------------------------------
+function getVSCodePath()
+{
+    var vscodePath = vscode.workspace.rootPath + "/.vscode";
+    return vscodePath;    
+}
+
 //----------------------------------------------------------------------------------------
 // returns the full path to the tasks.json file in the current workspace
 //----------------------------------------------------------------------------------------
 function getTasksPath()
 {
-    var tasksPath = vscode.workspace.rootPath + "/.vscode/tasks.json";
+    var tasksPath = getVSCodePath() + "/tasks.json";
     return tasksPath;
 }
 
@@ -138,6 +148,28 @@ function fileExists(path)
     return false;
 }
 
+//----------------------------------------------------------------------------------------
+// check if the given directory exists and returns true or false
+//----------------------------------------------------------------------------------------
+function dirExists(path)
+{
+    // fs.existsSync is deprecated (https://nodejs.org/api/fs.html#fs_fs_exists_path_callback)
+    try {
+        var stats = fs.statSync(path);
+        if (stats.isDirectory())
+            return true;
+        // is a file, so return false
+    }
+    catch (err)
+    {
+        if (err && err.code === 'ENOENT') {
+            // dir doesn't exist
+        } else if (err) {
+        }       
+    }
+    return false;
+}
+
 
 
 
@@ -148,7 +180,21 @@ function fileExists(path)
 //----------------------------------------------------------------------------------------
 function saveTasks(tasksObject)
 {
-    //TODO: create .vscode folder if it does not exist
+    var vscodePath = getVSCodePath();
+ 
+    // sanity check that .vscode is not a file. 
+    if (fileExists(vscodePath))
+    {
+        vscode.window.showErrorMessage("BeebVSC: '.vscode' exists as a file rather than a directory! Unexpected - Please resolve.");
+        return false;
+    }
+
+    // create .vscode directory if it does not already exist
+    if (!dirExists(vscodePath)) {
+        fs.mkdirSync(vscodePath);
+    }
+
+    // now we can write the tasks.json file
     var tasksPath = getTasksPath();
     try {
         var output = JSON.stringify(tasksObject, null, 4);
@@ -180,8 +226,9 @@ function loadTasks()
     if (!fileExists(tasksPath))
     {
         var tasksObject = tasksHeader;
-        if (!saveTasks(tasksObject))
-            return tasksObject;
+        // if tasks file could not be saved, return null to indicate problem.
+        if (!saveTasks(tasksObject)) 
+            return null;
     }
 
 
@@ -411,9 +458,14 @@ function createTargetCommand()
 
 
         // write the new tasks.json file
-        saveTasks(tasksObject);
+        if (saveTasks(tasksObject)) {
+            vscode.window.showInformationMessage("BeebVSC - added new build target '" + target + "'");
+        }else
+        {
+            vscode.window.showErrorMessage("BeebVSC - Error updating tasks.json, build target '" + target + "' could not be created.");
+        }
 
-        vscode.window.showInformationMessage("BeebVSC - added new build target '" + target + "'");
+
 
 
 
@@ -456,7 +508,7 @@ function selectTargetCommand()
     // sanity check - cant see how this might happen unless running on wierd platform or with wierd file permissions
     if (tasksObject == null)
     {
-        vscode.window.showErrorMessage("BeebVSC 'Error loading tasks.json' - contact developer");
+        vscode.window.showErrorMessage("BeebVSC 'Error loading tasks.json', could not select new target");
         return;            
     }
 
@@ -491,9 +543,12 @@ function selectTargetCommand()
 
   
         // write the new tasks.json file
-        saveTasks(tasksObject);
+        if (saveTasks(tasksObject)){
+            vscode.window.showInformationMessage("BeebVSC - selected new build target '" + selection + "'");
+        } else {
+            vscode.window.showErrorMessage("BeebVSC Error updating tasks.json - build target  '" + selection + "' could not be selected");
+        }
 
-        vscode.window.showInformationMessage("BeebVSC - selected new build target '" + selection + "'");
       
 
 
