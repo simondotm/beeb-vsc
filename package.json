@@ -1,8 +1,8 @@
 {
     "name": "beeb-vsc",
     "displayName": "Beeb VSC",
-    "description": "6502/BeebAsm BBC Micro syntax highlighting",
-    "version": "0.0.5",
+    "description": "6502 developmemnt environment (BBC Micro/BeebAsm)",
+    "version": "0.0.6",
     "icon": "images/icon.png",
     "galleryBanner": {
         "color": "#5c2d91",
@@ -60,11 +60,6 @@
                     "type": "string",
                     "default": "BeebEm.exe",
                     "description": "Your preferred emulator executable (eg. BeebEm.exe)."
-                },                
-                "beebvsc.options": {
-                    "type": "object",
-                    "default": {},
-                    "description": "The BeebASM options object to provide args passed to BeebASM when executed from a command line."
                 }
             }
         },           

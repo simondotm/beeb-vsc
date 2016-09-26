@@ -1,9 +1,13 @@
 # Beeb VSC
-[Visual Studio Code](https://code.visualstudio.com/) Extension to support simple code development for BBC Micro.
+[Visual Studio Code](https://code.visualstudio.com/) Extension to support code development primarily for BBC Micro, but it might be useful for other 6502 based machines.
 
 Visual Studio Code is free and really good for general retro/6502 development, so this extension was created to enhance the experience by providing syntax colouring for 6502 opcodes, labels, and BBC BASIC commands & functions supported by [BeebAsm](https://github.com/tom-seddon/beebasm).
 
-## Supported syntax:
+
+# Features
+
+
+## Syntax Highlighting:
 - All **6502 op-codes** (no 65C02 op codes yet)
 - **.label** style labels
 - **$** or **&** style hex constants
@@ -15,10 +19,26 @@ Visual Studio Code is free and really good for general retro/6502 development, s
 - .asm
 - .s
 
+## Build tools
+- Assemble & test 6502 projects all within Visual Studio Code
+- Uses Visual Studio Code tasks for building & testing
+- Easily create new build targets (supports multiple targets within a project folder)
+- Easily select 'default' build targets  
+- Run build targets in the emulator of your choice
 
-# Installation
+# Quick Setup
 
-Press CTRL+Shift+X in VSCode, look for beeb vsc or beebasm, click install and away you go.
+## Install the extension
+Press CTRL+Shift+X in VSCode, search for 'beeb vsc' or 'beebasm', click install.
+
+## Load your project
+Open your project folder in VSC
+
+## Configure your Assembler and emulator
+Go to `File->Preferences->User Settings` in Visual Studio Code, the editor will present current user preferences. Scroll to the bottom of the configuration until you see the BeebVSC settings.
+![Screenshot](https://github.com/simondotm/beeb-vsc/blob/master/images/example.png?raw=true)
+- 
+
 
 # Usage
 
