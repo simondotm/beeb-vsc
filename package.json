@@ -30,7 +30,9 @@
     "activationEvents": [
         "onLanguage:6502",
         "onCommand:extension.target.create",
-        "onCommand:extension.target.select"              
+        "onCommand:extension.target.select",             
+        "onCommand:extension.target.run",             
+        "onCommand:extension.target.build"             
     ],
     "main": "./extension",    
     "contributes": {
@@ -74,23 +76,41 @@
         {
             "command": "extension.target.select",
             "title": "BeebVSC: Select default build target"
+        },
+        {
+            "command": "extension.target.run",
+            "title": "BeebVSC: Run the currently selected target"
+        },
+        {
+            "command": "extension.target.build",
+            "title": "BeebVSC: Build the currently selected target"
         }],
         "keybindings": [
         {
             "command": "extension.target.create",
-            "key": "f9",
-            "mac": "f9"
-        },
-        {
-            "command": "extension.target.select",
             "key": "f10",
             "mac": "f10"
         },
         {
-            "command": "workbench.action.tasks.test",
+            "command": "extension.target.select",
+            "key": "f6",
+            "mac": "f6"
+        },
+        {
+            "command": "extension.target.run",
             "key": "Ctrl+Shift+T",
             "mac": "Ctrl+Shift+T"
         },
+        {
+            "command": "extension.target.run",
+            "key": "F9",
+            "mac": "F9"
+        },        
+        {
+            "command": "extension.target.build",
+            "key": "F7",
+            "mac": "F7"
+        },        
         {
             "command": "workbench.action.tasks.runTask",
             "key": "Ctrl+Shift+R",

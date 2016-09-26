@@ -650,6 +650,16 @@ function activate(context) {
         selectTargetCommand();
     });    
 
+    // Run (Test) the current build target - just a wrapper for the "Run test task"
+    var disposable = vscode.commands.registerCommand('extension.target.run', function () {
+        vscode.commands.executeCommand("workbench.action.tasks.test");
+    });      
+
+    // Build the current target - just a wrapper for the "Run build task"
+    var disposable = vscode.commands.registerCommand('extension.target.build', function () {
+        vscode.commands.executeCommand("workbench.action.tasks.build");
+    });            
+
 /*
     // TODO: remove?
     var disposable = vscode.commands.registerCommand('extension.run', function () {
