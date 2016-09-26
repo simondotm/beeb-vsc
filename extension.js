@@ -392,7 +392,7 @@ function createTargetCommand()
     }
 
     // show popup list picker in VSC for user to select desired new target file
-    var pickOptions = { "ignoreFocusOut" : true, "placeHolder" : "Select a source file to represent the new build target" };
+    var pickOptions = { "ignoreFocusOut" : true, "placeHolder" : "Create New Build Target: Select a source file" };
     vscode.window.showQuickPick(targetList, pickOptions).then(selection => {
         // if focus lost, or user cancels
         if (typeof selection == 'undefined') {
@@ -529,7 +529,7 @@ function selectTargetCommand()
     }
 
     // show popup list picker in VSC for user to select desired new target file
-    var pickOptions = { "ignoreFocusOut" : true, "placeHolder" : "Select a new default target file" };
+    var pickOptions = { "ignoreFocusOut" : true, "placeHolder" : "Select Build Target: Choose a new default target file" };
     vscode.window.showQuickPick(targetList, pickOptions).then(selection => {
         // if focus lost, or user cancels
         if (typeof selection == 'undefined') {
@@ -567,7 +567,6 @@ function selectTargetCommand()
 function execCommand(command, args)
 {
     console.log('execCommand "' + command + '", args "' + args + '"');
-//    let deferred = Q.defer<string>();
     let proc = child_process.spawn(command, args, { stdio: 'pipe' });
     let stderr = '';
     let stdout = '';
@@ -586,18 +585,14 @@ function execCommand(command, args)
     proc.on('error', (err) => {
         console.log("error '" + err + "'");
         vscode.window.showErrorMessage("Could not launch '" + command + "', args '" + args + "'");
-    //    deferred.reject(err);
     });
 
    proc.on('close', (code) => {
         if (code !== 0) {
-      //      errorLogger(stderr);
-      //      errorLogger(stdout);
-      //      deferred.reject(`Error running '${command} ${args.join(' ')}'`);
-              console.log("Error running '" + command + "', args '" + args + "'");
+            console.log("Error running '" + command + "', args '" + args + "'");
             vscode.window.showErrorMessage("Could not launch '" + command + "', args '" + args + "'");
         }
-      //  deferred.resolve(stdout);
+
     });
 
   /*
@@ -608,15 +603,14 @@ function execCommand(command, args)
         stdout += data.toString();
     });
     proc.on('error', (err: Error) => {
-    //    deferred.reject(err);
+
     });
     proc.on('close', (code: number) => {
         if (code !== 0) {
-      //      errorLogger(stderr);
-      //      errorLogger(stdout);
-      //      deferred.reject(`Error running '${command} ${args.join(' ')}'`);
+      //      console.error(stderr);
+      //      console.error(stdout);
+      //      console.error(`Error running '${command} ${args.join(' ')}'`);
         }
-      //  deferred.resolve(stdout);
     });
 */
 
@@ -625,58 +619,10 @@ function execCommand(command, args)
     console.log('stdout "' + stdout + '"');
 
 
-    console.error("test error");
-    console.warn("test warning");
-    console.info("test info");
-
-//    debug_adapter.console("test error debug adapter");
-//    debug.console.error("test error debug");
-
-
-    return true; //deferred.promise;
+    return true;
 }
 
 
-function showInputBox()
-{
-   // https://github.com/alefragnani/vscode-project-manager/blob/master/extension.ts
-    //            if (fs.existsSync(getProjectFilePath())) {
-    vscode.window.showErrorMessage("Drama!");
-
-
-        var ibo = {
-            prompt: "Project Name",
-            placeHolder: "Type a name for your project",
-            value: "wpath"
-        };
-
-    vscode.window.showInputBox(ibo).then(projectName => {
-            //console.log("Project Name: " + projectName);
-
-            if (typeof projectName == 'undefined') {
-                return;
-            }
-
-            // 'empty'
-            if (projectName == '') {
-                vscode.window.showWarningMessage('You must define a name for the project.');
-                return;
-            }
-    });
-/*
-
-    var itemsSorted = [ "a", "b", "c" ];
-
-    vscode.window.showQuickPick(itemsSorted).then(selection => {
-
-        if (typeof selection == 'undefined') {
-            return;
-        }			
-             vscode.window.showErrorMessage('The project has an invalid path. What would you like to do?');//, optionUpdateProject, optionDeleteProject).then(option => {
-     
-    });
-*/
-}
 
 //----------------------------------------------------------------------------------------
 // this method is called when your extension is activated
@@ -687,18 +633,12 @@ function activate(context) {
     // Use the console to output diagnostic information (console.log) and errors (console.error)
     // This line of code will only be executed once when your extension is activated
     console.log('BeebVSC extension activated!');
-//    vscode.window.showInformationMessage('BeebVSC extension activated.');
     console.log("path " + vscode.workspace.rootPath);
+//    vscode.window.showInformationMessage('BeebVSC extension activated.');
 
     // The command has been defined in the package.json file
     // Now provide the implementation of the command with  registerCommand
     // The commandId parameter must match the command field in package.json
-    var disposable = vscode.commands.registerCommand('extension.sayHello', function () {
-        // The code you place here will be executed every time your command is executed
-
-        // Display a message box to the user
-        vscode.window.showInformationMessage('Hello World!');
-    });
 
     // Create a new build target
     var disposable = vscode.commands.registerCommand('extension.target.create', function () {
@@ -710,35 +650,7 @@ function activate(context) {
         selectTargetCommand();
     });    
 
-    // TODO: remove
-    var disposable = vscode.commands.registerCommand('extension.build', function () {
-        // The code you place here will be executed every time your command is executed
-
-        // Display a message box to the user
-        vscode.window.showInformationMessage('Build BeebASM!');
-
-        // https://code.visualstudio.com/docs/customization/keybindings
-        
-
-        // https://github.com/Microsoft/vscode/issues/981
-//        vscode.commands.executeCommand("extension.sayHello");
-//        vscode.commands.executeCommand("workbench.action.tasks.runTask", ["/build"]);   // tasks.build
-
-       // var emulator = vscode.workspace.getConfiguration('beebvsc').get('emulator', 'Name');
-        //console.log("emulator path " + emulatorPath);
-
 /*
-
-        var beebassembler = vscode.workspace.getConfiguration('beebvsc').get('assembler', 'Name');
-        console.log("assembler path " + beebassembler);
-*/
-
-
-       // command = "C:\\Windows\\Notepad.exe";
-        command = "C:\\Users\\Simon\\Dropbox\\Emulation\\BBC\\Dev\\bin\\beebasm.exe";
-        args = [ "--help" ];
-        execCommand(command, args);
-    });    
     // TODO: remove?
     var disposable = vscode.commands.registerCommand('extension.run', function () {
         // The code you place here will be executed every time your command is executed
@@ -752,12 +664,8 @@ function activate(context) {
         var target = vscode.workspace.rootPath + "/sampleplayer.ssd"
         args = [ target ];
         execCommand(beebemulator, args);     
-        
-
-
-
-        
     });      
+*/
 
     context.subscriptions.push(disposable);
 }

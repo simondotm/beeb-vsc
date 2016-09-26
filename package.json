@@ -29,11 +29,8 @@
     ],
     "activationEvents": [
         "onLanguage:6502",
-        "onCommand:extension.sayHello",
         "onCommand:extension.target.create",
-        "onCommand:extension.target.select",                
-        "onCommand:extension.build",
-        "onCommand:extension.run"   
+        "onCommand:extension.target.select"              
     ],
     "main": "./extension",    
     "contributes": {
@@ -69,10 +66,7 @@
                 }
             }
         },           
-        "commands": [{
-            "command": "extension.sayHello",
-            "title": "BeebVSC: Hello World"
-        },
+        "commands": [
         {
             "command": "extension.target.create",
             "title": "BeebVSC: Create new build target"
@@ -80,30 +74,17 @@
         {
             "command": "extension.target.select",
             "title": "BeebVSC: Select default build target"
-        },
-        {
-            "command": "extension.build",
-            "title": "BeebVSC: Build"
-        },
-        {
-            "command": "extension.run",
-            "title": "BeebVSC: Run"
         }],
         "keybindings": [
         {
-            "command": "extension.sayHello",
-            "key": "f6",
-            "mac": "f6"
-        },
-        {
-            "command": "extension.build",
-            "key": "f8",
-            "mac": "f8"
-        },
-        {
-            "command": "extension.run",
+            "command": "extension.target.create",
             "key": "f9",
             "mac": "f9"
+        },
+        {
+            "command": "extension.target.select",
+            "key": "f10",
+            "mac": "f10"
         },
         {
             "command": "workbench.action.tasks.test",
