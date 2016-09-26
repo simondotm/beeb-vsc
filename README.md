@@ -70,7 +70,7 @@ Press `F9` or `Ctrl+Shift+T` and Visual Studio Code will run your disk image wit
 ## Changing Assembler and/or Emulator configuration
 If you wish to change your Assembler or Emulator configuration, go to `File->Preferences->User Settings` in Visual Studio Code, the editor will present current user preferences. Scroll to the bottom of the configuration until you see the BeebVSC settings. Copy the settings `"beebvsc.assembler"` and `"beebvsc.emulator"` across to your user settings and modify accordingly. Note that although full paths to executables can be included here, we do not recommend this since they are not portable if your project source is shared.
 
-![Screenshot](https://github.com/simondotm/beeb-vsc/blob/master/images/usersettings.png?raw=true)
+![Screenshot](https://github.com/simondotm/beeb-vsc/blob/master/images/usersettings.PNG?raw=true)
 
 ## Managing multiple build targets
 You can run the add build target command multiple times to add additional source files to the list of build targets in the `tasks.json` file.
