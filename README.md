@@ -53,3 +53,6 @@ To build [VSC extensions](https://code.visualstudio.com/docs/extensions/overview
 
 Finally, use the [vsce tool to publish](https://code.visualstudio.com/docs/tools/vscecli).
 
+## Added JavaScript functionality
+
+

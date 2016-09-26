@@ -2,7 +2,7 @@
     "name": "beeb-vsc",
     "displayName": "Beeb VSC",
     "description": "6502/BeebAsm BBC Micro syntax highlighting",
-    "version": "0.0.4",
+    "version": "0.0.5",
     "icon": "images/icon.png",
     "galleryBanner": {
         "color": "#5c2d91",
@@ -19,7 +19,7 @@
         "url": "https://github.com/simondotm/beeb-vsc.git"
     },
     "engines": {
-        "vscode": "^1.0.0"
+        "vscode": "^1.4.0"
     },
     "categories": [
         "Languages"
@@ -28,7 +28,12 @@
         "6502", "bbc", "micro", "beebasm", "assembly"
     ],
     "activationEvents": [
-        "onCommand:extension.sayHello"
+        "onLanguage:6502",
+        "onCommand:extension.sayHello",
+        "onCommand:extension.target.create",
+        "onCommand:extension.target.select",                
+        "onCommand:extension.build",
+        "onCommand:extension.run"   
     ],
     "main": "./extension",    
     "contributes": {
@@ -43,10 +48,73 @@
             "scopeName": "source.asm.6502",
             "path": "./syntaxes/6502.tmLanguage"
         }],
+        "configuration": {
+            "type": "object",
+            "title": "BeebVSC configuration",
+            "properties": {
+                "beebvsc.assembler": {
+                    "type": "string",
+                    "default": "BeebAsm.exe",
+                    "description": "Your assembler executable (eg. BeebAsm.exe)."
+                },
+                "beebvsc.emulator": {
+                    "type": "string",
+                    "default": "BeebEm.exe",
+                    "description": "Your preferred emulator executable (eg. BeebEm.exe)."
+                },                
+                "beebvsc.options": {
+                    "type": "object",
+                    "default": {},
+                    "description": "The BeebASM options object to provide args passed to BeebASM when executed from a command line."
+                }
+            }
+        },           
         "commands": [{
             "command": "extension.sayHello",
-            "title": "Hello World"
-        }]
+            "title": "BeebVSC: Hello World"
+        },
+        {
+            "command": "extension.target.create",
+            "title": "BeebVSC: Create new build target"
+        },
+        {
+            "command": "extension.target.select",
+            "title": "BeebVSC: Select default build target"
+        },
+        {
+            "command": "extension.build",
+            "title": "BeebVSC: Build"
+        },
+        {
+            "command": "extension.run",
+            "title": "BeebVSC: Run"
+        }],
+        "keybindings": [
+        {
+            "command": "extension.sayHello",
+            "key": "f6",
+            "mac": "f6"
+        },
+        {
+            "command": "extension.build",
+            "key": "f8",
+            "mac": "f8"
+        },
+        {
+            "command": "extension.run",
+            "key": "f9",
+            "mac": "f9"
+        },
+        {
+            "command": "workbench.action.tasks.test",
+            "key": "Ctrl+Shift+T",
+            "mac": "Ctrl+Shift+T"
+        },
+        {
+            "command": "workbench.action.tasks.runTask",
+            "key": "Ctrl+Shift+R",
+            "mac": "Ctrl+Shift+R"
+        }]           
     },
     "scripts": {
         "postinstall": "node ./node_modules/vscode/bin/install"
