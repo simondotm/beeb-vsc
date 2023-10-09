@@ -110,25 +110,12 @@
     "comments": {
       "patterns": [
         {
-          "begin": "/\\*",
-          "end": "\\*/",
-          "name": "comment.block"
-        },
-        {
           "match": ";.*",
           "name": "comment.line.semicolon"
         },
         {
           "match": "\\\\.*",
           "name": "comment.line.back-slash"
-        },
-        {
-          "match": "^\\S*\\s*(\\*.*)",
-          "captures": {
-            "1": {
-              "name": "comment.line.asterisk"
-            }
-          }
         }
       ]
     },
