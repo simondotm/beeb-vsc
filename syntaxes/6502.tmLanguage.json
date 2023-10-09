@@ -54,31 +54,31 @@
     "beebasm": {
       "patterns": [
         {
-          "match": "(?i)(\\s+|((^|\\s+|(?<=\\())))(and|or|eor|mod|div)(?=\\.[bzwaqlt]|\\s+|[:$#(\\\\])",
+          "match": "(?i)\\b(and|or|eor|mod|div)\\b",
           "name": "keyword"
         },
         {
-          "match": "(?i)(\\s+|((^|\\s+|(?<=\\())))(cpu|skip|skipto|include|incbin|mapchar|guard|clear|save|for|next|if|elif|else|endif|putfile|putbasic|macro|endmacro)(?=\\.[bzwaqlt]|\\s+|[:$#(\\\\])",
+          "match": "(?i)\\b(cpu|skip|skipto|include|incbin|mapchar|guard|clear|save|for|next|if|elif|else|endif|putfile|putbasic|puttext|macro|endmacro|randomize|asm)\\b",
           "name": "keyword"
         },
         {
-          "match": "(?i)(\\s+|((^|\\s+|(?<=\\())))(equb|equw|equd|equs)(?=\\.[bzwaqlt]|\\s+|[:$#(\\\\])",
+          "match": "(?i)\\b(equb|equw|equd|equs)\\b",
           "name": "storage.type"
         },
         {
-          "match": "(?i)(\\s+|((^|\\s+|(?<=\\())))(org|align)(?=\\.[bzwaqlt]|\\s+|[:$#(\\\\])",
+          "match": "(?i)\\b(org|align|copyblock)\\b",
           "name": "storage.modifier"
         },
         {
-          "match": "(?i)(\\s+|((^|\\s+|(?<=\\())))(true|false|pi|p%)(?=\\.[bzwaqlt]|\\s+|[:$#(\\\\])",
+          "match": "(?i)\\b(true|false|pi|p%|cpu)\\b",
           "name": "constant.regexp"
         },
         {
-          "match": "(?i)(lo|hi|sqr|sin|cos|tan|acs|asn|atn|rad|deg|abs|int|sgn|rnd|not|log|ln|exp)(?=\\()\\b",
+          "match": "(?i)\\b(lo|hi|sqr|sin|cos|tan|acs|asn|atn|rad|deg|abs|int|sgn|rnd|not|log|ln|exp|time[\\$]|str[\\$]|len|chr[\\$]|asc|mid[\\$]|left[\\$]|right[\\$]|string[\\$]|lower[\\$]|upper[\\$]|val|eval)\\W",
           "name": "keyword.other.functions"
         },
         {
-          "match": "(?i)(\\s+|((^|\\s+|(?<=\\())))(print|error)(?=\\.[bzwaqlt]|\\s+|[:$#(\\\\])",
+          "match": "(?i)\\b(print|error|assert)\\b",
           "name": "keyword.other.debug"
         }
       ]
