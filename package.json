@@ -45,7 +45,7 @@
         "grammars": [{
             "language": "6502",
             "scopeName": "source.asm.6502",
-            "path": "./syntaxes/6502.tmLanguage"
+            "path": "./syntaxes/6502.tmLanguage.json"
         }],
         "configuration": {
             "type": "object",

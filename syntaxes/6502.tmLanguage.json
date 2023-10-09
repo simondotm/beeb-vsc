@@ -1,0 +1,180 @@
+{
+  "fileTypes": [
+    "6502",
+    "asm",
+    "s"
+  ],
+  "name": "6502/BeebAsm Assembly",
+  "patterns": [
+    {
+      "include": "#comments"
+    },
+    {
+      "include": "#constants"
+    },
+    {
+      "include": "#control"
+    },
+    {
+      "include": "#6502"
+    },
+    {
+      "include": "#beebasm"
+    },
+    {
+      "include": "#quotes"
+    },
+    {
+      "include": "#operators"
+    },
+    {
+      "include": "#labels"
+    }
+  ],
+  "repository": {
+    "6502": {
+      "patterns": [
+        {
+          "match": "(?i)(\\s+|(?<=:))(adc|and|asl|bcc|bcs|beq|bit|bmi|bne|bpl|brk|bvc|bvs|clc|cld|cli|clv|cmp|cpx|cpy|dec|dex|dey|eor|inc|inx|iny|jmp|jsr|lda|ldx|ldy|lsr|nop|ora|pha|php|pla|plp|rol|ror|rti|rts|sbc|sec|sed|sei|sta|stx|sty|tax|tay|tsx|txa|txs|tya)(?=\\.[bzwaqlt]|\\s+|[:$#(\\\\])",
+          "name": "keyword.other.opcode.6502.legal"
+        },
+        {
+          "match": "(?i)(\\s+|(?<=:))(stz|phx|phy|plx|ply)(?=\\s+|[:$#(])",
+          "name": "keyword.other.opcode.6502.illegal"
+        }
+      ]
+    },
+    "control": {
+      "patterns": [
+        {
+          "match": "(?i)((^|\\s+)\\.error|\\s+ert)\\b",
+          "name": "keyword.control.error"
+        },
+        {
+          "match": "(?i)((^|\\s+)(\\.en)|^(\\s+|\\S+\\s+)(end))\\b",
+          "captures": {
+            "3": {
+              "name": "keyword.control.end"
+            },
+            "5": {
+              "name": "keyword.control.end"
+            }
+          }
+        },
+        {
+          "match": "(?i)((^|\\s+)(\\.(if|ifdef|ifndef)|#(if|while))|\\s+ift|^\\s+(eli|els|eif)|^\\s*(\\.(else|elseif|endif)|#(else|end)))\\b",
+          "name": "keyword.control.if"
+        }
+      ]
+    },
+    "beebasm": {
+      "patterns": [
+        {
+          "match": "(?i)(\\s+|((^|\\s+|(?<=\\())))(and|or|eor|mod|div)(?=\\.[bzwaqlt]|\\s+|[:$#(\\\\])",
+          "name": "keyword"
+        },
+        {
+          "match": "(?i)(\\s+|((^|\\s+|(?<=\\())))(cpu|skip|skipto|include|incbin|mapchar|guard|clear|save|for|next|if|elif|else|endif|putfile|putbasic|macro|endmacro)(?=\\.[bzwaqlt]|\\s+|[:$#(\\\\])",
+          "name": "keyword"
+        },
+        {
+          "match": "(?i)(\\s+|((^|\\s+|(?<=\\())))(equb|equw|equd|equs)(?=\\.[bzwaqlt]|\\s+|[:$#(\\\\])",
+          "name": "storage.type"
+        },
+        {
+          "match": "(?i)(\\s+|((^|\\s+|(?<=\\())))(org|align)(?=\\.[bzwaqlt]|\\s+|[:$#(\\\\])",
+          "name": "storage.modifier"
+        },
+        {
+          "match": "(?i)(\\s+|((^|\\s+|(?<=\\())))(true|false|pi|p%)(?=\\.[bzwaqlt]|\\s+|[:$#(\\\\])",
+          "name": "constant.regexp"
+        },
+        {
+          "match": "(?i)(lo|hi|sqr|sin|cos|tan|acs|asn|atn|rad|deg|abs|int|sgn|rnd|not|log|ln|exp)(?=\\()\\b",
+          "name": "keyword.other.functions"
+        },
+        {
+          "match": "(?i)(\\s+|((^|\\s+|(?<=\\())))(print|error)(?=\\.[bzwaqlt]|\\s+|[:$#(\\\\])",
+          "name": "keyword.other.debug"
+        }
+      ]
+    },
+    "labels": {
+      "patterns": [
+        {
+          "match": "(?i)\\.\\S+\\b",
+          "name": "entity.other.attribute-name.struct"
+        }
+      ]
+    },
+    "comments": {
+      "patterns": [
+        {
+          "begin": "/\\*",
+          "end": "\\*/",
+          "name": "comment.block"
+        },
+        {
+          "match": ";.*",
+          "name": "comment.line.semicolon"
+        },
+        {
+          "match": "\\\\.*",
+          "name": "comment.line.back-slash"
+        },
+        {
+          "match": "^\\S*\\s*(\\*.*)",
+          "captures": {
+            "1": {
+              "name": "comment.line.asterisk"
+            }
+          }
+        }
+      ]
+    },
+    "quotes": {
+      "patterns": [
+        {
+          "begin": "'",
+          "end": "'",
+          "name": "string.quoted.single"
+        },
+        {
+          "begin": "\"",
+          "end": "\"",
+          "name": "string.quoted.double"
+        }
+      ]
+    },
+    "constants": {
+      "patterns": [
+        {
+          "match": "(?i)(?<=,)\\s*[xy]\\b(?!.*\\.reg)",
+          "name": "constant.language.registers"
+        },
+        {
+          "match": "[+-]?([0-9]*[.])?[0-9]+",
+          "name": "constant.numeric.decimal"
+        },
+        {
+          "match": "(?i)\\$\\b\\h+\\b|\\&\\b\\h+\\b|\\b0x\\h+\\b",
+          "name": "constant.numeric.hexadecimal"
+        },
+        {
+          "match": "%\\b[0-1]+\\b",
+          "name": "constant.numeric.binary"
+        }
+      ]
+    },
+    "operators": {
+      "patterns": [
+        {
+          "match": "(?i)[+\\-*/%!|^=~\\:&<>]|equ|\\.(and|x?or|not|(lo|hi)(?=\\s*\\())",
+          "name": "keyword.operators"
+        }
+      ]
+    }
+  },
+  "scopeName": "source.asm.6502",
+  "uuid": "150d97b4-3afc-4503-bdfc-c43dd367e79b"
+}
