@@ -74,8 +74,12 @@
           "name": "constant.regexp"
         },
         {
-          "match": "(?i)\\b(lo|hi|sqr|sin|cos|tan|acs|asn|atn|rad|deg|abs|int|sgn|rnd|not|log|ln|exp|time[\\$]|str[\\$]|len|chr[\\$]|asc|mid[\\$]|left[\\$]|right[\\$]|string[\\$]|lower[\\$]|upper[\\$]|val|eval)\\W",
-          "name": "keyword.other.functions"
+          "match": "(?i)\\b(lower[\\$]|lo|hi|sqr|sin|cos|tan|acs|asn|atn|rad|deg|abs|int|sgn|rnd|not|log|ln|exp|time[\\$]|str[\\$]~|str[\\$]|len|chr[\\$]|asc|mid[\\$]|left[\\$]|right[\\$]|string[\\$]|upper[\\$]|val|eval)(?=\\()",
+          "name": "entity.name.function"
+        },
+        {
+          "match": "(?i)\\b(time|callstack|fileline)[\\$](?>\\W)",
+          "name": "entity.name.function"
         },
         {
           "match": "(?i)\\b(print|error|assert)\\b",
