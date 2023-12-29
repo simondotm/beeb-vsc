@@ -1,7 +1,7 @@
 # Beeb VSC
 [Visual Studio Code](https://code.visualstudio.com/) Extension to support code development primarily for BBC Micro, but it might be useful for other 6502 based machines.
 
-Visual Studio Code is free and really good for general retro/6502 development, so this extension was created to enhance the experience by providing syntax colouring for 6502 opcodes, labels, and BBC BASIC commands & functions supported by [BeebAsm](https://github.com/tom-seddon/beebasm).
+Visual Studio Code is free and really good for general retro/6502 development, so this extension was created to enhance the experience by providing syntax colouring for 6502 opcodes, labels, and BBC BASIC commands & functions supported by [BeebAsm](https://github.com/stardot/beebasm) as well as various types of VS Code functionality.
 
 
 # Features
@@ -11,8 +11,31 @@ Visual Studio Code is free and really good for general retro/6502 development, s
 - All **6502 op-codes** (no 65C02 op codes yet)
 - **.label** style labels
 - **$** or **&** style hex constants
-- All **BBC BASIC** style keywords (such as TAN, RND, MOD, DIV etc.)
-- All **BeebAsm** directives (such as ORG, GUARD, SKIP etc.)
+- All **BBC BASIC** style keywords (such as `TAN`, `RND`, `MOD`, `DIV` etc.)
+- All **BeebAsm** directives (such as `ORG`, `GUARD`, `SKIP` etc.)
+
+## Hover Information:
+- BeebAsm functions (`RND`, `CHR$`, `LO` etc.)
+- BeebAsm directives (`SAVE`, `EQUB`, `ORG` etc.)
+- Op-code information (description, bytecode, cycles etc.)
+- TODO: symbols and labels
+
+## References:
+The various types of reference navigation options available within VS Code via the context menu (right-click on a symbol or label).
+- Go to definition
+- Find all references
+- Peek definition/references
+- Links added to files referenced via `INCLUDE`, `PUTBASIC` or `PUTTEXT`
+
+## Diagnostics:
+The extension parses your code to try and identify the errors that would be reported by BeebAsm when compiling your code. Lines with issues will be underlined and reported in the Problems tab of VS Code. Dozens of issues are detected including:
+- BeebAsm function and directive syntax errors
+- Assembly errors (e.g. branch out of bounds, invalid addressing modes)
+
+## Completions:
+Provides a list of potential matches as you start to type.
+- BeebAsm functions
+- BeebAsm directives
 
 ## Supported Filetypes:
 - .6502
@@ -30,11 +53,10 @@ Visual Studio Code is free and really good for general retro/6502 development, s
 # Quick Setup
 
 ## 1. Install the extension
-Press CTRL+Shift+X in VSCode, search for 'beeb vsc' or 'beebasm', click install.
-
+Press CTRL+Shift+X in VS Code, search for 'beeb vsc' or 'beebasm', click install.
 
 ## 2. Install Assembler and Emulator
-By default, BeebVSC configures `BeebAsm.exe` as the default assembler, and `BeebEm.exe` as the default emulator, and assumes that these executables are can be located on the system path. If not, simply add paths to them in your global windows environment variables.
+By default, BeebVSC configures `BeebAsm.exe` as the default assembler, and `BeebEm.exe` as the default emulator, and assumes that these executables are can be located on the system path. If not, simply add paths to them in your global Windows environment variables.
 
 ## 3. Load your project
 Open your project folder in VSC. Syntax colouring will automatically activate when `.6502`, `.asm`, or `.s` files are opened in the editor.
@@ -115,6 +137,7 @@ There is none, but its probably quite feasible to get it working.
 
 # Release notes
 
+- **0.1.0** - Move to LSP client/server structure, add hovers, completions, diagnostics and reference finding
 - **0.0.6** - Added full build environment support via JS script to extension
 - **0.0.5** - Test version
 - **0.0.4** - Test update
@@ -131,10 +154,9 @@ There is none, but its probably quite feasible to get it working.
 # Footnotes
 
 ## Source code
-I opted to just use the plain old node.js JavaScript for this extension rather than TypeScript, as the latter seemed like a faff to setup and I'm not really using any fancy stuff.
+The extension uses TypeScript, as that is the language used for most online examples, especially those from MicroSoft.
 
 Contributions, suggestions or bug reports to this extension are welcome, via the [Beeb-VSC](https://github.com/simondotm/beeb-vsc) GitHub repository
-
 
 ## Syntax parsing
 The language syntax system VSC uses is based on TextMate, which basically a bunch of regular expressions.
@@ -160,9 +182,11 @@ The official Microsoft documentation for Visual Studio Code extensions is still 
 - [Microsoft's official Visual Studio Code Github repo](https://github.com/Microsoft/vscode)
 - [VSCE Tasks documentation](https://code.visualstudio.com/docs/editor/tasks#_running-multiple-commands)
 - [Brilliant regular expressions sandbox](https://regex101.com/#javascript)
+- [Language Server Protocol specification](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification)
+- [VS Code extension samples](https://github.com/microsoft/vscode-extension-samples)
 
 BBC Micro/6502 Resources:
-- [Rich Talbot-Watkin's rather brilliant BeebAsm project](https://github.com/tom-seddon/beebasm/blob/master/about.txt)
+- [Rich Talbot-Watkin's rather brilliant BeebAsm project](https://github.com/stardot/beebasm/blob/master/README.md)
 - [BeebEm Emulator](http://www.mkw.me.uk/beebem/index.html)
 - [Stardot Acorn/BBC Micro forums](http://stardot.org.uk/forums/)
 

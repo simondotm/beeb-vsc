@@ -1,121 +1,169 @@
 {
-    "name": "beeb-vsc",
-    "displayName": "Beeb VSC",
-    "description": "6502 developmemnt environment (BBC Micro/BeebAsm)",
-    "version": "0.0.6",
-    "icon": "images/icon.png",
-    "galleryBanner": {
-        "color": "#5c2d91",
-        "theme": "dark"
-    },
-    "publisher": "simondotm",
-    "license": "MIT",
-    "bugs": {
-        "url": "https://github.com/simondotm/beeb-vsc/issues"
-    },
-    "homepage": "https://github.com/simondotm/beeb-vsc/",
-    "repository": {
-        "type": "git",
-        "url": "https://github.com/simondotm/beeb-vsc.git"
-    },
-    "engines": {
-        "vscode": "^1.4.0"
-    },
-    "categories": [
-        "Languages"
-    ],
-    "keywords": [
-        "6502", "bbc", "micro", "beebasm", "assembly"
-    ],
-    "activationEvents": [
-        "onLanguage:6502",
-        "onCommand:extension.target.create",
-        "onCommand:extension.target.select",             
-        "onCommand:extension.target.run",             
-        "onCommand:extension.target.build"             
-    ],
-    "main": "./extension",    
-    "contributes": {
-        "languages": [{
-            "id": "6502",
-            "aliases": ["6502/BeebAsm Assembly"],
-            "extensions": [".asm", ".6502", ".s"],
-            "configuration": "./beeb-vsc.configuration.json"
-        }],
-        "grammars": [{
-            "language": "6502",
-            "scopeName": "source.asm.6502",
-            "path": "./syntaxes/6502.tmLanguage.json"
-        }],
-        "configuration": {
-            "type": "object",
-            "title": "BeebVSC configuration",
-            "properties": {
-                "beebvsc.assembler": {
-                    "type": "string",
-                    "default": "BeebAsm.exe",
-                    "description": "Your assembler executable (eg. BeebAsm.exe)."
-                },
-                "beebvsc.emulator": {
-                    "type": "string",
-                    "default": "BeebEm.exe",
-                    "description": "Your preferred emulator executable (eg. BeebEm.exe)."
-                }
-            }
-        },           
-        "commands": [
-        {
-            "command": "extension.target.create",
-            "title": "BeebVSC: Create new build target"
-        },
-        {
-            "command": "extension.target.select",
-            "title": "BeebVSC: Select default build target"
-        },
-        {
-            "command": "extension.target.run",
-            "title": "BeebVSC: Run the currently selected target"
-        },
-        {
-            "command": "extension.target.build",
-            "title": "BeebVSC: Build the currently selected target"
-        }],
-        "keybindings": [
-        {
-            "command": "extension.target.create",
-            "key": "f10",
-            "mac": "f10"
-        },
-        {
-            "command": "extension.target.select",
-            "key": "f6",
-            "mac": "f6"
-        },
-        {
-            "command": "extension.target.run",
-            "key": "Ctrl+Shift+T",
-            "mac": "Ctrl+Shift+T"
-        },
-        {
-            "command": "extension.target.run",
-            "key": "F9",
-            "mac": "F9"
-        },        
-        {
-            "command": "extension.target.build",
-            "key": "F7",
-            "mac": "F7"
-        },        
-        {
-            "command": "workbench.action.tasks.runTask",
-            "key": "Ctrl+Shift+R",
-            "mac": "Ctrl+Shift+R"
-        }]           
-    },
-    "scripts": {
-        "postinstall": "node ./node_modules/vscode/bin/install"
-    },
-    "devDependencies": {
-        "vscode": "^0.11.0"
-    }        
+	"name": "beeb-vsc",
+	"displayName": "Beeb VSC",
+	"description": "6502 developmemnt environment (BBC Micro/BeebAsm)",
+	"version": "0.1.0",
+	"icon": "images/icon.png",
+	"galleryBanner": {
+		"color": "#5c2d91",
+		"theme": "dark"
+	},
+	"publisher": "simondotm",
+	"license": "MIT",
+	"bugs": {
+		"url": "https://github.com/simondotm/beeb-vsc/issues"
+	},
+	"homepage": "https://github.com/simondotm/beeb-vsc/",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/simondotm/beeb-vsc.git"
+	},
+	"categories": [
+		"Programming Languages"
+	],
+	"keywords": [
+		"6502",
+		"bbc",
+		"micro",
+		"beebasm",
+		"assembly"
+	],
+	"engines": {
+		"vscode": "^1.75.0"
+	},
+	"configurations": [
+		{
+			"type": "node",
+			"request": "launch",
+			"name": "Mocha Tests",
+			"program": "${workspaceFolder}/node_modules/mocha/bin/_mocha",
+			"args": [
+				"--require",
+				"ts-node/register",
+				"-u",
+				"tdd",
+				"--timeout",
+				"999999",
+				"--colors",
+				"--recursive",
+				"${workspaceFolder}/server/src/test/*.ts"
+			],
+			"internalConsoleOptions": "openOnSessionStart"
+		}
+	],
+	"main": "./client/out/extension.js",
+	"contributes": {
+		"languages": [
+			{
+				"id": "beebasm",
+				"extensions": [
+					".6502",
+					".s",
+					".asm"
+				],
+				"aliases": [
+					"6502/BeebAsm Assembly"
+				],
+				"configuration": "./beeb-vsc.configuration.json"
+			}
+		],
+		"grammars": [
+			{
+				"language": "beebasm",
+				"scopeName": "source.asm.6502",
+				"path": "./syntaxes/6502.tmLanguage.json"
+			}
+		],
+		"configuration": {
+			"type": "object",
+			"title": "BeebVSC configuration",
+			"properties": {
+				"beebvsc.assembler": {
+					"type": "string",
+					"default": "BeebAsm.exe",
+					"description": "Your assembler executable (eg. BeebAsm.exe)."
+				},
+				"beebvsc.emulator": {
+					"type": "string",
+					"default": "BeebEm.exe",
+					"description": "Your preferred emulator executable (eg. BeebEm.exe)."
+				},
+				"beebvsc.enableHovering": {
+					"type": "boolean",
+					"default": true,
+					"description": "Enable the display of instruction documentation on hovering."
+				}
+				
+			}
+		},
+		"commands": [
+			{
+				"command": "extension.target.create",
+				"title": "BeebVSC: Create new build target"
+			},
+			{
+				"command": "extension.target.select",
+				"title": "BeebVSC: Select default build target"
+			},
+			{
+				"command": "extension.target.run",
+				"title": "BeebVSC: Run the currently selected target"
+			},
+			{
+				"command": "extension.target.build",
+				"title": "BeebVSC: Build the currently selected target"
+			}
+		],
+		"keybindings": [
+			{
+				"command": "extension.target.create",
+				"key": "f10",
+				"mac": "f10"
+			},
+			{
+				"command": "extension.target.select",
+				"key": "f6",
+				"mac": "f6"
+			},
+			{
+				"command": "extension.target.run",
+				"key": "Ctrl+Shift+T",
+				"mac": "Ctrl+Shift+T"
+			},
+			{
+				"command": "extension.target.run",
+				"key": "F9",
+				"mac": "F9"
+			},
+			{
+				"command": "extension.target.build",
+				"key": "F7",
+				"mac": "F7"
+			},
+			{
+				"command": "workbench.action.tasks.runTask",
+				"key": "Ctrl+Shift+R",
+				"mac": "Ctrl+Shift+R"
+			}
+		]
+	},
+	"scripts": {
+		"vscode:prepublish": "npm run compile",
+		"compile": "tsc -b",
+		"watch": "tsc -b -w",
+		"lint": "eslint ./client/src ./server/src --ext .ts,.tsx",
+		"postinstall": "cd client && npm install && cd ../server && npm install && cd .."
+	},
+	"devDependencies": {
+		"@types/mocha": "^10.0.6",
+		"@types/node": "^20.10.5",
+		"@typescript-eslint/eslint-plugin": "^6.14.0",
+		"@typescript-eslint/parser": "^6.14.0",
+		"eslint": "^8.56.0",
+		"mocha": "^10.2.0",
+		"typescript": "^5.3.3"
+	},
+	"dependencies": {
+		"source-map-support": "^0.5.21"
+	}
 }

@@ -1,0 +1,11 @@
+{
+	"editor.insertSpaces": false,
+	"typescript.tsc.autoDetect": "off",
+	"typescript.preferences.quoteStyle": "single",
+	"editor.codeActionsOnSave": {
+		"source.fixAll.eslint": "explicit"
+	},
+	"mochaExplorer.files": "server/out/test/*.js",
+	"mochaExplorer.require": "source-map-support/register",
+	"mochaExplorer.watch": "server/out/test/*.js"
+}
