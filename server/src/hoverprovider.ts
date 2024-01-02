@@ -77,7 +77,7 @@ Return: ${cmd.return}`
 						return null;
 					}
 					const loc = defn.GetLocation();
-					const document = FileHandler.Instance.GetDocumentText(loc.uri);
+					const document = FileHandler.Instance.GetDocumentText(URI.parse(loc.uri).fsPath);
 					if (document === undefined) {
 						return null;
 					}

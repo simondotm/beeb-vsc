@@ -18,7 +18,7 @@ Visual Studio Code is free and really good for general retro/6502 development, s
 - BeebAsm functions (`RND`, `CHR$`, `LO` etc.)
 - BeebAsm directives (`SAVE`, `EQUB`, `ORG` etc.)
 - Op-code information (description, bytecode, cycles etc.)
-- TODO: symbols and labels
+- Symbols and labels show the line of code where they are declared
 
 ## References:
 The various types of reference navigation options available within VS Code via the context menu (right-click on a symbol or label).
@@ -26,6 +26,7 @@ The various types of reference navigation options available within VS Code via t
 - Find all references
 - Peek definition/references
 - Links added to files referenced via `INCLUDE`, `PUTBASIC` or `PUTTEXT`
+- The rename refactoring functionality is also included
 
 ## Diagnostics:
 The extension parses your code to try and identify the errors that would be reported by BeebAsm when compiling your code. Lines with issues will be underlined and reported in the Problems tab of VS Code. Dozens of issues are detected including:
@@ -36,6 +37,7 @@ The extension parses your code to try and identify the errors that would be repo
 Provides a list of potential matches as you start to type.
 - BeebAsm functions
 - BeebAsm directives
+- Symbols and labels
 
 ## Supported Filetypes:
 - .6502
@@ -126,14 +128,14 @@ The BeebVSC extension is careful to preserve the contents of the `tasks.json` fi
 - You can manually remove tasks if you wish
 
 
-The only properties that are managed by the extension are the `isBuildCommand` and `isTestCommand`, so these are subject to modification.
-Note also that the commandline argument for the task marked as `isTestCommand` is managed by the extension, and updates whenever a new build target is selected.
+The only property that is managed by the extension is `Group -> Kind`, so this is subject to modification.
+Note also that the commandline argument for the test task is managed by the extension, and updates whenever a new build target is selected.
 
 ## Command Line format
 Due to constraints in the way that Visual Studio Code handles tasks, BeebVSC tasks must be executed as single arguments to a shell such as `"cmd.exe"`.
 
 ## Linux/Mac support
-There is none, but its probably quite feasible to get it working.
+The installation is for Windows by default, but its quite feasible to get it working for Linux and MacOS. Primarily this is done by changing the settings for `"beebvsc.assembler"` and `"beebvsc.emulator"`.
 
 # Release notes
 
@@ -155,6 +157,12 @@ There is none, but its probably quite feasible to get it working.
 
 ## Source code
 The extension uses TypeScript, as that is the language used for most online examples, especially those from MicroSoft.
+There are some tests (not very high coverage). These can be run from the Testing side-panel in VS Code by installing the Mocha Test Explorer from the extensions marketplace.
+To get the tests to show up, you may need to go to the command palette and select "Mocha Test Explorer: Enable for a workspace folder" command.  
+
+The project includes an adapted version of BeebAsm version 1.10 to perform the code analysis, helping to identify potential compile issues as you type. It was converted to TypeScript, changed to capture all errors instead of exiting on the first error and enhanced with the ability to capture information about the code that drives functionality such as code completion and reference finding. This remains under the GPL and is in a separate folder /server/src/beebasm-ts.
+
+Also incuded is the [JavaScript port of strftime() by T. H. Doan](https://thdoan.github.io/strftime/) for implementing the `TIME$` functionality.
 
 Contributions, suggestions or bug reports to this extension are welcome, via the [Beeb-VSC](https://github.com/simondotm/beeb-vsc) GitHub repository
 

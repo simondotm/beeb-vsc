@@ -221,13 +221,14 @@ const renameProvider = new RenameProvider();
 connection.onPrepareRename(renameProvider.onPrepareRename.bind(renameProvider));
 connection.onRenameRequest(renameProvider.onRename.bind(renameProvider));
 
-// TODO - add document link provider for INCBIN, PUTBASIC, PUTTEXT, PUTFILE statements
+// TODO - add document link provider for INCBIN, PUTBASIC, PUTTEXT, PUTFILE statements?
 connection.onDocumentLinks((params) => {
 	const doc = URI.parse(params.textDocument.uri).fsPath;
 	const docLinks = links.get(doc);
 	if (docLinks !== undefined) {
-		return docLinks;
+				return docLinks;
 	}
+	return [];
 });
 
 // TODO - update hover handler to include

@@ -3,9 +3,11 @@ import { LineParser } from './lineparser';
 import { SymbolTable } from './symboltable';
 import { GlobalData } from './globaldata';
 import * as AsmException from './asmexception';
-import { Diagnostic, DiagnosticSeverity, DocumentLink, Location, URI } from 'vscode-languageserver';
+import { Diagnostic, DiagnosticSeverity, DocumentLink, Location } from 'vscode-languageserver';
 import { integer } from 'vscode-languageserver';
 import { AST } from '../ast';
+import { URI } from 'vscode-uri';
+import path = require('path');
 
 const MAX_FOR_LEVELS = 256;
 const MAX_IF_LEVELS = 256;
@@ -50,11 +52,11 @@ export class SourceCode {
 	private _ifStack: If[] = [];
 	private _symbolTable: SymbolTable;
 	private _diagnostics: Map<string, Diagnostic[]>;
-	private _uri: URI;
+	private _uri: string;
 	private _trees: Map<string, AST[]>;
 	private _documentLinks: Map<string, DocumentLink[]>;
 
-	constructor(contents: string, lineNumber: number, parent: SourceCode | null, diagnostics: Map<string, Diagnostic[]>, uri: URI, trees: Map<string, AST[]>, doclinks: Map<string, DocumentLink[]>) {
+	constructor(contents: string, lineNumber: number, parent: SourceCode | null, diagnostics: Map<string, Diagnostic[]>, uri: string, trees: Map<string, AST[]>, doclinks: Map<string, DocumentLink[]>) {
 		this._forStackPtr = 0;
 		this._initialForStackPtr = 0;
 		this._ifStackPtr = 0;
@@ -286,8 +288,12 @@ export class SourceCode {
 		}
 	}
 
-	GetURI(): URI {
-		return this._uri;
+	GetURI(): string {
+		let uri = this._uri;
+		if (process.platform === 'win32') {
+			uri = URI.parse("file:///" + path.resolve(this._uri)).toString()
+		}
+		return uri;
 	}
 
 	ShouldOutputAsm(): boolean {
@@ -545,7 +551,7 @@ export class SourceCode {
 export class MacroInstance extends SourceCode {
 	private _macro: Macro;
 
-	constructor(macro: Macro, sourceCode: SourceCode, diagnostics: Map<string, Diagnostic[]>, uri: URI, trees: Map<string, AST[]>, links: Map<string, DocumentLink[]>) {
+	constructor(macro: Macro, sourceCode: SourceCode, diagnostics: Map<string, Diagnostic[]>, uri: string, trees: Map<string, AST[]>, links: Map<string, DocumentLink[]>) {
 		super(macro.GetBody(), macro.GetLineNumber(), sourceCode, diagnostics, uri, trees, links);
 		this._macro = macro;
 		this.CopyForStack(sourceCode);

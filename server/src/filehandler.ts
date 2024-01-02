@@ -11,7 +11,7 @@ export class FileHandler {
 	private static _instance: FileHandler;
 	private _textDocuments: Map<string, {contents: string, modified: Date}> = new Map<string, {contents: string, modified: Date}>();
 	public documents: TextDocuments<TextDocument> = new TextDocuments(TextDocument);
-
+	
     private constructor()
     {
 		//TBD
@@ -41,19 +41,19 @@ export class FileHandler {
 			this._textDocuments.set(uri, {contents: fileContents, modified: timestamp});
 			return fileContents;
 		} catch (error) {
-			throw new Error(`Unable to read file ${uri.toString()}`);
+			throw new Error(`Unable to read file ${uri.toString()} with error ${error}`);
 		}
 	}
 
 	private GetFileModifiedTime(uri: string): Date {
 		const stats = statSync(uri);
 		return stats.mtime;
-
-		
 	}
 
 	public GetDocumentText(uri: string): string {
-		const documentsText = this.GetFromDocumentsWithFSPath(uri);
+
+		const cleanPath = URI.parse(uri).fsPath;
+		const documentsText = this.GetFromDocumentsWithFSPath(cleanPath); // revert if not helping?
 		if (documentsText !== '') {
 			return documentsText;
 		}

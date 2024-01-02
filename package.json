@@ -18,6 +18,9 @@
 		"type": "git",
 		"url": "https://github.com/simondotm/beeb-vsc.git"
 	},
+	"sponsor": {
+		"url": "https://ko-fi.com/simondotm"
+	},
 	"categories": [
 		"Programming Languages"
 	],
@@ -51,7 +54,7 @@
 			"internalConsoleOptions": "openOnSessionStart"
 		}
 	],
-	"main": "./client/out/extension.js",
+	"main": "./out/main.js",
 	"contributes": {
 		"languages": [
 			{
@@ -93,7 +96,6 @@
 					"default": true,
 					"description": "Enable the display of instruction documentation on hovering."
 				}
-				
 			}
 		},
 		"commands": [
@@ -148,9 +150,11 @@
 		]
 	},
 	"scripts": {
-		"vscode:prepublish": "npm run compile",
-		"compile": "tsc -b",
-		"watch": "tsc -b -w",
+		"vscode:prepublish": "npm-run-all --parallel \"esbuild-base -- --minify\" \"esbuild-server -- --minify\"",
+		"esbuild-base": "esbuild ./client/src/extension.ts --bundle --outfile=out/main.js --external:vscode --format=cjs --platform=node",
+		"esbuild-server": "esbuild ./server/src/server.ts --bundle --outfile=out/server.js --external:vscode --format=cjs --platform=node",
+		"esbuild": "npm-run-all --parallel \"esbuild-base -- --sourcemap\" \"esbuild-server -- --sourcemap\"",
+		"esbuild-watch": "npm-run-all --parallel \"esbuild-base -- --sourcemap --watch\" \"esbuild-server -- --sourcemap --watch\"",
 		"lint": "eslint ./client/src ./server/src --ext .ts,.tsx",
 		"postinstall": "cd client && npm install && cd ../server && npm install && cd .."
 	},
@@ -159,8 +163,10 @@
 		"@types/node": "^20.10.5",
 		"@typescript-eslint/eslint-plugin": "^6.14.0",
 		"@typescript-eslint/parser": "^6.14.0",
+		"esbuild": "^0.19.11",
 		"eslint": "^8.56.0",
 		"mocha": "^10.2.0",
+		"npm-run-all": "^4.1.5",
 		"typescript": "^5.3.3"
 	},
 	"dependencies": {

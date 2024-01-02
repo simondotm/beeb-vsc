@@ -10,6 +10,7 @@ import { strftime }  from '../strftime-master/strftime';
 import { AST, ASTType } from '../ast';
 import { FileHandler } from '../filehandler';
 import * as path from 'path';
+import { URI } from 'vscode-uri';
 // import exp = require('constants');
 // import { match } from 'assert';
 
@@ -1910,20 +1911,30 @@ export class LineParser {
 			// disallow an include within a FOR loop
 			throw new AsmException.SyntaxError_CantInclude( this._line, this._column );
 		}
-		const filename = this.EvaluateExpressionAsString().replace(/\\/g, "/"); // Applies to all platforms??
-		const includeFile = path.resolve(filename);
+		const filename = this.EvaluateExpressionAsString().replace(/\\/g, "/");
+		const fspath = URI.parse(path.resolve(filename)).fsPath;
+		let includeFile: string;
+		if (process.platform === "win32") {
+			includeFile = URI.parse("file:///" + path.resolve(filename)).toString()
+			// if (includeFile.endsWith('/')) {
+			// 	includeFile = includeFile.substring(0, includeFile.length - 1);
+			// }
+		}
+		else {
+			includeFile = fspath;
+		}
 		if (this._ASTValueStack[0].type === ASTType.Value && this._ASTValueStack[0].value === '"' + filename + '"') {
 			const startColumn = this._ASTValueStack[0].startColumn + 1;
 			const endColumn = startColumn + filename.length;
 			const link: DocumentLink = {
 				range: { start: { line: this._lineno, character: startColumn }, end: { line: this._lineno, character: endColumn } },
-				target: includeFile,
+				target: includeFile
 			};
 			this._sourceCode.AddDocumentLink(link);
 		}
 
-		const contents = FileHandler.Instance.GetDocumentText(includeFile);
-		const input = new SourceFile(contents, this._sourceCode, this._sourceCode.GetDiagnostics(), includeFile, this._sourceCode.GetTrees(), this._sourceCode.GetDocumentLinks());
+		const contents = FileHandler.Instance.GetDocumentText(fspath);
+		const input = new SourceFile(contents, this._sourceCode, this._sourceCode.GetDiagnostics(), fspath, this._sourceCode.GetTrees(), this._sourceCode.GetDocumentLinks());
 		input.Process();
 
 		if ( this.AdvanceAndCheckEndOfStatement() ) {
@@ -2303,7 +2314,16 @@ export class LineParser {
 		if (text && this._ASTValueStack[0].type === ASTType.Value && this._ASTValueStack[0].value === '"' + hostFilename + '"') {
 			const startColumn = this._ASTValueStack[0].startColumn + 1;
 			const endColumn = startColumn + hostFilename.length;
-			const filelink = path.resolve(hostFilename);
+			let filelink: string;
+			if (process.platform === "win32") {
+				filelink = URI.parse("file:///" + path.resolve(hostFilename)).toString()
+				if (filelink.endsWith('/')) {
+					filelink = filelink.substring(0, filelink.length - 1);
+				}
+			}
+			else {
+				filelink = URI.parse(path.resolve(hostFilename)).fsPath;
+			}
 			const link: DocumentLink = {
 				range: { start: { line: this._lineno, character: startColumn }, end: { line: this._lineno, character: endColumn } },
 				target: filelink,
@@ -2320,7 +2340,16 @@ export class LineParser {
 		if (this._ASTValueStack[0].type === ASTType.Value && this._ASTValueStack[0].value === '"' + hostFilename + '"') {
 			const startColumn = this._ASTValueStack[0].startColumn + 1;
 			const endColumn = startColumn + hostFilename.length;
-			const filelink = path.resolve(hostFilename);
+			let filelink: string;
+			if (process.platform === "win32") {
+				filelink = URI.parse("file:///" + path.resolve(hostFilename)).toString()
+				if (filelink.endsWith('/')) {
+					filelink = filelink.substring(0, filelink.length - 1);
+				}
+			}
+			else {
+				filelink = URI.parse(path.resolve(hostFilename)).fsPath;
+			}
 			const link: DocumentLink = {
 				range: { start: { line: this._lineno, character: startColumn }, end: { line: this._lineno, character: endColumn } },
 				target: filelink,
