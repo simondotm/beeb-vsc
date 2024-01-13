@@ -75,7 +75,7 @@ connection.onInitialized(() => {
 });
 
 
-// TODO - base settings on beebasm command line options
+// TODO - base settings on beebasm command line options if any are suitable for this extension
 interface ExampleSettings {
 	maxNumberOfProblems: number;
 }
@@ -221,7 +221,8 @@ const renameProvider = new RenameProvider();
 connection.onPrepareRename(renameProvider.onPrepareRename.bind(renameProvider));
 connection.onRenameRequest(renameProvider.onRename.bind(renameProvider));
 
-// TODO - add document link provider for INCBIN, PUTBASIC, PUTTEXT, PUTFILE statements?
+// TODO - add document link provider for INCBIN, PUTBASIC, PUTTEXT, PUTFILE statements? 
+// This extension doesn't support the file types but could still link to them and leave it to the user
 connection.onDocumentLinks((params) => {
 	const doc = URI.parse(params.textDocument.uri).fsPath;
 	const docLinks = links.get(doc);
@@ -231,12 +232,8 @@ connection.onDocumentLinks((params) => {
 	return [];
 });
 
-// TODO - update hover handler to include
-// - symbol information (copy whole line to include any comments? maybe location (file & line))
 const hoverHandler = new HoverProvider(trees);
 connection.onHover(hoverHandler.onHover.bind(hoverHandler));
-
-// TODO - extend code completion to include labels and symbols
 
 // Make the text document manager listen on the connection
 // for open, change and close text document events

@@ -34,13 +34,12 @@ type Label = {
 }
 
 type ScopeDetails = {
+	uri: string;
 	startLine: integer;
 	endLine: integer;
 }
 
 const noLocation = { uri: "", range: { start: { line: 0, character: 0 }, end: { line: 0, character: 0 } } };
-
-// TODO: Position data should be scope i.e. global, block, macro or for loop (any others?)
 
 export class SymbolTable {
 	private static _instance: SymbolTable;
@@ -70,13 +69,14 @@ export class SymbolTable {
 		return filtered;
 	}
 
-	GetSymbolByLine(symbolname: string, line: number): [SymbolData | undefined, string] {
+	GetSymbolByLine(symbolname: string, uri: string, line: number): [SymbolData | undefined, string] {
 		// Relies on scopeLevel matching ForScopePtr when each scopeDetail was created
 		let search = "";
 		for ( let scopeLevel = this._labelScopes - 1; scopeLevel >= 0; scopeLevel-- ) {
 			if ( scopeLevel < this._scopeDetails.length
 				&& line >= this._scopeDetails[scopeLevel].startLine
-				&& line <= this._scopeDetails[scopeLevel].endLine ) {
+				&& line <= this._scopeDetails[scopeLevel].endLine
+				&& this._scopeDetails[scopeLevel].uri === uri ) {
 				search = `@${scopeLevel}_0` + search;
 			}
 		}
@@ -164,7 +164,7 @@ export class SymbolTable {
 		// TODO - check if can add symbol on second pass, currently getting deleted after first pass and not re-added
 	}
 
-	PushBrace(startLine: number, forID: number): void {
+	PushBrace(uri: string, startLine: number, forID: number): void {
 		if (GlobalData.Instance.IsSecondPass()) {
 			const addr = ObjectCode.Instance.GetPC();
 			if (this._lastLabel!._addr !== addr) {
@@ -173,9 +173,8 @@ export class SymbolTable {
 				this._lastLabel!._addr = addr;
 			}
 			this._lastLabel!._scope = this._labelScopes;
-			this._scopeDetails.push({ startLine: startLine, endLine: -1 });
+			this._scopeDetails.push({uri: uri, startLine: startLine, endLine: -1 });
 			this._labelScopes++;
-			// console.log("PushBrace: " + forID + " " + startLine);
 			this._labelStack.push(this._lastLabel!);
 		}
 	}
@@ -187,11 +186,10 @@ export class SymbolTable {
 			if ( forID !== -1 ) {
 				this._scopeDetails[forID].endLine = endLine;
 			}
-			// console.log("PopScope: " + forID + " " + endLine);
 		}
 	}
 
-	PushFor(symbol: string, value: number, startLine = -1, forID = -1): void {
+	PushFor(symbol: string, value: number, uri: string, startLine = -1, forID = -1): void {
 		if (GlobalData.Instance.IsSecondPass()) {
 			const addr = ObjectCode.Instance.GetPC();
 			symbol = symbol.substr(0, symbol.indexOf('@'));
@@ -200,9 +198,8 @@ export class SymbolTable {
 			this._lastLabel!._addr = addr;
 			this._lastLabel!._scope = this._labelScopes;
 			if ( startLine !== -1) {
-				this._scopeDetails.push({ startLine: startLine, endLine: -1 });
+				this._scopeDetails.push({ uri: uri, startLine: startLine, endLine: -1 });
 			}
-			// console.log("PushFor: " + forID + " " + startLine);
 			this._labelScopes++;
 			this._labelStack.push(this._lastLabel!);
 		}

@@ -15,8 +15,8 @@ export class RenameProvider {
 	constructor () {}
 
 	onPrepareRename(params: PrepareRenameParams): Range | null {
-		// TODO - check if symbol is valid for rename (symbol or label but not built in symbol)
 		const textDocument = FileHandler.Instance.documents.get(params.textDocument.uri);
+		const fspath = URI.parse(params.textDocument.uri).fsPath;
 		const position = params.position;
 		if (textDocument) {
 			const currentLine = textDocument.getText().split(/\r?\n/g)[position.line];
@@ -25,7 +25,7 @@ export class RenameProvider {
 				return null;
 			}
 			// lookup symbol in symbol table to confirm it exists
-			const [matched, fullSymbolName] = SymbolTable.Instance.GetSymbolByLine(symbolname, position.line);
+			const [matched, fullSymbolName] = SymbolTable.Instance.GetSymbolByLine(symbolname, fspath, position.line);
 			if (matched === undefined) {
 				return null;
 			}
@@ -41,6 +41,7 @@ export class RenameProvider {
 	onRename(params: RenameParams): WorkspaceEdit | null {
 		// Can assume symbol is valid for rename because use prepareRename first
 		const textDocument = FileHandler.Instance.documents.get(params.textDocument.uri);
+		const fspath = URI.parse(params.textDocument.uri).fsPath;
 		const version = textDocument?.version;
 		const position = params.position;
 		if (!textDocument) {
@@ -51,7 +52,7 @@ export class RenameProvider {
 		if (symbolname === null) {
 			return null;
 		}
-		const [matched, _] = SymbolTable.Instance.GetSymbolByLine(symbolname, position.line);
+		const [matched, _] = SymbolTable.Instance.GetSymbolByLine(symbolname, fspath, position.line);
 		if (matched === undefined) {
 			return null;
 		}
@@ -128,11 +129,12 @@ export class SymbolProvider {
 
 	onReferences(params: ReferenceParams): Location[] | null {
 		const textDocument = FileHandler.Instance.documents.get(params.textDocument.uri);
+		const fspath = URI.parse(params.textDocument.uri).fsPath;
 		const location = params.position;
 		if (textDocument) {
 			const currentLine = textDocument.getText().split(/\r?\n/g)[location.line]; // Would be nice to get just the line using a range argument but not sure what end position would be
-			const refs = FindReferences(currentLine, location);
-			const definition = FindDefinition(currentLine, location);
+			const refs = FindReferences(currentLine, fspath, location);
+			const definition = FindDefinition(currentLine, fspath, location);
 			if (definition !== null) {
 				if (refs === null) {
 					return [definition];
@@ -146,10 +148,11 @@ export class SymbolProvider {
 
 	onDefinition(params: DefinitionParams): Location | null {
 		const textDocument = FileHandler.Instance.documents.get(params.textDocument.uri);
+		const fspath = URI.parse(params.textDocument.uri).fsPath;
 		const location = params.position;
 		if (textDocument) {
 			const currentLine = textDocument.getText().split(/\r?\n/g)[location.line];
-			return FindDefinition(currentLine, location);
+			return FindDefinition(currentLine, fspath, location);
 		}
 		return null;
 	}
@@ -159,7 +162,7 @@ function GetTargetedSymbol(currentLine: string, location: Position): string | nu
 	// get symbol selected by searching forwards and backwards from cursor position
 	let symbolname = currentLine.charAt(location.character);
 	if (symbolname !== '' && !symbolname.match(/[a-zA-Z0-9_%&$]/)) {
-		console.log("invalid symbol: " + symbolname);
+		// console.log("invalid symbol: " + symbolname);
 		return null;
 	}
 	// search backwards
@@ -185,7 +188,7 @@ function GetTargetedSymbol(currentLine: string, location: Position): string | nu
 	return symbolname;
 }
 
-export function FindDefinition(currentLine: string, location: Position): Location | null {
+export function FindDefinition(currentLine: string, uri: string, location: Position): Location | null {
 	let result: Location;
 	const symbolname = GetTargetedSymbol(currentLine, location);
 	if (symbolname === null) {
@@ -193,7 +196,7 @@ export function FindDefinition(currentLine: string, location: Position): Locatio
 	}
 
 	// lookup symbol in symbol table
-	const [matched, _] = SymbolTable.Instance.GetSymbolByLine(symbolname, location.line);
+	const [matched, _] = SymbolTable.Instance.GetSymbolByLine(symbolname, uri, location.line);
 	if (matched) {
 		result = matched.GetLocation();
 		return result;
@@ -201,13 +204,13 @@ export function FindDefinition(currentLine: string, location: Position): Locatio
 	return null;
 }
 
-export function FindReferences(currentLine: string, location: Position): Location[] | null {
+export function FindReferences(currentLine: string, uri: string, location: Position): Location[] | null {
 	const symbolname = GetTargetedSymbol(currentLine, location);
 	if (symbolname === null) {
 		return null;
 	}
 	// lookup symbol in symbol table
-	const [matched, fullSymbolName] = SymbolTable.Instance.GetSymbolByLine(symbolname, location.line);
+	const [matched, fullSymbolName] = SymbolTable.Instance.GetSymbolByLine(symbolname, uri, location.line);
 	if (matched === undefined) {
 		return null;
 	}

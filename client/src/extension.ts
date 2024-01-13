@@ -319,7 +319,7 @@ function createTargetCommand(): void
 		// set as the default build and test target if this is the first task
 		// TODO: check if other targets already exist, but are not set as the default build? Can do this with target select.
 		if (tasks.length === 1) {
-			setCurrentTarget(tasksObject, label, selection);
+			setCurrentTarget(tasksObject, label, target);
 		}
 
 		// write the new tasks.json file

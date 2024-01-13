@@ -6,7 +6,7 @@ import { SourceCode } from '../beebasm-ts/sourcecode';
 import * as AsmException from '../beebasm-ts/asmexception';
 import { Diagnostic, DocumentLink, TextDocumentPositionParams } from 'vscode-languageserver';
 import { GlobalData } from '../beebasm-ts/globaldata';
-import { SymbolTable } from '../beebasm-ts/symboltable';
+import { SymbolData, SymbolTable } from '../beebasm-ts/symboltable';
 import { ObjectCode } from '../beebasm-ts/objectcode';
 import { CompletionProvider, SignatureProvider } from '../completions';
 import { FindDefinition, FindReferences } from '../symbolhandler';
@@ -171,6 +171,9 @@ suite('LineParser', function () {
 		});
 		test('Test repeated for symbol', function () {
 			testRepeatedForSymbol();
+		});
+		test('Test multiple files', function () {
+			testMultipleFiles();
 		});
 	});
 
@@ -392,7 +395,7 @@ function testFindReferenceToLabel() {
 JSR pressed_left
 .pressed_left`;
 	Run2Passes(code);
-	const res = FindReferences(code.split('\n')[2], { line: 2, character: 4 });
+	const res = FindReferences(code.split('\n')[2], "", { line: 2, character: 4 });
 	assert.equal(res!.length, 1);
 	assert.equal(res![0].range.start.line, 1);
 	assert.equal(res![0].range.start.character, 4);
@@ -403,10 +406,31 @@ function testFindReferenceToNestedLabel() {
 JSR pressed_left
 .pressed_left}`;
 	Run2Passes(code);
-	const res = FindReferences(code.split('\n')[2], { line: 2, character: 4 });
+	const res = FindReferences(code.split('\n')[2], "", { line: 2, character: 4 });
 	assert.equal(res!.length, 1);
 	assert.equal(res![0].range.start.line, 1);
 	assert.equal(res![0].range.start.character, 4);
+}
+
+function testMultipleFiles() {
+	const code1 = `{ a = 1 }`;
+	const code2 = `{ a = 2 }`;
+	for ( let pass = 0; pass < 2; pass++ ) {
+		GlobalData.Instance.SetPass(pass);
+		ObjectCode.Instance.InitialisePass();
+		GlobalData.Instance.ResetForId();
+		const input1 = new SourceCode(code1, 0, null, diagnostics, "file1", trees, links);
+		input1.Process();
+		const input2 = new SourceCode(code2, 0, null, diagnostics, "file2", trees, links);
+		input2.Process();
+	}
+	// check definition
+	let symbol: SymbolData | undefined;
+	let fullname: string;
+	[symbol, fullname] = SymbolTable.Instance.GetSymbolByLine("a", "file1", 0);
+	assert.equal(symbol?.GetValue(), 1);
+	[symbol, fullname] = SymbolTable.Instance.GetSymbolByLine("a", "file2", 0);
+	assert.equal(symbol?.GetValue(), 2);
 }
 
 function testMacroNaming() {
@@ -659,7 +683,7 @@ b=a
 	input.Process();
 	const currentLine: string = input.GetLine(2);
 	const position = { line: 2, character: 2 };
-	const result = FindDefinition(currentLine, position);
+	const result = FindDefinition(currentLine, "", position);
 	assert.notEqual(result, null);
 	assert.equal(result!.range.start.line, 1);
 	assert.equal(result!.range.start.character, 0);
@@ -697,28 +721,28 @@ b=a
 	// check for i within for loop
 	let currentLine = input.GetLine(9);
 	let position = { line: 9, character: 5 };
-	let result = FindDefinition(currentLine, position);
+	let result = FindDefinition(currentLine, "", position);
 	assert.notEqual(result, null);
 	assert.equal(result!.range.start.line, 8);
 	assert.equal(result!.range.start.character, 4);
 	// check for a within first block
 	currentLine = input.GetLine(3);
 	position = { line: 3, character: 2 };
-	result = FindDefinition(currentLine, position);
+	result = FindDefinition(currentLine, "", position);
 	assert.notEqual(result, null);
 	assert.equal(result!.range.start.line, 2);
 	assert.equal(result!.range.start.character, 0);
 	// check for a within last block
 	currentLine = input.GetLine(15);
 	position = { line: 15, character: 2 };
-	result = FindDefinition(currentLine, position);
+	result = FindDefinition(currentLine, "", position);
 	assert.notEqual(result, null);
 	assert.equal(result!.range.start.line, 14);
 	assert.equal(result!.range.start.character, 1);
 	// check for c within nested blocks
 	currentLine = input.GetLine(5);
 	position = { line: 5, character: 0 };
-	result = FindDefinition(currentLine, position);
+	result = FindDefinition(currentLine, "", position);
 	assert.notEqual(result, null);
 	assert.equal(result!.range.start.line, 5);
 	assert.equal(result!.range.start.character, 0);
@@ -737,7 +761,7 @@ NEXT`;
 	// Check with cursor before first n
 	let currentLine = code.split('\n')[2];
 	let position = { line: 2, character: 9 };
-	let result = FindDefinition(currentLine, position);
+	let result = FindDefinition(currentLine, "", position);
 	assert.notEqual(result, null);
 	assert.equal(result!.range.start.line, 1, "Expected line 1 but got " + result!.range.start.line + "");
 	assert.equal(result!.range.start.character, 4);
@@ -745,7 +769,7 @@ NEXT`;
 	// Check with cursor after first n
 	currentLine = code.split('\n')[2];
 	position = { line: 2, character: 10 };
-	result = FindDefinition(currentLine, position);
+	result = FindDefinition(currentLine, "", position);
 	assert.notEqual(result, null);
 	assert.equal(result!.range.start.line, 1);
 	assert.equal(result!.range.start.character, 4);
@@ -753,7 +777,7 @@ NEXT`;
 	// Check with cursor before second n
 	currentLine = code.split('\n')[5];
 	position = { line: 5, character: 9 };
-	result = FindDefinition(currentLine, position);
+	result = FindDefinition(currentLine, "", position);
 	assert.notEqual(result, null);
 	assert.equal(result!.range.start.line, 4);
 	assert.equal(result!.range.start.character, 4);
@@ -761,7 +785,7 @@ NEXT`;
 	// Check with cursor after second n
 	currentLine = code.split('\n')[5];
 	position = { line: 5, character: 10 };
-	result = FindDefinition(currentLine, position);
+	result = FindDefinition(currentLine, "", position);
 	assert.notEqual(result, null);
 	assert.equal(result!.range.start.line, 4);
 	assert.equal(result!.range.start.character, 4);

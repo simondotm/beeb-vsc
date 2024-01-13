@@ -83,91 +83,6 @@ export class SourceCode {
 		this._uri = uri;
 	}
 
-	// void SourceCode::Process()
-	// {
-	// 	// Remember the FOR and IF stack initial pointer values
-	
-	// 	m_initialForStackPtr = m_forStackPtr;
-	// 	m_initialIfStackPtr = m_ifStackPtr;
-	
-	// 	// Iterate through the file line-by-line
-	
-	// 	string lineFromFile;
-	
-	// 	while ( GetLine( lineFromFile ) )
-	// 	{
-	// 		// Convert tabs to spaces
-	
-	// 		StringUtils::ExpandTabsToSpaces( lineFromFile, 8 );
-	
-	// 		try
-	// 		{
-	// 			LineParser thisLine( this, lineFromFile );
-	// 			thisLine.Process();
-	// 		}
-	// 		catch ( AsmException_SyntaxError& e )
-	// 		{
-	// 			// Augment exception with more details
-	// 			e.SetFilename( m_filename );
-	// 			e.SetLineNumber( m_lineNumber );
-	// 			throw;
-	// 		}
-	
-	// 		m_lineNumber++;
-	// 		m_lineStartPointer = GetFilePointer();
-	// 	}
-	
-	// 	// Check whether we aborted prematurely
-	
-	// 	if ( !IsAtEnd() )
-	// 	{
-	// 		throw AsmException_FileError_ReadSourceFile( m_filename );
-	// 	}
-	
-	// 	// Check that we have no FOR / braces mismatch
-	
-	// 	if ( m_forStackPtr != m_initialForStackPtr )
-	// 	{
-	// 		For& mismatchedFor = m_forStack[ m_forStackPtr - 1 ];
-	
-	// 		if ( mismatchedFor.m_step == 0.0 )
-	// 		{
-	// 			AsmException_SyntaxError_MismatchedBraces e( mismatchedFor.m_line, mismatchedFor.m_column );
-	// 			e.SetFilename( m_filename );
-	// 			e.SetLineNumber( mismatchedFor.m_lineNumber );
-	// 			throw e;
-	// 		}
-	// 		else
-	// 		{
-	// 			AsmException_SyntaxError_ForWithoutNext e( mismatchedFor.m_line, mismatchedFor.m_column );
-	// 			e.SetFilename( m_filename );
-	// 			e.SetLineNumber( mismatchedFor.m_lineNumber );
-	// 			throw e;
-	// 		}
-	// 	}
-	
-	// 	// Check that we have no IF / MACRO mismatch
-	
-	// 	if ( m_ifStackPtr != m_initialIfStackPtr )
-	// 	{
-	// 		If& mismatchedIf = m_ifStack[ m_ifStackPtr - 1 ];
-	
-	// 		if ( mismatchedIf.m_isMacroDefinition )
-	// 		{
-	// 			AsmException_SyntaxError_NoEndMacro e( mismatchedIf.m_line, mismatchedIf.m_column );
-	// 			e.SetFilename( m_filename );
-	// 			e.SetLineNumber( mismatchedIf.m_lineNumber );
-	// 			throw e;
-	// 		}
-	// 		else
-	// 		{
-	// 			AsmException_SyntaxError_IfWithoutEndif e( mismatchedIf.m_line, mismatchedIf.m_column );
-	// 			e.SetFilename( m_filename );
-	// 			e.SetLineNumber( mismatchedIf.m_lineNumber );
-	// 			throw e;
-	// 		}
-	// 	}
-	// }
 	Process() {
 		// Remember the FOR and IF stack initial pointer values
 		this._initialForStackPtr = this._forStackPtr;
@@ -232,10 +147,49 @@ export class SourceCode {
 		
 		this._trees.set(this._uri, trees);
 		//Validation routines
-		//TODO - check whether we aborted prematurely
+		// // Check that we have no FOR / braces mismatch
+		// 	if ( m_forStackPtr != m_initialForStackPtr )
+		// 	{
+		// 		For& mismatchedFor = m_forStack[ m_forStackPtr - 1 ];
+		// 		if ( mismatchedFor.m_step == 0.0 )
+		// 		{
+		// 			AsmException_SyntaxError_MismatchedBraces e( mismatchedFor.m_line, mismatchedFor.m_column );
+		// 			e.SetFilename( m_filename );
+		// 			e.SetLineNumber( mismatchedFor.m_lineNumber );
+		// 			throw e;
+		// 		}
+		// 		else
+		// 		{
+		// 			AsmException_SyntaxError_ForWithoutNext e( mismatchedFor.m_line, mismatchedFor.m_column );
+		// 			e.SetFilename( m_filename );
+		// 			e.SetLineNumber( mismatchedFor.m_lineNumber );
+		// 			throw e;
+		// 		}
+		// 	}
+		// 	// Check that we have no IF / MACRO mismatch
+		// 	if ( m_ifStackPtr != m_initialIfStackPtr )
+		// 	{
+		// 		If& mismatchedIf = m_ifStack[ m_ifStackPtr - 1 ];
+		// 		if ( mismatchedIf.m_isMacroDefinition )
+		// 		{
+		// 			AsmException_SyntaxError_NoEndMacro e( mismatchedIf.m_line, mismatchedIf.m_column );
+		// 			e.SetFilename( m_filename );
+		// 			e.SetLineNumber( mismatchedIf.m_lineNumber );
+		// 			throw e;
+		// 		}
+		// 		else
+		// 		{
+		// 			AsmException_SyntaxError_IfWithoutEndif e( mismatchedIf.m_line, mismatchedIf.m_column );
+		// 			e.SetFilename( m_filename );
+		// 			e.SetLineNumber( mismatchedIf.m_lineNumber );
+		// 			throw e;
+		// 		}
+		// 	}
+		// }		
+		
 		//TODO - Check that we have no FOR / braces mismatch
 		//TODO - Check that we have no IF / MACRO mismatch
-		
+		// NB - don't throw, just create a diagnostic
 	}
 
 	GetDiagnostics(): Map<string, Diagnostic[]> {
@@ -446,7 +400,7 @@ export class SourceCode {
 			lineNumber: this._lineNumber,
 			firstPass: true
 		};
-		SymbolTable.Instance.PushBrace(this._lineNumber, this._forStack[this._forStackPtr].id);
+		SymbolTable.Instance.PushBrace(this._uri, this._lineNumber, this._forStack[this._forStackPtr].id);
 		this._forStackPtr++;
 	}
 
@@ -489,7 +443,7 @@ export class SourceCode {
 		const symbolname = varName + this.GetSymbolNameSuffix();
 		this._forStack[this._forStackPtr-1].varName = symbolname; // Update for stack to include suffix
 		SymbolTable.Instance.AddSymbol(symbolname, start, loc);
-		SymbolTable.Instance.PushFor(symbolname, start, this._lineNumber, this._forStack[this._forStackPtr-1].id);
+		SymbolTable.Instance.PushFor(symbolname, start, this._uri, this._lineNumber, this._forStack[this._forStackPtr-1].id);
 	}
 
 	UpdateFor(line: string, column: number):void {
@@ -517,7 +471,7 @@ export class SourceCode {
 			SymbolTable.Instance.ChangeSymbol(thisFor.varName, thisFor.current);
 			this.SetLinePointer( thisFor.filePtr );
 			SymbolTable.Instance.PopScope();
-			SymbolTable.Instance.PushFor(thisFor.varName, thisFor.current);
+			SymbolTable.Instance.PushFor(thisFor.varName, thisFor.current, this._uri);
 			thisFor.count++;
 			// If parsing NEXT statement for a second time then no longer in first loop
 			if (thisFor.count > 1 || (thisFor.count === 1 && thisFor.lineNumber !== this._lineNumber)) {

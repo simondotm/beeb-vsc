@@ -13,7 +13,8 @@ export class HoverProvider {
 	}
 
     onHover(params: HoverParams): Hover | null {
-		const docTrees = this.trees.get(URI.parse(params.textDocument.uri).fsPath);
+		const fspath = URI.parse(params.textDocument.uri).fsPath;
+		const docTrees = this.trees.get(fspath);
 		const location = params.position;
 		if (docTrees !== undefined) {
 			const lineTree = docTrees[location.line];
@@ -72,11 +73,14 @@ Return: ${cmd.return}`
 				const symbol = SymbolOrLabel(lineTree, location.character);
 				if (symbol !== '') {
 					
-					const [defn, _] = SymbolTable.Instance.GetSymbolByLine(symbol, location.line);
+					const [defn, _] = SymbolTable.Instance.GetSymbolByLine(symbol, fspath, location.line);
 					if (defn === undefined) {
 						return null;
 					}
 					const loc = defn.GetLocation();
+					if (loc.uri === '') {
+						return null; // Built in constant - could have special info here documenting P%, CPU etc.
+					}
 					const document = FileHandler.Instance.GetDocumentText(URI.parse(loc.uri).fsPath);
 					if (document === undefined) {
 						return null;

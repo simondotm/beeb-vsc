@@ -1855,6 +1855,7 @@ export class LineParser {
 						}
 					}
 				}
+				this._currentAST.children.push(this._ASTValueStack[0]);
 			}
 			else {
 				this.EatWhitespace();

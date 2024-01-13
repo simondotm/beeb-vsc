@@ -153,8 +153,9 @@
 		"vscode:prepublish": "npm-run-all --parallel \"esbuild-base -- --minify\" \"esbuild-server -- --minify\"",
 		"esbuild-base": "esbuild ./client/src/extension.ts --bundle --outfile=out/main.js --external:vscode --format=cjs --platform=node",
 		"esbuild-server": "esbuild ./server/src/server.ts --bundle --outfile=out/server.js --external:vscode --format=cjs --platform=node",
+		"compile-for-tests": "tsc -b -w",
 		"esbuild": "npm-run-all --parallel \"esbuild-base -- --sourcemap\" \"esbuild-server -- --sourcemap\"",
-		"esbuild-watch": "npm-run-all --parallel \"esbuild-base -- --sourcemap --watch\" \"esbuild-server -- --sourcemap --watch\"",
+		"esbuild-watch": "npm-run-all --parallel \"esbuild-base -- --sourcemap --watch\" \"esbuild-server -- --sourcemap --watch\" \"compile-for-tests\"",
 		"lint": "eslint ./client/src ./server/src --ext .ts,.tsx",
 		"postinstall": "cd client && npm install && cd ../server && npm install && cd .."
 	},
