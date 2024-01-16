@@ -49,18 +49,7 @@ export class Macro {
 }
 
 // export class MacroInstance extends SourceCode {
-// 	private _macro: Macro;
-
-// 	constructor(macro: Macro, sourceCode: SourceCode, diagnostics: Diagnostic[]) {
-// 		super(macro.GetBody(), macro.GetLineNumber(), sourceCode, diagnostics);
-// 		this._macro = macro;
-// 		this.CopyForStack(sourceCode);
-// 	}
-
-// 	GetMacro(): Macro {
-// 		return this._macro;
-// 	}
-// }
+// Moved to sourcecode.ts
 
 export class MacroTable {
 	private _macros: Map<string, Macro> = new Map<string, Macro>();

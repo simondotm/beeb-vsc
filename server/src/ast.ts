@@ -18,12 +18,12 @@ export type AST = {
 	value: string | number;
 	startColumn: number;
 	children: AST[];
-	parent: AST | null;
 }
 
-export function Opcode(ast: AST, position: number): number {
+const OPCODE_LENGTH = 3;
+export function GetOpcodeFromAST(ast: AST, position: number): number {
 	for (const child of ast.children) {
-		if (child.type === ASTType.Assembly && child.startColumn <= position && child.startColumn + 3 > position) {
+		if (child.type === ASTType.Assembly && child.startColumn <= position && child.startColumn + OPCODE_LENGTH > position) {
 			return Number(child.value);
 		}
 	}
@@ -31,7 +31,7 @@ export function Opcode(ast: AST, position: number): number {
 }
 
 // Command e.g. PRINT
-export function Command(ast: AST, position: number): string {
+export function GetCommandFromAST(ast: AST, position: number): string {
 	for (const child of ast.children) {
 		if (child.type === ASTType.Command && child.startColumn <= position && child.startColumn + String(child.value).length > position) {
 			return String(child.value);
@@ -42,7 +42,7 @@ export function Command(ast: AST, position: number): string {
 
 // UnaryOp e.g. CHR$()
 // Need to search whole tree since can be nested
-export function UnaryOp(ast: AST, position: number): string {
+export function GetUnaryOpFromAST(ast: AST, position: number): string {
 	const queue: AST[] = [];
 	queue.push(ast);
 	while (queue.length > 0) {
@@ -59,7 +59,7 @@ export function UnaryOp(ast: AST, position: number): string {
 	return '';
 }
 
-export function SymbolOrLabel(ast: AST, position: number): string {
+export function GetSymbolOrLabelFromAST(ast: AST, position: number): string {
 	const queue: AST[] = [];
 	queue.push(ast);
 	while (queue.length > 0) {

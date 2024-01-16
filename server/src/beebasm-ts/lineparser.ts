@@ -300,7 +300,7 @@ export class LineParser {
 			{ token: "OR", precedence: 2, parameterCount: 0, handler: "EvalOr" },
 			{ token: "EOR", precedence: 2, parameterCount: 0, handler: "EvalEor" }
 		];
-		this._tree = { type: ASTType.Line, value: "", startColumn: this._column, children: [], parent: null };
+		this._tree = { type: ASTType.Line, value: "", startColumn: this._column, children: [] };
 		this._parentAST = this._tree; // start at the root, change as enter subexpressions
 		this._currentAST = this._tree; // not used, just placeholder until gets set
 	}
@@ -405,7 +405,7 @@ export class LineParser {
 				}
 				// else {
 
-				this._currentAST = { type: ASTType.VariableDeclaration, value: symbolName, startColumn: startLoc.character, children: [], parent: null };
+				this._currentAST = { type: ASTType.VariableDeclaration, value: symbolName, startColumn: startLoc.character, children: [] };
 				this._currentAST.children.push(this._ASTValueStack[0]);
 				this._parentAST.children.push(this._currentAST);
 				// }
@@ -555,7 +555,7 @@ export class LineParser {
 			}
 
 			if (bMatch) {
-				this._currentAST = { type: ASTType.Assembly, value: token, startColumn: this._column, children: [], parent: null };
+				this._currentAST = { type: ASTType.Assembly, value: token, startColumn: this._column, children: [] };
 				this._parentAST.children.push(this._currentAST);
 				this._parentAST = this._currentAST;
 				this._column += len;
@@ -676,7 +676,7 @@ export class LineParser {
 
 	private HandleToken(i: integer, oldColumn: integer): void {
 		// assert(i >= 0);
-		this._currentAST = { type: ASTType.Command, value: this._gaTokenTable[i].name, startColumn: oldColumn, children: [], parent: null };
+		this._currentAST = { type: ASTType.Command, value: this._gaTokenTable[i].name, startColumn: oldColumn, children: [] };
 
 		if (this._gaTokenTable[i].directiveHandler !== "") {
 			this._sourceCode.Execute(this._gaTokenTable[i].directiveHandler, this._line, this._column);
@@ -1648,7 +1648,7 @@ export class LineParser {
 		}
 		this._currentAST.value = opcode; // Rewrite as using this as index into hover text
 		if (mode == ADDRESSING_MODE.ACC) {
-			this._currentAST.children.push({type: ASTType.Value, value: "A", startColumn: registerPosition, children: [], parent: null});
+			this._currentAST.children.push({type: ASTType.Value, value: "A", startColumn: registerPosition, children: []});
 		}
 		this._parentAST = this._tree;
 	}
@@ -1668,10 +1668,10 @@ export class LineParser {
 		this._currentAST.value = opcode;
 		this._currentAST.children.push(this._ASTValueStack[0]);
 		if (mode == ADDRESSING_MODE.ZPX || mode == ADDRESSING_MODE.INDX) {
-			this._currentAST.children.push({type: ASTType.Value, value: "X", startColumn: registerPosition, children: [], parent: null});
+			this._currentAST.children.push({type: ASTType.Value, value: "X", startColumn: registerPosition, children: []});
 		}
 		if (mode == ADDRESSING_MODE.ZPY || mode == ADDRESSING_MODE.INDY) {
-			this._currentAST.children.push({type: ASTType.Value, value: "Y", startColumn: registerPosition, children: [], parent: null});
+			this._currentAST.children.push({type: ASTType.Value, value: "Y", startColumn: registerPosition, children: []});
 		}
 		this._parentAST = this._tree;
 	}
@@ -1691,10 +1691,10 @@ export class LineParser {
 		this._currentAST.value = opcode;
 		this._currentAST.children.push(this._ASTValueStack[0]);
 		if (mode == ADDRESSING_MODE.ABSX || mode == ADDRESSING_MODE.IND16X) {
-			this._currentAST.children.push({type: ASTType.Value, value: "X", startColumn: registerPosition, children: [], parent: null});
+			this._currentAST.children.push({type: ASTType.Value, value: "X", startColumn: registerPosition, children: []});
 		}
 		if (mode == ADDRESSING_MODE.ABSY) {
-			this._currentAST.children.push({type: ASTType.Value, value: "Y", startColumn: registerPosition, children: [], parent: null});
+			this._currentAST.children.push({type: ASTType.Value, value: "Y", startColumn: registerPosition, children: []});
 		}
 		this._parentAST = this._tree;
 	}
@@ -1865,11 +1865,11 @@ export class LineParser {
 				const callstackKeywordLength = 10;
 				if ( this._line.substring(this._column, this._column + filelineKeywordLength) === filelineKeyword ) {
 					this._column += filelineKeywordLength ;
-					this._currentAST.children.push({type: ASTType.Value, value: filelineKeyword, startColumn: this._column, children: [], parent: null});
+					this._currentAST.children.push({type: ASTType.Value, value: filelineKeyword, startColumn: this._column, children: []});
 				}
 				else if ( this._line.substring(this._column, this._column + callstackKeywordLength) === callstackKeyword ) {
 					this._column += callstackKeywordLength;
-					this._currentAST.children.push({type: ASTType.Value, value: callstackKeyword, startColumn: this._column, children: [], parent: null});
+					this._currentAST.children.push({type: ASTType.Value, value: callstackKeyword, startColumn: this._column, children: []});
 				}
 				else {
 					// print number in decimal or string

@@ -5,8 +5,8 @@ import { ObjectCode } from './objectcode';
 // can't use Symbol as a type name because it's a reserved word
 export class SymbolData {
 	private _value: number | string;
-	private _isLabel: boolean;
-	private _location: Location;
+	private readonly _isLabel: boolean;
+	private readonly _location: Location;
 	public constructor(value: number | string, isLabel: boolean, location: Location) {
 		this._value = value;
 		this._isLabel = isLabel;
@@ -42,9 +42,9 @@ type ScopeDetails = {
 const noLocation = { uri: "", range: { start: { line: 0, character: 0 }, end: { line: 0, character: 0 } } };
 
 export class SymbolTable {
-	private static _instance: SymbolTable;
+	private static _instance: SymbolTable | null = null;
 	private _labelScopes: number; // Just like For stack index?
-    private _map: Map<string, SymbolData> = new Map<string, SymbolData>();
+    private readonly _map: Map<string, SymbolData> = new Map<string, SymbolData>();
 	private _lastLabel: Label = { _addr: 0, _scope: 0, _identifier: ""};
 	private _labelStack: Label[] = [];
 	private _labelList: Label[] = [];
@@ -59,13 +59,15 @@ export class SymbolTable {
 
     public static get Instance()
     {
-        // Do you need arguments? Make it a regular static method instead.
-        return this._instance || (this._instance = new this());
+        if (this._instance === null) {
+			this._instance = new SymbolTable();
+		}
+        return this._instance;
     }
 
+	// get all symbols where location is not noLocation	
 	public GetSymbols(): Map<string, SymbolData> {
-		// get all symbols where location is not noLocation	
-		const filtered = new Map([...this._map.entries()].filter(([_, v]) => v.GetLocation() !== noLocation));
+		const filtered = new Map(Array.from(this._map.entries()).filter(([_, v]) => v.GetLocation() !== noLocation));
 		return filtered;
 	}
 

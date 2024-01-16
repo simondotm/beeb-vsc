@@ -854,7 +854,7 @@ ERROR`;
 function testFindFunctionName() {
 	const code = `PRINT "Hello World"`;
 	const provider = new SignatureProvider();
-	const [match, parameterNo] = provider.findMatchingFunction(code, 6);
+	const [match, parameterNo] = provider.findMatchingFunction(code, 5);
 	assert.equal(match, "PRINT");
 	assert.equal(parameterNo, 0);
 }

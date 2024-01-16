@@ -1,5 +1,5 @@
 import { Hover, MarkupContent, HoverParams } from 'vscode-languageserver';
-import { AST, Opcode, Command, UnaryOp, SymbolOrLabel } from './ast';
+import { AST, GetOpcodeFromAST, GetCommandFromAST, GetUnaryOpFromAST, GetSymbolOrLabelFromAST } from './ast';
 import { opcodeData, opcodeinfo, beebasmCommands, beebasmFunctions } from './shareddata';
 import { URI } from 'vscode-uri';
 import { SymbolTable } from './beebasm-ts/symboltable';
@@ -20,7 +20,7 @@ export class HoverProvider {
 			const lineTree = docTrees[location.line];
 			if (lineTree !== undefined) {
 				// Assembly opcode information
-				const opcode = Opcode(lineTree, location.character);
+				const opcode = GetOpcodeFromAST(lineTree, location.character);
 				if (opcode !== -1) {
 					const info = opcodeData.get(opcode);
 					if (info !== undefined) {
@@ -32,7 +32,7 @@ export class HoverProvider {
 					}
 				}
 				// Command information
-				const command = Command(lineTree, location.character);
+				const command = GetCommandFromAST(lineTree, location.character);
 				if (command !== '') {
 					// try to find in list of commands beebasmCommands
 					// iterate through beebasmCommands looking for a match
@@ -49,7 +49,7 @@ ${cmd.documentation?.value}`
 					}
 				}
 				// Function information
-				const func = UnaryOp(lineTree, location.character);
+				const func = GetUnaryOpFromAST(lineTree, location.character);
 				if (func !== '') {
 					// try to find in list of commands beebasmCommands
 					// iterate through beebasmCommands looking for a match
@@ -70,7 +70,7 @@ Return: ${cmd.return}`
 					}
 				}
 				// Symbols and labels
-				const symbol = SymbolOrLabel(lineTree, location.character);
+				const symbol = GetSymbolOrLabelFromAST(lineTree, location.character);
 				if (symbol !== '') {
 					
 					const [defn, _] = SymbolTable.Instance.GetSymbolByLine(symbol, fspath, location.line);

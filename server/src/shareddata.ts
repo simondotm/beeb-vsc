@@ -8,8 +8,10 @@ type beebasmFunction = {
 };
 
 type beebasmCommand = {
+	command: string;
 	label: string;
 	documentation?: MarkupContent;
+	parameters?: ParameterInformation[];
 };
 
 export const beebasmFunctions: beebasmFunction[] = [
@@ -736,7 +738,8 @@ export const beebasmFunctions: beebasmFunction[] = [
 export const beebasmCommands: beebasmCommand[] = [
 	// PRINT
 	{
-		label: 'PRINT',
+		command: "PRINT",
+		label: 'PRINT [expr, ...]',
 		documentation: {
 		kind: MarkupKind.Markdown,
 		value: [
@@ -754,7 +757,8 @@ export const beebasmCommands: beebasmCommand[] = [
 	},
 	// CPU
 	{
-		label: 'CPU',
+		command: "CPU",
+		label: 'CPU type',
 		documentation: {
 		kind: MarkupKind.Markdown,
 		value: [
@@ -767,10 +771,17 @@ export const beebasmCommands: beebasmCommand[] = [
 			'```',
 		].join('\n'),
 		},
+		parameters: [
+			{
+				label: 'type',
+				documentation: '0 = 6502, 1 = 65C02',
+			},
+		],
 	},
 	// ORG
 	{
-		label: 'ORG',
+		command: "ORG",
+		label: 'ORG address',
 		documentation: {
 		kind: MarkupKind.Markdown,
 		value: [
@@ -783,10 +794,14 @@ export const beebasmCommands: beebasmCommand[] = [
 			'```',
 		].join('\n'),
 		},
+		parameters: [
+			{ label: 'address' },
+		],
 	},
 	// INCLUDE
 	{
-		label: 'INCLUDE',
+		command: "INCLUDE",
+		label: 'INCLUDE "filename"',
 		documentation: {
 		kind: MarkupKind.Markdown,
 		value: [
@@ -796,10 +811,14 @@ export const beebasmCommands: beebasmCommand[] = [
 			'```',
 		].join('\n'),
 		},
+		parameters: [
+			{ label: '"filename"' },
+		],
 	},
 	// EQUB
 	{
-		label: 'EQUB',
+		command: "EQUB",
+		label: 'EQUB a, [b, c, ...]',
 		documentation: {
 		kind: MarkupKind.Markdown,
 		value: [
@@ -813,7 +832,8 @@ export const beebasmCommands: beebasmCommand[] = [
 	},
 	// EQUD
 	{
-		label: 'EQUD',
+		command: "EQUD",
+		label: 'EQUD a, [b, c, ...]',
 		documentation: {
 		kind: MarkupKind.Markdown,
 		value: [
@@ -826,7 +846,8 @@ export const beebasmCommands: beebasmCommand[] = [
 	},
 	// EQUS
 	{
-		label: 'EQUS',
+		command: "EQUS",
+		label: 'EQUS a, [b, c, ...]',
 		documentation: {
 		kind: MarkupKind.Markdown,
 		value: [
@@ -843,6 +864,7 @@ export const beebasmCommands: beebasmCommand[] = [
 	},
 	//EQUW
 	{
+		command: "EQUW",
 		label: 'EQUW',
 		documentation: {
 		kind: MarkupKind.Markdown,
@@ -856,7 +878,8 @@ export const beebasmCommands: beebasmCommand[] = [
 	},
 	// ASSERT a [, b, c, ...]	Abort assembly if any of the expressions is false.
 	{
-		label: 'ASSERT',
+		command: "ASSERT",
+		label: 'ASSERT a [, b, c, ...]',
 		documentation: {
 		kind: MarkupKind.Markdown,
 		value: [
@@ -869,7 +892,8 @@ export const beebasmCommands: beebasmCommand[] = [
 	},
 	//SAVE
 	{
-		label: 'SAVE',
+		command: "SAVE",
+		label: 'SAVE "filename", start, end [, exec [, reload] ]',
 		documentation: {
 		kind: MarkupKind.Markdown,
 		value: [
@@ -889,9 +913,17 @@ export const beebasmCommands: beebasmCommand[] = [
 			'relocated to its correct address upon execution.',
 		].join('\n'),
 		},
+		parameters: [
+			{ label: '"filename"' },
+			{ label: 'start' },
+			{ label: 'end' },
+			{ label: 'exec' },
+			{ label: 'reload' },
+		],
 	},
 	// IF...ELIF...ELSE...ENDIF
 	{
+		command: "IF",
 		label: 'IF',
 		documentation: {
 		kind: MarkupKind.Markdown,
@@ -918,7 +950,8 @@ export const beebasmCommands: beebasmCommand[] = [
 	},
 	// ALIGN <alignment>
 	{
-		label: 'ALIGN',
+		command: "ALIGN",
+		label: 'ALIGN alignment',
 		documentation: {
 		kind: MarkupKind.Markdown,
 		value: [
@@ -930,10 +963,14 @@ export const beebasmCommands: beebasmCommand[] = [
 			'```',
 		].join('\n'),
 		},
+		parameters: [
+			{ label: 'alignment' },
+		],
 	},
 	// SKIPTO <addr>
 	{
-		label: 'SKIPTO',
+		command: "SKIPTO",
+		label: 'SKIPTO address',
 		documentation: {
 		kind: MarkupKind.Markdown,
 		value: [
@@ -944,10 +981,14 @@ export const beebasmCommands: beebasmCommand[] = [
 			'```',
 		].join('\n'),
 		},
+		parameters: [
+			{ label: 'address' },
+		],
 	},
 	// SKIP <bytes>
 	{
-		label: 'SKIP',
+		command: "SKIP",
+		label: 'SKIP bytes',
 		documentation: {
 		kind: MarkupKind.Markdown,
 		value: [
@@ -958,10 +999,14 @@ export const beebasmCommands: beebasmCommand[] = [
 			'```',
 		].join('\n'),
 		},
+		parameters: [
+			{ label: 'bytes' },
+		],
 	},
 	// GUARD <addr>	
 	{
-		label: 'GUARD',
+		command: "GUARD",
+		label: 'GUARD addr',
 		documentation: {
 		kind: MarkupKind.Markdown,
 		value: [
@@ -972,10 +1017,14 @@ export const beebasmCommands: beebasmCommand[] = [
 			'```',
 		].join('\n'),
 		},
+		parameters: [
+			{ label: 'addr' },
+		],
 	},
 	// CLEAR <start>, <end>
 	{
-		label: 'CLEAR',
+		command: "CLEAR",
+		label: 'CLEAR start, end',
 		documentation: {
 		kind: MarkupKind.Markdown,
 		value: [
@@ -989,10 +1038,15 @@ export const beebasmCommands: beebasmCommand[] = [
 			'```',
 		].join('\n'),
 		},
+		parameters: [
+			{ label: 'start' },
+			{ label: 'end' },
+		],
 	},
 	// INCBIN "filename"
 	{
-		label: 'INCBIN',
+		command: "INCBIN",
+		label: 'INCBIN "filename"',
 		documentation: {
 		kind: MarkupKind.Markdown,
 		value: [
@@ -1002,11 +1056,15 @@ export const beebasmCommands: beebasmCommand[] = [
 			'```',
 		].join('\n'),
 		},
+		parameters: [
+			{ label: '"filename"' },
+		],
 	},
 	// MAPCHAR <ascii code>, <remapped code>
 	// MAPCHAR <start ascii code>, <end ascii code>, <remapped code>
 	{
-		label: 'MAPCHAR',
+		command: "MAPCHAR",
+		label: 'MAPCHAR start_ascii_code [, end_ascii_code], remapped_code',
 		documentation: {
 		kind: MarkupKind.Markdown,
 		value: [
@@ -1028,10 +1086,16 @@ export const beebasmCommands: beebasmCommand[] = [
 			'default ASCII codes.',
 		].join('\n'),
 		},
+		parameters: [
+			{ label: 'start_ascii_code' },
+			{ label: 'end_ascii_code' },
+			{ label: 'remapped_code' },
+		],
 	},
 	// PUTFILE <host filename>, [<beeb filename>,] <start addr> [,<exec addr>]
 	{
-		label: 'PUTFILE',
+		command: "PUTFILE",
+		label: 'PUTFILE host_filename, [beeb_filename,] start_ addr [,exec_addr]',
 		documentation: {
 		kind: MarkupKind.Markdown,
 		value: [
@@ -1046,10 +1110,17 @@ export const beebasmCommands: beebasmCommand[] = [
 			'```',
 		].join('\n'),
 		},
+		parameters: [
+			{ label: 'host_filename' },
+			{ label: 'beeb_filename' },
+			{ label: 'start_addr' },
+			{ label: 'exec_addr' },
+		],
 	},
 	// PUTTEXT <host filename>, [<beeb filename>,] <start addr> [,<exec addr>]
 	{
-		label: 'PUTTEXT',
+		command: "PUTTEXT",
+		label: 'PUTTEXT host_filename, [beeb_filename,] start_ addr [,exec_addr]',
 		documentation: {
 		kind: MarkupKind.Markdown,
 		value: [
@@ -1063,10 +1134,17 @@ export const beebasmCommands: beebasmCommand[] = [
 			'```',
 		].join('\n'),
 		},
+		parameters: [
+			{ label: 'host_filename' },
+			{ label: 'beeb_filename' },
+			{ label: 'start_addr' },
+			{ label: 'exec_addr' },
+		],
 	},
 	// PUTBASIC <host filename> [,<beeb filename>]
 	{
-		label: 'PUTBASIC',
+		command: "PUTBASIC",
+		label: 'PUTBASIC host_filename [,beeb_filename]',
 		documentation: {
 		kind: MarkupKind.Markdown,
 		value: [
@@ -1081,10 +1159,15 @@ export const beebasmCommands: beebasmCommand[] = [
 			'```',
 		].join('\n'),
 		},
+		parameters: [
+			{ label: 'host_filename' },
+			{ label: 'beeb_filename' },
+		],
 	},
 	// MACRO <name> [,<parameter list...>]
 	{
-		label: 'MACRO',
+		command: "MACRO",
+		label: 'MACRO name, [parameter_list...]',
 		documentation: {
 		kind: MarkupKind.Markdown,
 		value: [
@@ -1112,10 +1195,15 @@ export const beebasmCommands: beebasmCommand[] = [
 			'```',
 		].join('\n'),
 		},
+		parameters: [
+			{ label: 'name' },
+			{ label: 'parameter_list' },
+		],
 	},
 	// ERROR "message"
 	{
-		label: 'ERROR',
+		command: "ERROR",
+		label: 'ERROR "message"',
 		documentation: {
 		kind: MarkupKind.Markdown,
 		value: [
@@ -1134,10 +1222,14 @@ export const beebasmCommands: beebasmCommand[] = [
 			'```',
 		].join('\n'),
 		},
+		parameters: [
+			{ label: 'message' },
+		],
 	},
 	// COPYBLOCK <start>,<end>,<dest>
 	{
-		label: 'COPYBLOCK',
+		command: "COPYBLOCK",
+		label: 'COPYBLOCK start, end, dest',
 		documentation: {
 		kind: MarkupKind.Markdown,
 		value: [
@@ -1150,10 +1242,16 @@ export const beebasmCommands: beebasmCommand[] = [
 			'```',
 		].join('\n'),
 		},
+		parameters: [
+			{ label: 'start' },
+			{ label: 'end' },
+			{ label: 'dest' },
+		],
 	},
 	// RANDOMIZE <n>
 	{
-		label: 'RANDOMIZE',
+		command: "RANDOMIZE",
+		label: 'RANDOMIZE n',
 		documentation: {
 		kind: MarkupKind.Markdown,
 		value: [
@@ -1166,10 +1264,14 @@ export const beebasmCommands: beebasmCommand[] = [
 			'```',
 		].join('\n'),
 		},
+		parameters: [
+			{ label: 'n' },
+		],
 	},
 	// ASM <str>
 	{
-		label: 'ASM',
+		command: "ASM",
+		label: 'ASM str',
 		documentation: {
 		kind: MarkupKind.Markdown,
 		value: [
@@ -1180,6 +1282,9 @@ export const beebasmCommands: beebasmCommand[] = [
 			'```',
 		].join('\n'),
 		},
+		parameters: [
+			{ label: 'str' },
+		],
 	},
 ];
 

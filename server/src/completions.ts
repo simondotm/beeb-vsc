@@ -71,14 +71,15 @@ export class CompletionProvider
 	}
 }
 
-const signatures: SignatureInformation[] = beebasmFunctions.map((item) =>
+const signatures: SignatureInformation[] = beebasmCommands.map((item) =>
 ({
+	command: item.command,
 	label: item.label,
 	documentation: item.documentation,
 	parameters: item.parameters
 }));
 
-const functionAndCommandIdentifiers = new Set(beebasmFunctions.map((item) => item.label).concat(beebasmCommands.map((item) => item.label)));
+const functionAndCommandIdentifiers = new Set(beebasmFunctions.map((item) => item.label).concat(beebasmCommands.map((item) => item.command)));
 
 export class SignatureProvider
 {
@@ -101,8 +102,10 @@ export class SignatureProvider
 		const line = doc.getText().split(/\r?\n/g)[lineno];
 		const [functionName, parameterNo] = this.findMatchingFunction(line, character);
 		// filter signatures to only those matching the function name
-		const matchingSignatures = signatures.filter((item) => item.label === functionName);
-		
+		const matchingSignatures = signatures.filter((item) => item.label.replace(/ .*/,'') === functionName);
+		if (matchingSignatures.length === 0) {
+			return null;
+		}
 		return <SignatureHelp> {
 			signatures: matchingSignatures,
 			activeSignature: 0,
@@ -110,7 +113,7 @@ export class SignatureProvider
 		};
 	}
 
-	// TODO : Can make private when unit testing complete? Don't want to lose tests though
+	// NB: Public just for unit testing
 	public findMatchingFunction(line: string, character: number): [string, number] {
 		// Parse text for function name
 		// Find all words in line then check against functionAndCommand set
@@ -122,9 +125,9 @@ export class SignatureProvider
 		matches.forEach((match) => {
 			// word must end before the character position
 			if (match.index !== undefined) {
-				if (match.index + match[0].length < character) {
+				if (match.index + match[0].length <= character) {
 					if (functionAndCommandIdentifiers.has(match[0].toUpperCase())) {
-						potentialmatch = match[0];
+						potentialmatch = match[0].toUpperCase();
 						potentialmatchPosition = match.index;
 					}
 				}
@@ -159,7 +162,7 @@ export class SignatureProvider
 				commas++;
 			}
 		}
-
+		// console.log(`potentialmatch: ${potentialmatch}, commas: ${commas}, character: ${character}`);
 		return [potentialmatch, commas];
 	}
 }

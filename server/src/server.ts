@@ -120,7 +120,7 @@ FileHandler.Instance.documents.onDidClose(e => {
 // The content of a text document has changed. This event is emitted
 // when the text document first opened or when its content has changed.
 FileHandler.Instance.documents.onDidChangeContent(change => {
-	console.log(`Document changed: ${change.document.uri}`);
+	// console.log(`Document changed: ${change.document.uri}`);
 	ParseDocument(change.document);
 });
 
@@ -138,7 +138,7 @@ async function getSourceFileName(): Promise<string> {
 		const item: ConfigurationItem = { scopeUri: workspaceroot, section: 'beebvsc' };
 		const settings = await connection.workspace.getConfiguration(item);
 		filename = settings['sourceFile'];
-		connection.console.log(`Source file name: ${filename}`);
+		// connection.console.log(`Source file name: ${filename}`);
 		return filename;
 	}
 	else {
