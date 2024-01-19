@@ -90,11 +90,6 @@
 					"type": "string",
 					"default": "BeebEm.exe",
 					"description": "Your preferred emulator executable (eg. BeebEm.exe)."
-				},
-				"beebvsc.enableHovering": {
-					"type": "boolean",
-					"default": true,
-					"description": "Enable the display of instruction documentation on hovering."
 				}
 			}
 		},
