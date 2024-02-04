@@ -301,74 +301,110 @@ function createTargetCommand(): void
 		task["command"] = getAssemblerPath();
 
 		// Create BeebAsm commandline arguments
-		const args = [];
-		args.push("-v");
-		args.push("-i");
-		args.push(selection);
-		args.push("-do");
-		args.push(target);
-		args.push("-boot");
-		args.push("Main"); // create a !Boot file containing '*RUN Main'. Should parameterise this
-		task["args"] = args;
-
-		task["group"] = {"kind": "build", "isDefault": true};
-
-		// Add the new task to the tasks array
-		tasks.push(task);
-
-		// set as the default build and test target if this is the first task
-		// TODO: check if other targets already exist, but are not set as the default build? Can do this with target select.
-		if (tasks.length === 1) {
-			setCurrentTarget(tasksObject, label, target);
-		}
-
-		// write the new tasks.json file
-		if (saveTasks(tasksObject)) {
-			window.showInformationMessage("BeebVSC: New build target '" + target + "' created");
-		} 
-		else {
-			window.showErrorMessage("BeebVSC: 'Error saving tasks.json file' - contact developer");
-		}
-
-		// Now want to save the selection to the settings.json file in the .vscode folder
-		// Check if it exists first
-		const settingsPath = path.join(workspace.workspaceFolders[0].uri.fsPath, ".vscode", "settings.json");
-		if (!fileExists(settingsPath)) {
-			CreateNewLocalSettingsJson(selection, target);
+		let bootTarget: string;
+		let DFSBootTargetList: string[] = [];
+		// add selection to list, excluding the extension (could check for valid name here?)
+		let ext = selection.lastIndexOf('.');
+		if (ext === -1) {
+			DFSBootTargetList.push(selection);
 		}
 		else {
-			// settings.json exists, so load it
-			let settingsObject: any = null;
-			try {
-				settingsObject = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
-				console.log("settings.json loaded");
-			}
-			catch (err) {
-				window.showErrorMessage("Could not load settings.json file");
-				return;
-			}
-			// sanity check - ensure beebvsc settings are included exists
-			if (!("beebvsc" in settingsObject)) {
-				settingsObject["beebvsc"] = {};
-				console.log("Added beebvsc object to settings.json");
-			}
-			// now add the new settings
-			settingsObject["beebvsc"]["sourceFile"] = path.join(rootPath, selection);
-			settingsObject["beebvsc"]["targetName"] = target;
-			// save the settings.json file
-			try {
-				const output = JSON.stringify(settingsObject, null, 4);
-				fs.writeFileSync(settingsPath, output, 'utf8');
-			}
-			catch (err) {
-				window.showErrorMessage("BeebVSC '" + err + "', when saving file 'settings.json'");
-				console.log("error saving settings.json '" + err + "'");
-				return;
-			}
-			console.log("settings.json saved");
+			DFSBootTargetList.push(selection.substring(0, ext));
 		}
+		// Do a quick scan of the file to see if there are any SAVE commands
+		DFSBootTargetList = DFSBootTargetList.concat(GetSAVECommands(selection));
+		// If the list is empty, return 'Main'
+		if (DFSBootTargetList.length === 0) {
+			bootTarget = "Main";
+		}
+		// If the list has one entry, return that
+		if (DFSBootTargetList.length === 1) {
+			bootTarget = DFSBootTargetList[0];
+		}
+		// If have set the target, write files, otherwise ask use for option
+		if (bootTarget !== undefined) {
+			FinaliseThenSaveTasks(task, tasks, tasksObject, label, selection, target, bootTarget, rootPath);
+			return;
+		}
+		// Present the user with a list of options
+		const pickOptions = { "ignoreFocusOut" : true, "placeHolder" : "Select a file to boot from (Default: 'Main')" };
+		window.showQuickPick(DFSBootTargetList, pickOptions).then((bootTarget) => {
+			// if focus lost, or user cancelled
+			if (bootTarget === undefined) {
+				console.log("bad selection, defaulting to 'Main'");
+				bootTarget = "Main";
+			}
+			console.log("Booting to '" + bootTarget + "'");
+			bootTarget = bootTarget;
+			FinaliseThenSaveTasks(task, tasks, tasksObject, label, selection, target, bootTarget, rootPath);
+		});
+
 	});
 }
+
+function FinaliseThenSaveTasks(task: object, tasks: object[], tasksObject: object, label: string, selection: string, target: string, bootTarget: string, rootPath: string) {
+	task["args"] = ["-v", "-i", selection, "-do", target, "-boot", bootTarget];
+	task["group"] = {"kind": "build", "isDefault": true};
+
+	// Add the new task to the tasks array
+	tasks.push(task);
+
+	// set as the default build and test target if this is the first task
+	// TODO: check if other targets already exist, but are not set as the default build? Can do this with target select.
+	if (tasks.length === 1) {
+		setCurrentTarget(tasksObject, label, target);
+	}
+
+	SaveJSONFiles(tasksObject, target, selection, rootPath);
+}
+
+function SaveJSONFiles(tasksObject, target: string, selection: string, rootPath: string): void {
+	// write the new tasks.json file
+	if (saveTasks(tasksObject)) {
+		window.showInformationMessage("BeebVSC: New build target '" + target + "' created");
+	} 
+	else {
+		window.showErrorMessage("BeebVSC: 'Error saving tasks.json file' - contact developer");
+	}
+	// Now want to save the selection to the settings.json file in the .vscode folder
+	// Check if it exists first
+	const settingsPath = path.join(workspace.workspaceFolders[0].uri.fsPath, ".vscode", "settings.json");
+	if (!fileExists(settingsPath)) {
+		CreateNewLocalSettingsJson(selection, target);
+	}
+	else {
+		// settings.json exists, so load it
+		let settingsObject: any = null;
+		try {
+			settingsObject = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
+			console.log("settings.json loaded");
+		}
+		catch (err) {
+			window.showErrorMessage("Could not load settings.json file");
+			return;
+		}
+		// sanity check - ensure beebvsc settings are included exists
+		if (!("beebvsc" in settingsObject)) {
+			settingsObject["beebvsc"] = {};
+			console.log("Added beebvsc object to settings.json");
+		}
+		// now add the new settings
+		settingsObject["beebvsc"]["sourceFile"] = path.join(rootPath, selection);
+		settingsObject["beebvsc"]["targetName"] = target;
+		// save the settings.json file
+		try {
+			const output = JSON.stringify(settingsObject, null, 4);
+			fs.writeFileSync(settingsPath, output, 'utf8');
+		}
+		catch (err) {
+			window.showErrorMessage("BeebVSC '" + err + "', when saving file 'settings.json'");
+			console.log("error saving settings.json '" + err + "'");
+			return;
+		}
+		console.log("settings.json saved");
+	}
+}
+
 
 //----------------------------------------------------------------------------------------
 // present the user with a list of current build targets in the tasks.json file
@@ -428,6 +464,25 @@ function selectTargetCommand(): void
 		}
 	});
 }
+
+function GetSAVECommands(ASMFilename: string): string[] {
+	const saveList: string[] = [];
+	const rootPath = workspace.workspaceFolders[0].uri.fsPath;
+	// Confident this exists as we've already checked for it in calling function
+	const textFile = fs.readFileSync(path.join(rootPath, ASMFilename), 'utf8');
+	const lines = textFile.split('\n');
+	
+	// TODO: Exclude commented out lines
+	const saveCommandRegex = /(^|:)\s*(SAVE\s+)((["'])([^\4]+)\4).*$/im;
+	for (let i = 0; i < lines.length; i++) {
+		const match = saveCommandRegex.exec(lines[i]);
+		if (match !== null && match.length > 5) {
+			saveList.push(match[5]);
+		}
+	}
+	return saveList;
+}
+
 
 //----------------------------------------------------------------------------------------
 // load the tasks.json file from the local workspace
