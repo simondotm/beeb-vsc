@@ -1,6 +1,13 @@
 .gitignore
 .vscode/**
 typings/**
+client/**
+server/**
+**/*.ts
+**/*.map
+node_modules/**
+**/node_modules/**
+**/tsconfig.json
 test/**
-jsconfig.json
-vsc-extension-quickstart.md
+images/**
+!images/icon.png
