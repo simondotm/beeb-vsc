@@ -27,7 +27,6 @@ jobs:
           FILENAME="beeb-vsc-$VERSION.vsix"
           echo Version: $VERSION
           echo Package: $FILENAME
-
           echo "PACKAGE_NAME=$FILENAME" >> $GITHUB_ENV
           echo "PACKAGE_PATH=./$FILENAME" >> $GITHUB_ENV
 
@@ -58,6 +57,6 @@ jobs:
         uses: HaaLeo/publish-vscode-extension@v1
         with:
           pat: ${{ secrets.VS_MARKETPLACE_TOKEN }}
-          packagePath: ${{ env.PACKAGE_PATH }}
+          extensionFile: ${{ env.PACKAGE_NAME }}
           registryUrl: https://marketplace.visualstudio.com
 
