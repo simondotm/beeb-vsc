@@ -39,7 +39,7 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            return context.ref.replace('v', '')
+            return context.ref.replace(/\/refs\/tags\//, '').replace('v', '')
             
       - name: Echo2
         run: echo ${{ steps.version.outputs.result }}            
@@ -48,10 +48,11 @@ jobs:
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ github.token }}
+          PACKAGE_VERSION: ${{ format('beeb-vsc-{0}.vsix', steps.version.outputs.result) }}
         with:
           upload_url: ${{ github.event.release.upload_url }}
-          asset_path: ./beeb-vsc-${{ steps.version.outputs.result }}.vsix
-          asset_name: beeb-vsc-${{ steps.version.outputs.result }}.vsix
+          asset_path: ${{ join('./', env.PACKAGE_VERSION) }}
+          asset_name: ${{ env.PACKAGE_VERSION }}
           asset_content_type: application/gzip
 
 
