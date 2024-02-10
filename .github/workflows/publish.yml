@@ -11,12 +11,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - name: setup node
-        uses: actions/setup-node@v2
-        with:
-          node-version: 18
-      - run: npm install
 
+      # Match the tag to the package version
       - name: match-tag-to-package-version
         id: match-tag-to-package-version
         uses: geritol/match-tag-to-package-version@0.2.0
@@ -24,20 +20,29 @@ jobs:
           TAG_PREFIX: v # Optional, default prefix is ""
           # TAG_PREFIX may also be defined under the 'env' key.      
 
-      # Get the package name, stripping any v-prefix from the tag
+      # Get the output package name, stripping any v-prefix from the tag
       - name: Get package name
         run: |
           VERSION=${GITHUB_REF_NAME#v}
           FILENAME="beeb-vsc-$VERSION.vsix"
           echo Version: $VERSION
-          echo Package: $PACKAGE_NAME
+          echo Package: $FILENAME
 
           echo "PACKAGE_NAME=$FILENAME" >> $GITHUB_ENV
           echo "PACKAGE_PATH=./$FILENAME" >> $GITHUB_ENV
 
+      # Set up Node.js
+      - name: setup node
+        uses: actions/setup-node@v2
+        with:
+          node-version: 18
+      - run: npm install
+
+      # Build the package
       - name: Build
         run: npm run package
 
+      # Upload the package artefact to the Github release
       - name: Upload build artefact
         uses: actions/upload-release-asset@v1
         env:
@@ -48,7 +53,7 @@ jobs:
           asset_name: ${{ env.PACKAGE_NAME }}
           asset_content_type: application/gzip
 
-
+      # Publish the package to the marketplace
       - name: Publish to Visual Studio Marketplace
         uses: HaaLeo/publish-vscode-extension@v1
         with:
