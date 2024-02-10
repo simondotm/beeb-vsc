@@ -24,43 +24,28 @@ jobs:
           TAG_PREFIX: v # Optional, default prefix is ""
           # TAG_PREFIX may also be defined under the 'env' key.      
 
-      - name: Build
-        run: npm run package
-
-      - name: GitHub Tag Name
-        # ${GITHUB_REF_NAME#v}
-        run: |
-          echo "Tag name from GITHUB_REF_NAME: $GITHUB_REF_NAME"
-          echo "Tag name from github.ref_name: ${{  github.ref_name }}"
-
-      - name: Extract version from tag
-        id: version
-        uses: actions/github-script@0.2.0
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            return context.ref.replace(/\/refs\/tags\//, '').replace('v', '')
-            
-      - name: Echo2
-        run: echo ${{ steps.version.outputs.result }}            
-
-
-      # Store the version, stripping any v-prefix
-      - name: Write release version
+      # Get the package name, stripping any v-prefix from the tag
+      - name: Get package name
         run: |
           VERSION=${GITHUB_REF_NAME#v}
+          FILENAME="beeb-vsc-$VERSION.vsix"
           echo Version: $VERSION
-          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo Package: $PACKAGE_NAME
+
+          echo "PACKAGE_NAME=$FILENAME" >> $GITHUB_ENV
+          echo "PACKAGE_PATH=./$FILENAME" >> $GITHUB_ENV
+
+      - name: Build
+        run: npm run package
 
       - name: Upload build artefact
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ github.token }}
-          PACKAGE_VERSION: ${{ format('beeb-vsc-{0}.vsix', env.VERSION) }}
         with:
           upload_url: ${{ github.event.release.upload_url }}
-          asset_path: ${{ format('{0}{1}', './', env.PACKAGE_VERSION) }}
-          asset_name: ${{ env.PACKAGE_VERSION }}
+          asset_path: ${{ env.PACKAGE_PATH }}
+          asset_name: ${{ env.PACKAGE_NAME }}
           asset_content_type: application/gzip
 
 
@@ -68,5 +53,6 @@ jobs:
         uses: HaaLeo/publish-vscode-extension@v1
         with:
           pat: ${{ secrets.VS_MARKETPLACE_TOKEN }}
+          packagePath: ${{ env.PACKAGE_PATH }}
           registryUrl: https://marketplace.visualstudio.com
 
