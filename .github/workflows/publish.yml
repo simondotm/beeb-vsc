@@ -44,14 +44,22 @@ jobs:
       - name: Echo2
         run: echo ${{ steps.version.outputs.result }}            
 
+
+      # Store the version, stripping any v-prefix
+      - name: Write release version
+        run: |
+          VERSION=${GITHUB_REF_NAME#v}
+          echo Version: $VERSION
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+
       - name: Upload build artefact
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ github.token }}
-          PACKAGE_VERSION: ${{ format('beeb-vsc-{0}.vsix', steps.version.outputs.result) }}
+          PACKAGE_VERSION: ${{ format('beeb-vsc-{0}.vsix', env.VERSION) }}
         with:
           upload_url: ${{ github.event.release.upload_url }}
-          asset_path: ${{ join('./', env.PACKAGE_VERSION) }}
+          asset_path: ${{ format('{0}{1}', './', env.PACKAGE_VERSION) }}
           asset_name: ${{ env.PACKAGE_VERSION }}
           asset_content_type: application/gzip
 
