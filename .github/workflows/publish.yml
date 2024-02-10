@@ -1,0 +1,74 @@
+# Publish package to marketplace when a Github release is published
+# This action checks the tag matches the package version and then publishes the package to the marketplace
+name: Publish
+
+on:
+  release:
+    types: [released]
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: setup node
+        uses: actions/setup-node@v2
+        with:
+          node-version: 18
+      - run: npm install
+
+      - name: match-tag-to-package-version
+        id: match-tag-to-package-version
+        uses: geritol/match-tag-to-package-version@0.2.0
+        with:
+          TAG_PREFIX: v # Optional, default prefix is ""
+          # TAG_PREFIX may also be defined under the 'env' key.      
+
+      - name: Build
+        run: npm run package
+
+      - name: GitHub Tag Name
+        run: |
+          echo "Tag name from GITHUB_REF_NAME: $GITHUB_REF_NAME"
+          echo "Tag name from github.ref_name: ${{  github.ref_name }}"
+
+      - name: Extract tag name
+        id: tag
+        uses: actions/github-script@0.2.0
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            return context.payload.ref.replace(/\/refs\/tags\//, '');
+
+      - name: Echo
+        run: echo ${{ steps.tag.outputs.result }}            
+
+
+      - name: Extract version from tag
+        id: version
+        uses: actions/github-script@0.2.0
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            return context.ref.replace('v', '')
+            
+      - name: Echo2
+        run: echo ${{ steps.version.outputs.result }}            
+
+      - name: upload build
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./beeb-vsc-${{ steps.version.outputs.result }}.vsix
+          asset_name: beeb-vsc-${{ steps.version.outputs.result }}.vsix
+          asset_content_type: application/gzip
+
+
+      - name: Publish to Visual Studio Marketplace
+        uses: HaaLeo/publish-vscode-extension@v1
+        with:
+          pat: ${{ secrets.VS_MARKETPLACE_TOKEN }}
+          registryUrl: https://marketplace.visualstudio.com
+

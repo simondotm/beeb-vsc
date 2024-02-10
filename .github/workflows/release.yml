@@ -1,0 +1,26 @@
+# This workflow runs when a Github release is created
+# It checks the tag for the new release matches the current package version
+# If the tag does not match the package version, the workflow will fail
+# In this scenario, the release/tag should be deleted and the package version should be updated
+name: Release
+
+on:
+  push:
+    tags:
+      - '*'
+
+jobs:
+  setup:
+    name: Setup
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: match-tag-to-package-version
+        id: match-tag-to-package-version
+        uses: geritol/match-tag-to-package-version@0.2.0
+        with:
+          TAG_PREFIX: v # Optional, default prefix is ""
+          # TAG_PREFIX may also be defined under the 'env' key.
+
