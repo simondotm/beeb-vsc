@@ -38,5 +38,5 @@ jobs:
         run: npm run lint
 
       - name: Test
-        run: echo (todo) npm run test
+        run: echo npm run test
 
