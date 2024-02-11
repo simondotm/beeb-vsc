@@ -153,7 +153,7 @@
     "build:prod": "npm-run-all \"bundle:client -- --minify\" \"bundle:server -- --minify\"",
     "watch": "npm-run-all --parallel \"compile -- -w\" \"bundle:client -- --watch\" \"bundle:server -- --watch\"",
     "compile-for-tests": "tsc -b -w",
-    "lint": "eslint ./client/src ./server/src --ext .ts,.tsx",
+    "lint": "eslint ./src --ext .ts,.tsx",
     "package": "vsce package",
     "compile:client": "tsc -p ./client",
     "watch:client": "tsc -watch -p ./client",
@@ -166,23 +166,23 @@
   "devDependencies": {
     "@types/mocha": "^10.0.6",
     "@types/node": "^20.10.5",
-    "@typescript-eslint/eslint-plugin": "^6.14.0",
-    "@typescript-eslint/parser": "^6.14.0",
+    "@types/vscode": "^1.85.0",
+    "@typescript-eslint/eslint-plugin": "^6.21.0",
+    "@typescript-eslint/parser": "^6.21.0",
+    "@vscode/test-electron": "^2.3.8",
     "@vscode/vsce": "^2.23.0",
     "esbuild": "^0.19.11",
     "eslint": "^8.56.0",
     "mocha": "^10.2.0",
     "npm-run-all": "^4.1.5",
-    "typescript": "^5.3.3",
     "ts-mocha": "^10.0.0",
-    "@types/vscode": "^1.85.0",
-    "@vscode/test-electron": "^2.3.8"
+    "typescript": "^5.3.3"
   },
   "dependencies": {
     "source-map-support": "^0.5.21",
+    "vscode-languageclient": "^9.0.1",
     "vscode-languageserver": "^9.0.1",
     "vscode-languageserver-textdocument": "^1.0.11",
-    "vscode-uri": "^3.0.8",
-    "vscode-languageclient": "^9.0.1"
+    "vscode-uri": "^3.0.8"
   }
 }
