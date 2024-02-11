@@ -146,6 +146,11 @@
   },
   "scripts": {
     "vscode:prepublish": "npm run compile:client & npm-run-all --parallel \"esbuild-base -- --minify\" \"esbuild-server -- --minify\"",
+    "build:client": "esbuild ./src/client/extension.ts --bundle --outfile=out/main.js --external:vscode --format=cjs --platform=node --sourcemap",
+    "build:server": "esbuild ./src/server/server.ts --bundle --outfile=out/server.js --external:vscode --format=cjs --platform=node --sourcemap",
+    "compile": "tsc",
+    "build": "npm-run-all compile build:client build:server",
+    "build:prod": "npm-run-all \"build:client -- --minify\" \"build:server -- --minify\"",
     "esbuild-base": "esbuild ./client/src/extension.ts --bundle --outfile=out/main.js --external:vscode --format=cjs --platform=node",
     "esbuild-server": "esbuild ./server/src/server.ts --bundle --outfile=out/server.js --external:vscode --format=cjs --platform=node",
     "compile-for-tests": "tsc -b -w",
