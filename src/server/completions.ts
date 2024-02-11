@@ -18,25 +18,25 @@ const triggerParameterHints = Command.create(
 );
 
 const functionCompletions: CompletionItem[] = beebasmFunctions.map((item) =>
-({
-	label: item.label,
-	kind: CompletionItemKind.Function, 
-	insertTextFormat: InsertTextFormat.Snippet,
-	insertText: `${item.label}($1)$0`,
-	command: triggerParameterHints,
-	detail: 'function',
-	documentation: item.documentation
-}));
+	({
+		label: item.label,
+		kind: CompletionItemKind.Function, 
+		insertTextFormat: InsertTextFormat.Snippet,
+		insertText: `${item.label}($1)$0`,
+		command: triggerParameterHints,
+		detail: 'function',
+		documentation: item.documentation
+	}));
 const commandCompletions: CompletionItem[] = beebasmCommands.map((item) =>
-({
-	label: item.label,
-	kind: CompletionItemKind.Method, 
-	insertTextFormat: InsertTextFormat.Snippet,
-	insertText: `${item.label} $0`,
-	command: triggerParameterHints,
-	detail: 'command',
-	documentation: item.documentation
-}));
+	({
+		label: item.label,
+		kind: CompletionItemKind.Method, 
+		insertTextFormat: InsertTextFormat.Snippet,
+		insertText: `${item.label} $0`,
+		command: triggerParameterHints,
+		detail: 'command',
+		documentation: item.documentation
+	}));
   
 export class CompletionProvider
 {
@@ -56,12 +56,12 @@ export class CompletionProvider
 		// Collect all symbols and labels from the SymbolTable
 		const symbols = SymbolTable.Instance.GetSymbols();
 		const symbolCompletionItems: CompletionItem[] = [...symbols.entries()].map((item) =>
-		({
-			label: item[0],
-			kind: item[1].IsLabel() ? CompletionItemKind.Reference : CompletionItemKind.Variable,
-			insertTextFormat: InsertTextFormat.PlainText,
-			insertText: item[0],
-		}));
+			({
+				label: item[0],
+				kind: item[1].IsLabel() ? CompletionItemKind.Reference : CompletionItemKind.Variable,
+				insertTextFormat: InsertTextFormat.PlainText,
+				insertText: item[0],
+			}));
 
 		return functionCompletions.concat(commandCompletions).concat(symbolCompletionItems);
 	}
@@ -72,12 +72,12 @@ export class CompletionProvider
 }
 
 const signatures: SignatureInformation[] = beebasmCommands.map((item) =>
-({
-	command: item.command,
-	label: item.label,
-	documentation: item.documentation,
-	parameters: item.parameters
-}));
+	({
+		command: item.command,
+		label: item.label,
+		documentation: item.documentation,
+		parameters: item.parameters
+	}));
 
 const functionAndCommandIdentifiers = new Set(beebasmFunctions.map((item) => item.label).concat(beebasmCommands.map((item) => item.command)));
 

@@ -12,16 +12,16 @@ export class FileHandler {
 	private _textDocuments: Map<string, {contents: string, modified: Date}> = new Map<string, {contents: string, modified: Date}>();
 	public documents: TextDocuments<TextDocument> = new TextDocuments(TextDocument);
 	
-    private constructor()
-    {
+	private constructor()
+	{
 		//TBD
-    }
+	}
 
-    public static get Instance()
-    {
-        // Do you need arguments? Make it a regular static method instead.
-        return this._instance || (this._instance = new this());
-    }
+	public static get Instance()
+	{
+		// Do you need arguments? Make it a regular static method instead.
+		return this._instance || (this._instance = new this());
+	}
 
 	public Clear(): void {
 		this._textDocuments.clear();

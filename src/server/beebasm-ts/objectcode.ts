@@ -21,8 +21,8 @@
 /*************************************************************************************************/
 
 import { integer } from 'vscode-languageserver';
-import { SymbolTable } from "./symboltable";
-import * as AsmException from "./asmexception";
+import { SymbolTable } from './symboltable';
+import * as AsmException from './asmexception';
 import { GlobalData } from './globaldata';
 
 enum FLAGS
@@ -46,14 +46,14 @@ export class ObjectCode {
 	private _aMapChar: integer[] = new Array(96);
 
 	private constructor()
-    {
+	{
 		//SymbolTable.Instance.AddSymbol( "CPU", this._CPU );
-    }
+	}
 
-    public static get Instance()
-    {
-        return this._instance || (this._instance = new this());
-    }
+	public static get Instance()
+	{
+		return this._instance || (this._instance = new this());
+	}
 
 	public Reset(): void {
 		this._PC = 0;
@@ -73,7 +73,7 @@ export class ObjectCode {
 
 	public SetCPU(i: number): void {
 		this._CPU = i;
-		SymbolTable.Instance.ChangeSymbol("CPU", this._CPU);
+		SymbolTable.Instance.ChangeSymbol('CPU', this._CPU);
 	}
 
 	public SetPC(i: number): void {
@@ -92,14 +92,14 @@ export class ObjectCode {
 		}
 		this._aFlags[this._PC] |= FLAGS.USED;
 		this._aMemory[this._PC++] = b;
-		SymbolTable.Instance.ChangeSymbol("P%", this._PC);
+		SymbolTable.Instance.ChangeSymbol('P%', this._PC);
 	}
 
 	InitialisePass(): void {
 		// Reset CPU type and PC
 		this.SetCPU(0);
 		this.SetPC(0);
-		SymbolTable.Instance.ChangeSymbol("P%", this._PC);
+		SymbolTable.Instance.ChangeSymbol('P%', this._PC);
 		// Clear flags between passes
 		this.Clear(0, 0x10000, false);
 		// initialise ascii mapping table
@@ -206,7 +206,7 @@ export class ObjectCode {
 		}
 		this._aFlags[this._PC] |= (FLAGS.USED | FLAGS.CHECK);
 		this._aMemory[this._PC++] = opcode;
-		SymbolTable.Instance.ChangeSymbol("P%", this._PC);
+		SymbolTable.Instance.ChangeSymbol('P%', this._PC);
 	}
 
 	Assemble2(opcode: number, val: number): void {
@@ -229,7 +229,7 @@ export class ObjectCode {
 		this._aMemory[this._PC++] = opcode;
 		this._aFlags[this._PC] |= FLAGS.USED;
 		this._aMemory[this._PC++] = val;
-		SymbolTable.Instance.ChangeSymbol("P%", this._PC);
+		SymbolTable.Instance.ChangeSymbol('P%', this._PC);
 	}
 	
 	Assemble3(opcode: number, addr: number): void {
@@ -258,6 +258,6 @@ export class ObjectCode {
 		this._aMemory[this._PC++] = addr & 0xFF;
 		this._aFlags[this._PC] |= FLAGS.USED;
 		this._aMemory[this._PC++] = (addr & 0xFF00) >> 8;
-		SymbolTable.Instance.ChangeSymbol("P%", this._PC);
+		SymbolTable.Instance.ChangeSymbol('P%', this._PC);
 	}
 }

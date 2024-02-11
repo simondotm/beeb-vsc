@@ -23,7 +23,7 @@ beforeEach(function () {
 	ObjectCode.Instance.Reset();
 	GlobalData.Instance.ResetForId();
 	GlobalData.Instance.SetPass(0);
-	diagnostics.set("", []);
+	diagnostics.set('', []);
 });
 
 // Helpers
@@ -32,7 +32,7 @@ function Run2Passes(code: string) {
 		GlobalData.Instance.SetPass(pass);
 		ObjectCode.Instance.InitialisePass();
 		GlobalData.Instance.ResetForId();
-		const input = new SourceCode(code, 0, null, diagnostics, "", trees, links);
+		const input = new SourceCode(code, 0, null, diagnostics, '', trees, links);
 		input.Process();
 	}
 }
@@ -258,50 +258,50 @@ oswrch = &FFEE
 `;
 
 function testSymbolAssignmentNumber() {
-	const sourceCode = new SourceCode(assignments, 1, null, diagnostics, "", trees, links);
+	const sourceCode = new SourceCode(assignments, 1, null, diagnostics, '', trees, links);
 	const parser = new LineParser(sourceCode, sourceCode.GetLine(1), 1);
-	let result: string | number = "";
+	let result: string | number = '';
 	parser.Process();
 	let found = false;
-	[found, result] = sourceCode.GetSymbolValue("a");
+	[found, result] = sourceCode.GetSymbolValue('a');
 	assert.equal(result, 10);
 }
 
 function testSymbolAssignmentString() {
-	const sourceCode = new SourceCode(assignments, 1, null, diagnostics, "", trees, links);
+	const sourceCode = new SourceCode(assignments, 1, null, diagnostics, '', trees, links);
 	const parser = new LineParser(sourceCode, sourceCode.GetLine(3), 3);
-	let result: string | number = "";
+	let result: string | number = '';
 	parser.Process();
 	let found = false;
-	[found, result] = sourceCode.GetSymbolValue("c");
-	assert.equal(result, "hello");
+	[found, result] = sourceCode.GetSymbolValue('c');
+	assert.equal(result, 'hello');
 }
 
 function testSymbolAssignmentHex() {
-	const sourceCode = new SourceCode(assignments, 1, null, diagnostics, "", trees, links);
+	const sourceCode = new SourceCode(assignments, 1, null, diagnostics, '', trees, links);
 	const parser = new LineParser(sourceCode, sourceCode.GetLine(7), 7);
-	let result: string | number = "";
+	let result: string | number = '';
 	parser.Process();
 	let found = false;
-	[found, result] = sourceCode.GetSymbolValue("oswrch");
+	[found, result] = sourceCode.GetSymbolValue('oswrch');
 	assert.equal(result, 0xFFEE);
 }
 
 
 function testSymbolAssignmentMultistatement() {
-	const sourceCode = new SourceCode(assignments, 1, null, diagnostics, "", trees, links);
+	const sourceCode = new SourceCode(assignments, 1, null, diagnostics, '', trees, links);
 	const parser = new LineParser(sourceCode, sourceCode.GetLine(2), 2);
-	let result: string | number = "";
+	let result: string | number = '';
 	parser.Process();
 	let found = false;
-	[found, result] = sourceCode.GetSymbolValue("b");
+	[found, result] = sourceCode.GetSymbolValue('b');
 	assert.equal(result, 20);
-	[found, result] = sourceCode.GetSymbolValue("d");
+	[found, result] = sourceCode.GetSymbolValue('d');
 	assert.equal(result, 30);
 }
 
 function testSymbolAssignmentUpdated() {
-	const sourceCode = new SourceCode(assignments, 1, null, diagnostics, "", trees, links);
+	const sourceCode = new SourceCode(assignments, 1, null, diagnostics, '', trees, links);
 	const parser1 = new LineParser(sourceCode, sourceCode.GetLine(4), 4);
 	const parser2 = new LineParser(sourceCode, sourceCode.GetLine(5), 5);
 	parser1.Process();
@@ -310,7 +310,7 @@ function testSymbolAssignmentUpdated() {
 	}
 	catch (e) {
 		if (e instanceof AsmException.SyntaxError_LabelAlreadyDefined) {
-			assert.equal(e.message, "Symbol already defined.");
+			assert.equal(e.message, 'Symbol already defined.');
 			assert.equal(e._line, sourceCode.GetLine(5));
 			assert.equal(e._column, 0);
 		}
@@ -318,14 +318,14 @@ function testSymbolAssignmentUpdated() {
 }
 
 function testSymbolAssignmentInvalid() {
-	const sourceCode = new SourceCode(assignments, 1, null, diagnostics, "", trees, links);
+	const sourceCode = new SourceCode(assignments, 1, null, diagnostics, '', trees, links);
 	const parser = new LineParser(sourceCode, sourceCode.GetLine(6), 6);
 	try {
 		parser.Process();
 	}
 	catch (e) {
 		if (e instanceof AsmException.SyntaxError_InvalidCharacter) {
-			assert.equal(e.message, "Bad expression.");
+			assert.equal(e.message, 'Bad expression.');
 			assert.equal(e._line, sourceCode.GetLine(6));
 			assert.equal(e._column, 10);
 		}
@@ -342,50 +342,50 @@ const labels = `
 .loop`;
 
 function testLabelAllGlobalLevels() {
-	const sourceCode = new SourceCode(labels, 1, null, diagnostics, "", trees, links);
+	const sourceCode = new SourceCode(labels, 1, null, diagnostics, '', trees, links);
 	sourceCode.Process();
 	let found = false;
-	let result: string | number = "";
-	[found, result] = sourceCode.GetSymbolValue("loop");
+	let result: string | number = '';
+	[found, result] = sourceCode.GetSymbolValue('loop');
 	assert.equal(found, true);
-	[found, result] = sourceCode.GetSymbolValue("above");
+	[found, result] = sourceCode.GetSymbolValue('above');
 	assert.equal(found, true);
-	[found, result] = sourceCode.GetSymbolValue("global");
+	[found, result] = sourceCode.GetSymbolValue('global');
 	assert.equal(found, true);
-	assert.equal(diagnostics.get("")!.length, 1); // .loop is a duplicate label
+	assert.equal(diagnostics.get('')!.length, 1); // .loop is a duplicate label
 }
 
 function testInnerLabel() {
 	// need to parse line by line and stop inside the braces for symbol search to work
-	const sourceCode = new SourceCode(labels, 1, null, diagnostics, "", trees, links);
+	const sourceCode = new SourceCode(labels, 1, null, diagnostics, '', trees, links);
 	for (let i = 0; i < 4; i++) {
 		const parser = new LineParser(sourceCode, sourceCode.GetLine(i), i);
 		parser.Process();
 	}
 	let found = false;
-	let result: string | number = "";
-	[found, result] = sourceCode.GetSymbolValue("inner");
+	let result: string | number = '';
+	[found, result] = sourceCode.GetSymbolValue('inner');
 	assert.equal(found, true);
 }
 
 function test2Pass() {
-	const code = `a = 1`;
+	const code = 'a = 1';
 	for ( let pass = 0; pass < 2; pass++ ) {
 		GlobalData.Instance.SetPass(pass);
 		ObjectCode.Instance.InitialisePass();
 		GlobalData.Instance.ResetForId();
-		const input = new SourceCode(code, 0, null, diagnostics, "", trees, links);
+		const input = new SourceCode(code, 0, null, diagnostics, '', trees, links);
 		input.Process();
 	}
-	assert.equal(diagnostics.get("")!.length, 0);
+	assert.equal(diagnostics.get('')!.length, 0);
 }
 
 function testLabelReassigned() {
-	const sourceCode = new SourceCode(labels, 1, null, diagnostics, "", trees, links);
+	const sourceCode = new SourceCode(labels, 1, null, diagnostics, '', trees, links);
 	sourceCode.Process();
 
-	const lastError = diagnostics.get("")!.pop();
-	assert.equal(lastError!.message, "Symbol already defined.");
+	const lastError = diagnostics.get('')!.pop();
+	assert.equal(lastError!.message, 'Symbol already defined.');
 	assert.equal(lastError!.range.start.line, 7);
 	assert.equal(lastError!.range.start.character, 0);
 }
@@ -395,7 +395,7 @@ function testFindReferenceToLabel() {
 JSR pressed_left
 .pressed_left`;
 	Run2Passes(code);
-	const res = FindReferences(code.split('\n')[2], "", { line: 2, character: 4 });
+	const res = FindReferences(code.split('\n')[2], '', { line: 2, character: 4 });
 	assert.equal(res!.length, 1);
 	assert.equal(res![0].range.start.line, 1);
 	assert.equal(res![0].range.start.character, 4);
@@ -406,30 +406,30 @@ function testFindReferenceToNestedLabel() {
 JSR pressed_left
 .pressed_left}`;
 	Run2Passes(code);
-	const res = FindReferences(code.split('\n')[2], "", { line: 2, character: 4 });
+	const res = FindReferences(code.split('\n')[2], '', { line: 2, character: 4 });
 	assert.equal(res!.length, 1);
 	assert.equal(res![0].range.start.line, 1);
 	assert.equal(res![0].range.start.character, 4);
 }
 
 function testMultipleFiles() {
-	const code1 = `{ a = 1 }`;
-	const code2 = `{ a = 2 }`;
+	const code1 = '{ a = 1 }';
+	const code2 = '{ a = 2 }';
 	for ( let pass = 0; pass < 2; pass++ ) {
 		GlobalData.Instance.SetPass(pass);
 		ObjectCode.Instance.InitialisePass();
 		GlobalData.Instance.ResetForId();
-		const input1 = new SourceCode(code1, 0, null, diagnostics, "file1", trees, links);
+		const input1 = new SourceCode(code1, 0, null, diagnostics, 'file1', trees, links);
 		input1.Process();
-		const input2 = new SourceCode(code2, 0, null, diagnostics, "file2", trees, links);
+		const input2 = new SourceCode(code2, 0, null, diagnostics, 'file2', trees, links);
 		input2.Process();
 	}
 	// check definition
 	let symbol: SymbolData | undefined;
 	let fullname: string;
-	[symbol, fullname] = SymbolTable.Instance.GetSymbolByLine("a", "file1", 0);
+	[symbol, fullname] = SymbolTable.Instance.GetSymbolByLine('a', 'file1', 0);
 	assert.equal(symbol?.GetValue(), 1);
-	[symbol, fullname] = SymbolTable.Instance.GetSymbolByLine("a", "file2", 0);
+	[symbol, fullname] = SymbolTable.Instance.GetSymbolByLine('a', 'file2', 0);
 	assert.equal(symbol?.GetValue(), 2);
 }
 
@@ -447,23 +447,23 @@ MACRO ADDI8 addr, val
 ENDMACRO
 `;
 	Run2Passes(code);
-	assert.equal(diagnostics.get("")!.length, 0);
+	assert.equal(diagnostics.get('')!.length, 0);
 	// getting error in vscode after changing code i.e. need to parse again
 	SymbolTable.Instance.Reset();
 	MacroTable.Instance.Reset();
 	Run2Passes(code);
-	assert.equal(diagnostics.get("")!.length, 0);
+	assert.equal(diagnostics.get('')!.length, 0);
 }
 
 
 function testMismatchedBraces() {
-	const sourceCode = new SourceCode("}", 0, null, diagnostics, "", trees, links);
+	const sourceCode = new SourceCode('}', 0, null, diagnostics, '', trees, links);
 	try {
 		sourceCode.Process();
 	}
 	catch (e) {
 		if (e instanceof AsmException.SyntaxError_MismatchedBraces) {
-			assert.equal(e.message, "Mismatched braces.");
+			assert.equal(e.message, 'Mismatched braces.');
 			assert.equal(e._line, sourceCode.GetLine(0));
 			assert.equal(e._column, 1);
 		}
@@ -475,7 +475,7 @@ function testForwardReferenceWithDecrement() {
 LDA addr-1,Y
 .addr skip 2`;
 	Run2Passes(code);
-	assert.equal(diagnostics.get("")!.length, 0);
+	assert.equal(diagnostics.get('')!.length, 0);
 }
 
 function testFailingForwardReference() {
@@ -489,7 +489,7 @@ ALIGN &100
 EQUB 0,0,1,1,3,3,3,3
 `;
 	Run2Passes(code);
-	assert.equal(diagnostics.get("")!.length, 0, diagnostics.get("")![0]?.message);
+	assert.equal(diagnostics.get('')!.length, 0, diagnostics.get('')![0]?.message);
 }
 
 function testSkipAndOrg() {
@@ -502,7 +502,7 @@ function testSkipAndOrg() {
 			GlobalData.Instance.SetPass(pass);
 			ObjectCode.Instance.InitialisePass();
 			GlobalData.Instance.ResetForId();
-			const input = new SourceCode(code, 0, null, diagnostics, "", trees, links);
+			const input = new SourceCode(code, 0, null, diagnostics, '', trees, links);
 			input.Process();
 		}
 	}
@@ -514,7 +514,7 @@ function testSkipAndOrg() {
 			throw e;
 		}
 	}
-	assert.equal(diagnostics.get("")!.length, 0);
+	assert.equal(diagnostics.get('')!.length, 0);
 	const pc = ObjectCode.Instance.GetPC();
 	assert.equal(pc, 0x21);
 }
@@ -528,10 +528,10 @@ function testForLoop() {
 		GlobalData.Instance.SetPass(pass);
 		ObjectCode.Instance.InitialisePass();
 		GlobalData.Instance.ResetForId();
-		const input = new SourceCode(code, 0, null, diagnostics, "", trees, links);
+		const input = new SourceCode(code, 0, null, diagnostics, '', trees, links);
 		input.Process();
 	}
-	assert.equal(diagnostics.get("")!.length, 0, diagnostics.get("")![0]?.message);
+	assert.equal(diagnostics.get('')!.length, 0, diagnostics.get('')![0]?.message);
 }
 
 function testForLevel() {
@@ -539,7 +539,7 @@ function testForLevel() {
 	const code = `
 FOR i, 0, 1: PRINT i: NEXT
 INCLUDE "dumm"`;
-	const sourceCode = new SourceCode(code, 0, null, diagnostics, "", trees, links);
+	const sourceCode = new SourceCode(code, 0, null, diagnostics, '', trees, links);
 	sourceCode.Process();
 	const forLevel = sourceCode.GetForLevel();
 	assert.equal(forLevel, 0);
@@ -556,37 +556,37 @@ FOR n, 0, 9
 	ENDIF
 	EQUB a
 NEXT`;
-	const sourceCode = new SourceCode(code, 0, null, diagnostics, "", trees, links);
+	const sourceCode = new SourceCode(code, 0, null, diagnostics, '', trees, links);
 	sourceCode.Process();
-	assert.equal(diagnostics.get("")!.length, 0);
+	assert.equal(diagnostics.get('')!.length, 0);
 }
 
 function testAssembler1() {
-	const code = `RTS`;
-	const sourceCode = new SourceCode(code, 0, null, diagnostics, "", trees, links);
+	const code = 'RTS';
+	const sourceCode = new SourceCode(code, 0, null, diagnostics, '', trees, links);
 	sourceCode.Process();
-	assert.equal(diagnostics.get("")!.length, 0);
+	assert.equal(diagnostics.get('')!.length, 0);
 }
 
 function testIndirect() {
-	const code = `LDA (&70), Y`;
-	const sourceCode = new SourceCode(code, 0, null, diagnostics, "", trees, links);
+	const code = 'LDA (&70), Y';
+	const sourceCode = new SourceCode(code, 0, null, diagnostics, '', trees, links);
 	sourceCode.Process();
-	assert.equal(diagnostics.get("")!.length, 0);
+	assert.equal(diagnostics.get('')!.length, 0);
 }
 
 function testAbsoluteX() {
-	const code = `ORA &12,X`;
-	const sourceCode = new SourceCode(code, 0, null, diagnostics, "", trees, links);
+	const code = 'ORA &12,X';
+	const sourceCode = new SourceCode(code, 0, null, diagnostics, '', trees, links);
 	sourceCode.Process();
-	assert.equal(diagnostics.get("")!.length, 0);
+	assert.equal(diagnostics.get('')!.length, 0);
 }
 
 function testMappedCharExpr() {
-	const code = `SBC#'0'-1`;
-	const sourceCode = new SourceCode(code, 0, null, diagnostics, "", trees, links);
+	const code = 'SBC#\'0\'-1';
+	const sourceCode = new SourceCode(code, 0, null, diagnostics, '', trees, links);
 	sourceCode.Process();
-	assert.equal(diagnostics.get("")!.length, 0);
+	assert.equal(diagnostics.get('')!.length, 0);
 }
 
 function testReferenceError() {
@@ -598,33 +598,33 @@ function testReferenceError() {
 		GlobalData.Instance.SetPass(pass);
 		ObjectCode.Instance.InitialisePass();
 		GlobalData.Instance.ResetForId();
-		const input = new SourceCode(code, 0, null, diagnostics, "", trees, links);
+		const input = new SourceCode(code, 0, null, diagnostics, '', trees, links);
 		input.Process();
 	}
-	assert.equal(diagnostics.get("")!.length, 0);
+	assert.equal(diagnostics.get('')!.length, 0);
 }
 
 function testLOFunction() {
-	const code = `LDA #LO(640)`;
+	const code = 'LDA #LO(640)';
 	for ( let pass = 0; pass < 2; pass++ ) {
 		GlobalData.Instance.SetPass(pass);
 		ObjectCode.Instance.InitialisePass();
 		GlobalData.Instance.ResetForId();
-		const input = new SourceCode(code, 0, null, diagnostics, "", trees, links);
+		const input = new SourceCode(code, 0, null, diagnostics, '', trees, links);
 		input.Process();
 	}
-	assert.equal(diagnostics.get("")!.length, 0, diagnostics.get("")![0]?.message);
+	assert.equal(diagnostics.get('')!.length, 0, diagnostics.get('')![0]?.message);
 }
 
 function testSymbolLocation() {
-	const code = `a=1: b=2: c=3`;
-	const input = new SourceCode(code, 0, null, diagnostics, "", trees, links);
+	const code = 'a=1: b=2: c=3';
+	const input = new SourceCode(code, 0, null, diagnostics, '', trees, links);
 	input.Process();
 	const syms = SymbolTable.Instance.GetSymbols();
-	let loc = syms.get("a")!.GetLocation();
+	let loc = syms.get('a')!.GetLocation();
 	assert.equal(loc.range.start.character, 0);
 	assert.equal(loc.range.end.character, 1);
-	loc = syms.get("b")!.GetLocation();
+	loc = syms.get('b')!.GetLocation();
 	assert.equal(loc.range.start.character, 5);
 	assert.equal(loc.range.end.character, 6);
 }
@@ -641,16 +641,16 @@ PRINT CALLSTACK$, " : Skipping",al - (P% AND (al - 1)),"at",~P%
 ENDIF
 ALIGN al
 ENDMACRO`;
-	const input = new SourceCode(code, 0, null, diagnostics, "", trees, links);
+	const input = new SourceCode(code, 0, null, diagnostics, '', trees, links);
 	input.Process();
-	assert.equal(diagnostics.get("")!.length, 0);
+	assert.equal(diagnostics.get('')!.length, 0);
 }
 
 function testMapChar() {
-	const code = `MAPCHAR ' ','Z', 32`;
-	const input = new SourceCode(code, 0, null, diagnostics, "", trees, links);
+	const code = 'MAPCHAR \' \',\'Z\', 32';
+	const input = new SourceCode(code, 0, null, diagnostics, '', trees, links);
 	input.Process();
-	assert.equal(diagnostics.get("")!.length, 0);
+	assert.equal(diagnostics.get('')!.length, 0);
 }
 
 // function asyncMethod() {
@@ -665,7 +665,7 @@ function testMapChar() {
 // Or just extract function and test that???
 async function testCompletions() {
 	const completionHandler = new CompletionProvider();
-	const pos: TextDocumentPositionParams = { textDocument: { uri: "" }, position: { line: 0, character: 0 } };
+	const pos: TextDocumentPositionParams = { textDocument: { uri: '' }, position: { line: 0, character: 0 } };
 	const completions = completionHandler.onCompletion(pos);
 	let output;
 	const temp = completions.then((result) => {
@@ -679,11 +679,11 @@ function testSymbolReference() {
 a=1
 b=a
 `;
-	const input = new SourceCode(code, 0, null, diagnostics, "", trees, links);
+	const input = new SourceCode(code, 0, null, diagnostics, '', trees, links);
 	input.Process();
 	const currentLine: string = input.GetLine(2);
 	const position = { line: 2, character: 2 };
-	const result = FindDefinition(currentLine, "", position);
+	const result = FindDefinition(currentLine, '', position);
 	assert.notEqual(result, null);
 	assert.equal(result!.range.start.line, 1);
 	assert.equal(result!.range.start.character, 0);
@@ -709,40 +709,40 @@ d=2
  a=1
 b=a
 `;
-	const input = new SourceCode(code, 0, null, diagnostics, "", trees, links);
+	const input = new SourceCode(code, 0, null, diagnostics, '', trees, links);
 	// input.Process();
 	for ( let pass = 0; pass < 2; pass++ ) {
 		GlobalData.Instance.SetPass(pass);
 		ObjectCode.Instance.InitialisePass();
 		GlobalData.Instance.ResetForId();
-		const input = new SourceCode(code, 0, null, diagnostics, "", trees, links);
+		const input = new SourceCode(code, 0, null, diagnostics, '', trees, links);
 		input.Process();
 	}
 	// check for i within for loop
 	let currentLine = input.GetLine(9);
 	let position = { line: 9, character: 5 };
-	let result = FindDefinition(currentLine, "", position);
+	let result = FindDefinition(currentLine, '', position);
 	assert.notEqual(result, null);
 	assert.equal(result!.range.start.line, 8);
 	assert.equal(result!.range.start.character, 4);
 	// check for a within first block
 	currentLine = input.GetLine(3);
 	position = { line: 3, character: 2 };
-	result = FindDefinition(currentLine, "", position);
+	result = FindDefinition(currentLine, '', position);
 	assert.notEqual(result, null);
 	assert.equal(result!.range.start.line, 2);
 	assert.equal(result!.range.start.character, 0);
 	// check for a within last block
 	currentLine = input.GetLine(15);
 	position = { line: 15, character: 2 };
-	result = FindDefinition(currentLine, "", position);
+	result = FindDefinition(currentLine, '', position);
 	assert.notEqual(result, null);
 	assert.equal(result!.range.start.line, 14);
 	assert.equal(result!.range.start.character, 1);
 	// check for c within nested blocks
 	currentLine = input.GetLine(5);
 	position = { line: 5, character: 0 };
-	result = FindDefinition(currentLine, "", position);
+	result = FindDefinition(currentLine, '', position);
 	assert.notEqual(result, null);
 	assert.equal(result!.range.start.line, 5);
 	assert.equal(result!.range.start.character, 0);
@@ -761,15 +761,15 @@ NEXT`;
 	// Check with cursor before first n
 	let currentLine = code.split('\n')[2];
 	let position = { line: 2, character: 9 };
-	let result = FindDefinition(currentLine, "", position);
+	let result = FindDefinition(currentLine, '', position);
 	assert.notEqual(result, null);
-	assert.equal(result!.range.start.line, 1, "Expected line 1 but got " + result!.range.start.line + "");
+	assert.equal(result!.range.start.line, 1, 'Expected line 1 but got ' + result!.range.start.line + '');
 	assert.equal(result!.range.start.character, 4);
 
 	// Check with cursor after first n
 	currentLine = code.split('\n')[2];
 	position = { line: 2, character: 10 };
-	result = FindDefinition(currentLine, "", position);
+	result = FindDefinition(currentLine, '', position);
 	assert.notEqual(result, null);
 	assert.equal(result!.range.start.line, 1);
 	assert.equal(result!.range.start.character, 4);
@@ -777,7 +777,7 @@ NEXT`;
 	// Check with cursor before second n
 	currentLine = code.split('\n')[5];
 	position = { line: 5, character: 9 };
-	result = FindDefinition(currentLine, "", position);
+	result = FindDefinition(currentLine, '', position);
 	assert.notEqual(result, null);
 	assert.equal(result!.range.start.line, 4);
 	assert.equal(result!.range.start.character, 4);
@@ -785,7 +785,7 @@ NEXT`;
 	// Check with cursor after second n
 	currentLine = code.split('\n')[5];
 	position = { line: 5, character: 10 };
-	result = FindDefinition(currentLine, "", position);
+	result = FindDefinition(currentLine, '', position);
 	assert.notEqual(result, null);
 	assert.equal(result!.range.start.line, 4);
 	assert.equal(result!.range.start.character, 4);
@@ -797,7 +797,7 @@ function testAssertFails() {
 ASSERT 1==2
 `;
 	Run2Passes(code);
-	assert.equal(diagnostics.get("")!.length, 1);
+	assert.equal(diagnostics.get('')!.length, 1);
 }
 
 function testAssertPasses() {
@@ -805,7 +805,7 @@ function testAssertPasses() {
 ASSERT 1==1
 `;
 	Run2Passes(code);
-	assert.equal(diagnostics.get("")!.length, 0);
+	assert.equal(diagnostics.get('')!.length, 0);
 }
 
 function testAssertStringConcat() {
@@ -815,7 +815,7 @@ bar = "Bar"
 ASSERT foo + " " + bar == "Foo Bar"
 `;
 	Run2Passes(code);
-	assert.equal(diagnostics.get("")!.length, 0, diagnostics.get("")![0]?.message);
+	assert.equal(diagnostics.get('')!.length, 0, diagnostics.get('')![0]?.message);
 }
 
 function testEvalShiftLeft() {
@@ -826,13 +826,13 @@ b = 7283 << 2
 c = 29658 << -2
 d = -1583 << 3`;
 	Run2Passes(code);
-	const a = SymbolTable.Instance.GetSymbols().get("a")?.GetValue();
+	const a = SymbolTable.Instance.GetSymbols().get('a')?.GetValue();
 	assert.equal(a, -16);
-	const b = SymbolTable.Instance.GetSymbols().get("b")?.GetValue();
+	const b = SymbolTable.Instance.GetSymbols().get('b')?.GetValue();
 	assert.equal(b, 29132);
-	const c = SymbolTable.Instance.GetSymbols().get("c")?.GetValue();
+	const c = SymbolTable.Instance.GetSymbols().get('c')?.GetValue();
 	assert.equal(c, 7414);
-	const d = SymbolTable.Instance.GetSymbols().get("d")?.GetValue();
+	const d = SymbolTable.Instance.GetSymbols().get('d')?.GetValue();
 	assert.equal(d, -12664);
 }
 
@@ -840,52 +840,52 @@ function testTIME$() {
 	const code = `
 ASSERT TIME$ == TIME$("%a,%d %b %Y.%H:%M:%S")`;
 	Run2Passes(code);
-	assert.equal(diagnostics.get("")!.length, 0, diagnostics.get("")![0]?.message);
+	assert.equal(diagnostics.get('')!.length, 0, diagnostics.get('')![0]?.message);
 }
 
 function testExpressionlessERROR() {
 	const code = `
 ERROR`;
 	Run2Passes(code);
-	assert.equal(diagnostics.get("")!.length, 0, diagnostics.get("")![0]?.message);
+	assert.equal(diagnostics.get('')!.length, 0, diagnostics.get('')![0]?.message);
 }
 
 
 function testFindFunctionName() {
-	const code = `PRINT "Hello World"`;
+	const code = 'PRINT "Hello World"';
 	const provider = new SignatureProvider();
 	const [match, parameterNo] = provider.findMatchingFunction(code, 5);
-	assert.equal(match, "PRINT");
+	assert.equal(match, 'PRINT');
 	assert.equal(parameterNo, 0);
 }
 
 function testFindFunctionNameCHR$() {
-	const code = `CHR$(65)`;
+	const code = 'CHR$(65)';
 	const provider = new SignatureProvider();
 	const [match, parameterNo] = provider.findMatchingFunction(code, 6);
-	assert.equal(match, "CHR$");
+	assert.equal(match, 'CHR$');
 	assert.equal(parameterNo, 0);
 }
 
 function testFindFunctionNameMID$() {
-	const code = `MID$("Hello", 2, 3)`;
+	const code = 'MID$("Hello", 2, 3)';
 	const provider = new SignatureProvider();
 	let [match, parameterNo] = provider.findMatchingFunction(code, 5);
-	assert.equal(match, "MID$");
+	assert.equal(match, 'MID$');
 	assert.equal(parameterNo, 0);
 	[match, parameterNo] = provider.findMatchingFunction(code, 13);
-	assert.equal(match, "MID$");
+	assert.equal(match, 'MID$');
 	assert.equal(parameterNo, 1);
 	[match, parameterNo] = provider.findMatchingFunction(code, 16);
-	assert.equal(match, "MID$");
+	assert.equal(match, 'MID$');
 	assert.equal(parameterNo, 2);
 }
 
 function testASTAssign() {
-	const code = `a=1`;
-	const input = new SourceCode(code, 0, null, diagnostics, "", trees, links);
+	const code = 'a=1';
+	const input = new SourceCode(code, 0, null, diagnostics, '', trees, links);
 	input.Process();
-	const tree = input.GetTrees().get("")![0];
+	const tree = input.GetTrees().get('')![0];
 	console.log(tree.children);
 	assert.equal(tree.children[0].type, AST.ASTType.VariableDeclaration);
 	assert.equal(tree.children.length, 1);
@@ -894,10 +894,10 @@ function testASTAssign() {
 }
 
 function testASTAssignExpr() {
-	const code = `a=SIN(1+2)`;
-	const input = new SourceCode(code, 0, null, diagnostics, "", trees, links);
+	const code = 'a=SIN(1+2)';
+	const input = new SourceCode(code, 0, null, diagnostics, '', trees, links);
 	input.Process();
-	const tree = input.GetTrees().get("")![0];
+	const tree = input.GetTrees().get('')![0];
 	// console.log(tree.children);
 	assert.equal(tree.children[0].type, AST.ASTType.VariableDeclaration);
 	assert.equal(tree.children.length, 1);
@@ -910,8 +910,8 @@ function testASTAssignExpr() {
 }
 
 function testASTCommand() {
-	const code = ` PRINT CHR$(6)`;
-	const input = new SourceCode(code, 0, null, diagnostics, "", trees, links);
+	const code = ' PRINT CHR$(6)';
+	const input = new SourceCode(code, 0, null, diagnostics, '', trees, links);
 	const thisLine = new LineParser(input, code, 0);
 	thisLine.Process();
 	const tree = thisLine.GetTree();
@@ -925,8 +925,8 @@ function testASTCommand() {
 }
 
 function testASTAssignCommand() {
-	const code = `a=CHR$(6)`;
-	const input = new SourceCode(code, 0, null, diagnostics, "", trees, links);
+	const code = 'a=CHR$(6)';
+	const input = new SourceCode(code, 0, null, diagnostics, '', trees, links);
 	const thisLine = new LineParser(input, code, 0);
 	thisLine.Process();
 	const tree = thisLine.GetTree();
@@ -940,10 +940,10 @@ function testASTAssignCommand() {
 }
 
 function testAST2Expressions() {
-	const code = `a=1: b=a`; // `a=1: b=2`
-	const input = new SourceCode(code, 0, null, diagnostics, "", trees, links);
+	const code = 'a=1: b=a'; // `a=1: b=2`
+	const input = new SourceCode(code, 0, null, diagnostics, '', trees, links);
 	input.Process();
-	const tree = input.GetTrees().get("")![0];
+	const tree = input.GetTrees().get('')![0];
 	console.log(tree.children);
 	assert.equal(tree.children.length, 3);
 	assert.equal(tree.children[0].type, AST.ASTType.VariableDeclaration);
@@ -953,10 +953,10 @@ function testAST2Expressions() {
 }
 
 function testASTAssembler1() {
-	const code = `RTS`;
-	const input = new SourceCode(code, 0, null, diagnostics, "", trees, links);
+	const code = 'RTS';
+	const input = new SourceCode(code, 0, null, diagnostics, '', trees, links);
 	input.Process();
-	const tree = input.GetTrees().get("")![0];
+	const tree = input.GetTrees().get('')![0];
 	console.log(tree.children);
 	assert.equal(tree.children.length, 1);
 	assert.equal(tree.children[0].type, AST.ASTType.Assembly);
@@ -964,10 +964,10 @@ function testASTAssembler1() {
 }
 
 function testASTAssembler2() {
-	const code = `LDA #1`;
-	const input = new SourceCode(code, 0, null, diagnostics, "", trees, links);
+	const code = 'LDA #1';
+	const input = new SourceCode(code, 0, null, diagnostics, '', trees, links);
 	input.Process();
-	const tree = input.GetTrees().get("")![0];
+	const tree = input.GetTrees().get('')![0];
 	console.log(tree.children);
 	assert.equal(tree.children.length, 1);
 	assert.equal(tree.children[0].type, AST.ASTType.Assembly);
@@ -977,64 +977,64 @@ function testASTAssembler2() {
 }
 
 function testASTAssembler3() {
-	const code = `JSR &FFEE`;
-	const input = new SourceCode(code, 0, null, diagnostics, "", trees, links);
+	const code = 'JSR &FFEE';
+	const input = new SourceCode(code, 0, null, diagnostics, '', trees, links);
 	input.Process();
-	const tree = input.GetTrees().get("")![0];
+	const tree = input.GetTrees().get('')![0];
 	console.log(tree.children);
 	console.log(tree.children[0].children[0]);
 	assert.equal(tree.children.length, 1);
 	assert.equal(tree.children[0].type, AST.ASTType.Assembly);
 	assert.equal(tree.children[0].children.length, 1);
 	assert.equal(tree.children[0].children[0].type, AST.ASTType.Value);
-	assert.equal(tree.children[0].children[0].value, "&FFEE");
+	assert.equal(tree.children[0].children[0].value, '&FFEE');
 }
 
 function testASTModeACC() {
-	const code = `ASL A`;
-	const input = new SourceCode(code, 0, null, diagnostics, "", trees, links);
+	const code = 'ASL A';
+	const input = new SourceCode(code, 0, null, diagnostics, '', trees, links);
 	input.Process();
-	const tree = input.GetTrees().get("")![0];
+	const tree = input.GetTrees().get('')![0];
 	console.log(tree.children);
 	console.log(tree.children[0].children[0]);
 	assert.equal(tree.children.length, 1);
 	assert.equal(tree.children[0].type, AST.ASTType.Assembly);
 	assert.equal(tree.children[0].children.length, 1);
 	assert.equal(tree.children[0].children[0].type, AST.ASTType.Value);
-	assert.equal(tree.children[0].children[0].value, "A");
+	assert.equal(tree.children[0].children[0].value, 'A');
 }
 
 function testASTModeINDX() {
-	const code = `LDA (&FF,X)`;
-	const input = new SourceCode(code, 0, null, diagnostics, "", trees, links);
+	const code = 'LDA (&FF,X)';
+	const input = new SourceCode(code, 0, null, diagnostics, '', trees, links);
 	input.Process();
-	const tree = input.GetTrees().get("")![0];
+	const tree = input.GetTrees().get('')![0];
 	console.log(tree.children);
 	console.log(tree.children[0].children[0]);
 	assert.equal(tree.children[0].children.length, 2);
-	assert.equal(tree.children[0].children[0].value, "&FF");
-	assert.equal(tree.children[0].children[1].value, "X");
+	assert.equal(tree.children[0].children[0].value, '&FF');
+	assert.equal(tree.children[0].children[1].value, 'X');
 }
 
 function testASTModeIND16X() {
 	const code = `
 CPU 1 ; set 65C02 mode as IND16,X is not supported on 6502
 JMP (&1000,X)`;
-	const input = new SourceCode(code, 0, null, diagnostics, "", trees, links);
+	const input = new SourceCode(code, 0, null, diagnostics, '', trees, links);
 	input.Process();
-	const tree = input.GetTrees().get("")![2];
+	const tree = input.GetTrees().get('')![2];
 	console.log(tree.children);
 	console.log(tree.children[0].children[0]);
 	assert.equal(tree.children[0].children.length, 2);
-	assert.equal(tree.children[0].children[0].value, "&1000");
-	assert.equal(tree.children[0].children[1].value, "X");
+	assert.equal(tree.children[0].children[0].value, '&1000');
+	assert.equal(tree.children[0].children[1].value, 'X');
 }
 
 function testASTEQUB() {
-	const code = `EQUB 1,2,3`;
-	const input = new SourceCode(code, 0, null, diagnostics, "", trees, links);
+	const code = 'EQUB 1,2,3';
+	const input = new SourceCode(code, 0, null, diagnostics, '', trees, links);
 	input.Process();
-	const tree = input.GetTrees().get("")![0];
+	const tree = input.GetTrees().get('')![0];
 	console.log(tree.children);
 	console.log(tree.children[0].children);
 	assert.equal(tree.children[0].children.length, 3);
@@ -1050,10 +1050,10 @@ function testASTEQUB() {
 // linenumber gets set back FOR line -1 after NEXT, ready for looping back
 // for type contains count which could be useful
 function testASTForLoop() {
-	const code = `FOR n, 0, 1: EQUB n: NEXT`;
-	const input = new SourceCode(code, 0, null, diagnostics, "", trees, links);
+	const code = 'FOR n, 0, 1: EQUB n: NEXT';
+	const input = new SourceCode(code, 0, null, diagnostics, '', trees, links);
 	input.Process();
-	const tree = input.GetTrees().get("")![0];
+	const tree = input.GetTrees().get('')![0];
 	console.log(tree.children);
 	console.log(tree.children[0].children);
 	assert.equal(tree.children.length, 5); // includes statement separator
@@ -1065,14 +1065,14 @@ function testASTForLoopMultipleLines() {
 	const code = `FOR n, 0, 1
 EQUB n
 NEXT`;
-	const input = new SourceCode(code, 0, null, diagnostics, "", trees, links);
+	const input = new SourceCode(code, 0, null, diagnostics, '', trees, links);
 	input.Process();
-	let tree = input.GetTrees().get("")![0];
+	let tree = input.GetTrees().get('')![0];
 	console.log(tree.children);
 	console.log(tree.children[0].children);
-	tree = input.GetTrees().get("")![1];
+	tree = input.GetTrees().get('')![1];
 	console.log(tree.children);
-	tree = input.GetTrees().get("")![2];
+	tree = input.GetTrees().get('')![2];
 	console.log(tree.children);
 	
 }

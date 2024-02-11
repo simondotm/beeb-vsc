@@ -78,8 +78,8 @@ type Token = {
 }
 
 function Data(cpu: number, op: string, imp: number, acc: number, imm: number, zp: number, zpx: number, zpy: number, abs: number, absx: number, absy: number, ind: number, indx: number, indy: number, ind16: number, ind16x: number, rel: number): OpcodeData {
-    const opcodes: number[] = [imp, acc, imm, zp, zpx, zpy, abs, absx, absy, ind, indx, indy, ind16, ind16x, rel];
-    return {opcodes, op, cpu};
+	const opcodes: number[] = [imp, acc, imm, zp, zpx, zpy, abs, absx, absy, ind, indx, indy, ind16, ind16x, rel];
+	return {opcodes, op, cpu};
 }
 
 type OpcodeData =
@@ -149,182 +149,182 @@ export class LineParser {
 		this._line = line;
 		this._lineno = lineno;
 		this._gaTokenTable = [
-			{ name: ".", handler: "HandleDefineLabel", directiveHandler: "" },
-			{ name: "\\", handler: "HandleDefineComment", directiveHandler: "" },
-			{ name: ";", handler: "HandleDefineComment", directiveHandler: "" },
-			{ name: ":", handler: "HandleStatementSeparator", directiveHandler: "" },
-			{ name: "PRINT", handler: "HandlePrint", directiveHandler: "" },
-			{ name: "CPU", handler: "HandleCpu", directiveHandler: "" },
-			{ name: "ORG", handler: "HandleOrg", directiveHandler: "" },
-			{ name: "INCLUDE", handler: "HandleInclude", directiveHandler: "" },
-			{ name: "EQUB", handler: "HandleEqub", directiveHandler: "" },
-			{ name: "EQUD", handler: "HandleEqud", directiveHandler: "" },
-			{ name: "EQUS", handler: "HandleEqub", directiveHandler: "" },
-			{ name: "EQUW", handler: "HandleEquw", directiveHandler: "" },
-			{ name: "ASSERT", handler: "HandleAssert", directiveHandler: "" },
-			{ name: "SAVE", handler: "HandleSave", directiveHandler: "" },
-			{ name: "FOR", handler: "HandleFor", directiveHandler: "" },
-			{ name: "NEXT", handler: "HandleNext", directiveHandler: "" },
-			{ name: "IF", handler: "HandleIf", directiveHandler: "AddIfLevel" },
-			{ name: "ELIF", handler: "HandleIf", directiveHandler: "StartElIf" },
-			{ name: "ELSE", handler: "HandleDirective", directiveHandler: "StartElse"},
-			{ name: "ENDIF", handler: "HandleDirective", directiveHandler: "RemoveIfLevel" },
-			{ name: "ALIGN", handler: "HandleAlign", directiveHandler: "" },
-			{ name: "SKIPTO", handler: "HandleSkipTo", directiveHandler: "" },
-			{ name: "SKIP", handler: "HandleSkip", directiveHandler: "" },
-			{ name: "GUARD", handler: "HandleGuard", directiveHandler: "" },
-			{ name: "CLEAR", handler: "HandleClear", directiveHandler: "" },
-			{ name: "INCBIN", handler: "HandleIncBin", directiveHandler: "" },
-			{ name: "{", handler: "HandleOpenBrace", directiveHandler: "" },
-			{ name: "}", handler: "HandleCloseBrace", directiveHandler: "" },
-			{ name: "MAPCHAR", handler: "HandleMapChar", directiveHandler: "" },
-			{ name: "PUTFILE", handler: "HandlePutFile", directiveHandler: "" },
-			{ name: "PUTTEXT", handler: "HandlePutText", directiveHandler: "" },
-			{ name: "PUTBASIC", handler: "HandlePutBasic", directiveHandler: "" },
-			{ name: "MACRO", handler: "HandleMacro", directiveHandler: "StartMacro" },
-			{ name: "ENDMACRO", handler: "HandleEndMacro", directiveHandler: "EndMacro" },
-			{ name: "ERROR", handler: "HandleError", directiveHandler: "" },
-			{ name: "COPYBLOCK", handler: "HandleCopyBlock", directiveHandler: "" },
-			{ name: "RANDOMIZE", handler: "HandleRandomize", directiveHandler: "" },
-			{ name: "ASM", handler: "HandleAsm", directiveHandler: "" }
+			{ name: '.', handler: 'HandleDefineLabel', directiveHandler: '' },
+			{ name: '\\', handler: 'HandleDefineComment', directiveHandler: '' },
+			{ name: ';', handler: 'HandleDefineComment', directiveHandler: '' },
+			{ name: ':', handler: 'HandleStatementSeparator', directiveHandler: '' },
+			{ name: 'PRINT', handler: 'HandlePrint', directiveHandler: '' },
+			{ name: 'CPU', handler: 'HandleCpu', directiveHandler: '' },
+			{ name: 'ORG', handler: 'HandleOrg', directiveHandler: '' },
+			{ name: 'INCLUDE', handler: 'HandleInclude', directiveHandler: '' },
+			{ name: 'EQUB', handler: 'HandleEqub', directiveHandler: '' },
+			{ name: 'EQUD', handler: 'HandleEqud', directiveHandler: '' },
+			{ name: 'EQUS', handler: 'HandleEqub', directiveHandler: '' },
+			{ name: 'EQUW', handler: 'HandleEquw', directiveHandler: '' },
+			{ name: 'ASSERT', handler: 'HandleAssert', directiveHandler: '' },
+			{ name: 'SAVE', handler: 'HandleSave', directiveHandler: '' },
+			{ name: 'FOR', handler: 'HandleFor', directiveHandler: '' },
+			{ name: 'NEXT', handler: 'HandleNext', directiveHandler: '' },
+			{ name: 'IF', handler: 'HandleIf', directiveHandler: 'AddIfLevel' },
+			{ name: 'ELIF', handler: 'HandleIf', directiveHandler: 'StartElIf' },
+			{ name: 'ELSE', handler: 'HandleDirective', directiveHandler: 'StartElse'},
+			{ name: 'ENDIF', handler: 'HandleDirective', directiveHandler: 'RemoveIfLevel' },
+			{ name: 'ALIGN', handler: 'HandleAlign', directiveHandler: '' },
+			{ name: 'SKIPTO', handler: 'HandleSkipTo', directiveHandler: '' },
+			{ name: 'SKIP', handler: 'HandleSkip', directiveHandler: '' },
+			{ name: 'GUARD', handler: 'HandleGuard', directiveHandler: '' },
+			{ name: 'CLEAR', handler: 'HandleClear', directiveHandler: '' },
+			{ name: 'INCBIN', handler: 'HandleIncBin', directiveHandler: '' },
+			{ name: '{', handler: 'HandleOpenBrace', directiveHandler: '' },
+			{ name: '}', handler: 'HandleCloseBrace', directiveHandler: '' },
+			{ name: 'MAPCHAR', handler: 'HandleMapChar', directiveHandler: '' },
+			{ name: 'PUTFILE', handler: 'HandlePutFile', directiveHandler: '' },
+			{ name: 'PUTTEXT', handler: 'HandlePutText', directiveHandler: '' },
+			{ name: 'PUTBASIC', handler: 'HandlePutBasic', directiveHandler: '' },
+			{ name: 'MACRO', handler: 'HandleMacro', directiveHandler: 'StartMacro' },
+			{ name: 'ENDMACRO', handler: 'HandleEndMacro', directiveHandler: 'EndMacro' },
+			{ name: 'ERROR', handler: 'HandleError', directiveHandler: '' },
+			{ name: 'COPYBLOCK', handler: 'HandleCopyBlock', directiveHandler: '' },
+			{ name: 'RANDOMIZE', handler: 'HandleRandomize', directiveHandler: '' },
+			{ name: 'ASM', handler: 'HandleAsm', directiveHandler: '' }
 		];
 		LineParser._gaOpcodeTable = [
-			Data(0,  "ADC", -1, -1,  0x69,  0x65,  0x75, -1,  0x6D,  0x7D,  0x79,  0x172,  0x61,  0x71, -1, -1, -1),
-			Data(0,  "AND", -1, -1,  0x29,  0x25,  0x35, -1,  0x2D,  0x3D,  0x39,  0x132,  0x21,  0x31, -1, -1, -1),
-			Data(0,  "ASL", -1,  0x0A, -1,  0x06,  0x16, -1,  0x0E,  0x1E, -1, -1, -1, -1, -1, -1, -1),
-			Data(0,  "BCC", -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  0x90),
-			Data(0,  "BCS", -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  0xB0),
-			Data(0,  "BEQ", -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  0xF0),
-			Data(0,  "BIT", -1, -1,  0x189,  0x24,  0x134, -1,  0x2C,  0x13C, -1, -1, -1, -1, -1, -1, -1),
-			Data(0,  "BMI", -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  0x30),
-			Data(0,  "BNE", -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  0xD0),
-			Data(0,  "BPL", -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  0x10),
-			Data(1,  "BRA", -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  0x180),
-			Data(0,  "BRK",  0x00, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1),
-			Data(0,  "BVC", -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  0x50),
-			Data(0,  "BVS", -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  0x70),
-			Data(0,  "CLC",  0x18, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1),
-			Data(0,  "CLD",  0xD8, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1),
-			Data(0,  "CLI",  0x58, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1),
-			Data(1,  "CLR", -1, -1, -1,  0x164,  0x174, -1,  0x19C,  0x19E, -1, -1, -1, -1, -1, -1, -1),
-			Data(0,  "CLV",  0xB8, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1),
-			Data(0,  "CMP", -1, -1,  0xC9,  0xC5,  0xD5, -1,  0xCD,  0xDD,  0xD9,  0x1D2,  0xC1,  0xD1, -1, -1, -1),
-			Data(0,  "CPX", -1, -1,  0xE0,  0xE4, -1, -1,  0xEC, -1, -1, -1, -1, -1, -1, -1, -1),
-			Data(0,  "CPY", -1, -1,  0xC0,  0xC4, -1, -1,  0xCC, -1, -1, -1, -1, -1, -1, -1, -1),
-			Data(1,  "DEA",  0x13A, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1),
-			Data(0,  "DEC", -1,  0x13A, -1,  0xC6,  0xD6, -1,  0xCE,  0xDE, -1, -1, -1, -1, -1, -1, -1),
-			Data(0,  "DEX",  0xCA, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1),
-			Data(0,  "DEY",  0x88, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1),
-			Data(0,  "EOR", -1, -1,  0x49,  0x45,  0x55, -1,  0x4D,  0x5D,  0x59,  0x152,  0x41,  0x51, -1, -1, -1),
-			Data(1,  "INA",  0x11A, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1),
-			Data(0,  "INC", -1,  0x11A, -1,  0xE6,  0xF6, -1,  0xEE,  0xFE, -1, -1, -1, -1, -1, -1, -1),
-			Data(0,  "INX",  0xE8, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1),
-			Data(0,  "INY",  0xC8, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1),
-			Data(0,  "JMP", -1, -1, -1, -1, -1, -1,  0x4C, -1, -1, -1, -1, -1,  0x6C,  0x17C, -1),
-			Data(0,  "JSR", -1, -1, -1, -1, -1, -1,  0x20, -1, -1, -1, -1, -1, -1, -1, -1),
-			Data(0,  "LDA", -1, -1,  0xA9,  0xA5,  0xB5, -1,  0xAD,  0xBD,  0xB9,  0x1B2,  0xA1,  0xB1, -1, -1, -1),
-			Data(0,  "LDX", -1, -1,  0xA2,  0xA6, -1,  0xB6,  0xAE, -1,  0xBE, -1, -1, -1, -1, -1, -1),
-			Data(0,  "LDY", -1, -1,  0xA0,  0xA4,  0xB4, -1,  0xAC,  0xBC, -1, -1, -1, -1, -1, -1, -1),
-			Data(0,  "LSR", -1,  0x4A, -1,  0x46,  0x56, -1,  0x4E,  0x5E, -1, -1, -1, -1, -1, -1, -1),
-			Data(0,  "NOP",  0xEA, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1),
-			Data(0,  "ORA", -1, -1,  0x09,  0x05,  0x15, -1,  0x0D,  0x1D,  0x19,  0x112,  0x01,  0x11, -1, -1, -1),
-			Data(0,  "PHA",  0x48, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1),
-			Data(0,  "PHP",  0x08, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1),
-			Data(1,  "PHX",  0x1DA, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1),
-			Data(1,  "PHY",  0x15A, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1),
-			Data(0,  "PLA",  0x68, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1),
-			Data(0,  "PLP",  0x28, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1),
-			Data(1,  "PLX",  0x1FA, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1),
-			Data(1,  "PLY",  0x17A, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1),
-			Data(0,  "ROL", -1,  0x2A, -1,  0x26,  0x36, -1,  0x2E,  0x3E, -1, -1, -1, -1, -1, -1, -1),
-			Data(0,  "ROR", -1,  0x6A, -1,  0x66,  0x76, -1,  0x6E,  0x7E, -1, -1, -1, -1, -1, -1, -1),
-			Data(0,  "RTI",  0x40, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1),
-			Data(0,  "RTS",  0x60, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1),
-			Data(0,  "SBC", -1, -1,  0xE9,  0xE5,  0xF5, -1,  0xED,  0xFD,  0xF9,  0x1F2,  0xE1,  0xF1, -1, -1, -1),
-			Data(0,  "SEC",  0x38, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1),
-			Data(0,  "SED",  0xF8, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1),
-			Data(0,  "SEI",  0x78, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1),
-			Data(0,  "STA", -1, -1, -1,  0x85,  0x95, -1,  0x8D,  0x9D,  0x99,  0x192,  0x81,  0x91, -1, -1, -1),
-			Data(0,  "STX", -1, -1, -1,  0x86, -1,  0x96,  0x8E, -1, -1, -1, -1, -1, -1, -1, -1),
-			Data(0,  "STY", -1, -1, -1,  0x84,  0x94, -1,  0x8C, -1, -1, -1, -1, -1, -1, -1, -1),
-			Data(1,  "STZ", -1, -1, -1,  0x164,  0x174, -1,  0x19C,  0x19E, -1, -1, -1, -1, -1, -1, -1),
-			Data(0,  "TAX",  0xAA, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1),
-			Data(0,  "TAY",  0xA8, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1),
-			Data(1,  "TRB", -1, -1, -1,  0x114, -1, -1,  0x11C, -1, -1, -1, -1, -1, -1, -1, -1),
-			Data(1,  "TSB", -1, -1, -1,  0x104, -1, -1,  0x10C, -1, -1, -1, -1, -1, -1, -1, -1),
-			Data(0,  "TSX",  0xBA, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1),
-			Data(0,  "TXA",  0x8A, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1),
-			Data(0,  "TXS",  0x9A, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1),
-			Data(0,  "TYA",  0x98, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1)
+			Data(0,  'ADC', -1, -1,  0x69,  0x65,  0x75, -1,  0x6D,  0x7D,  0x79,  0x172,  0x61,  0x71, -1, -1, -1),
+			Data(0,  'AND', -1, -1,  0x29,  0x25,  0x35, -1,  0x2D,  0x3D,  0x39,  0x132,  0x21,  0x31, -1, -1, -1),
+			Data(0,  'ASL', -1,  0x0A, -1,  0x06,  0x16, -1,  0x0E,  0x1E, -1, -1, -1, -1, -1, -1, -1),
+			Data(0,  'BCC', -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  0x90),
+			Data(0,  'BCS', -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  0xB0),
+			Data(0,  'BEQ', -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  0xF0),
+			Data(0,  'BIT', -1, -1,  0x189,  0x24,  0x134, -1,  0x2C,  0x13C, -1, -1, -1, -1, -1, -1, -1),
+			Data(0,  'BMI', -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  0x30),
+			Data(0,  'BNE', -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  0xD0),
+			Data(0,  'BPL', -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  0x10),
+			Data(1,  'BRA', -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  0x180),
+			Data(0,  'BRK',  0x00, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1),
+			Data(0,  'BVC', -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  0x50),
+			Data(0,  'BVS', -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  0x70),
+			Data(0,  'CLC',  0x18, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1),
+			Data(0,  'CLD',  0xD8, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1),
+			Data(0,  'CLI',  0x58, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1),
+			Data(1,  'CLR', -1, -1, -1,  0x164,  0x174, -1,  0x19C,  0x19E, -1, -1, -1, -1, -1, -1, -1),
+			Data(0,  'CLV',  0xB8, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1),
+			Data(0,  'CMP', -1, -1,  0xC9,  0xC5,  0xD5, -1,  0xCD,  0xDD,  0xD9,  0x1D2,  0xC1,  0xD1, -1, -1, -1),
+			Data(0,  'CPX', -1, -1,  0xE0,  0xE4, -1, -1,  0xEC, -1, -1, -1, -1, -1, -1, -1, -1),
+			Data(0,  'CPY', -1, -1,  0xC0,  0xC4, -1, -1,  0xCC, -1, -1, -1, -1, -1, -1, -1, -1),
+			Data(1,  'DEA',  0x13A, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1),
+			Data(0,  'DEC', -1,  0x13A, -1,  0xC6,  0xD6, -1,  0xCE,  0xDE, -1, -1, -1, -1, -1, -1, -1),
+			Data(0,  'DEX',  0xCA, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1),
+			Data(0,  'DEY',  0x88, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1),
+			Data(0,  'EOR', -1, -1,  0x49,  0x45,  0x55, -1,  0x4D,  0x5D,  0x59,  0x152,  0x41,  0x51, -1, -1, -1),
+			Data(1,  'INA',  0x11A, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1),
+			Data(0,  'INC', -1,  0x11A, -1,  0xE6,  0xF6, -1,  0xEE,  0xFE, -1, -1, -1, -1, -1, -1, -1),
+			Data(0,  'INX',  0xE8, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1),
+			Data(0,  'INY',  0xC8, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1),
+			Data(0,  'JMP', -1, -1, -1, -1, -1, -1,  0x4C, -1, -1, -1, -1, -1,  0x6C,  0x17C, -1),
+			Data(0,  'JSR', -1, -1, -1, -1, -1, -1,  0x20, -1, -1, -1, -1, -1, -1, -1, -1),
+			Data(0,  'LDA', -1, -1,  0xA9,  0xA5,  0xB5, -1,  0xAD,  0xBD,  0xB9,  0x1B2,  0xA1,  0xB1, -1, -1, -1),
+			Data(0,  'LDX', -1, -1,  0xA2,  0xA6, -1,  0xB6,  0xAE, -1,  0xBE, -1, -1, -1, -1, -1, -1),
+			Data(0,  'LDY', -1, -1,  0xA0,  0xA4,  0xB4, -1,  0xAC,  0xBC, -1, -1, -1, -1, -1, -1, -1),
+			Data(0,  'LSR', -1,  0x4A, -1,  0x46,  0x56, -1,  0x4E,  0x5E, -1, -1, -1, -1, -1, -1, -1),
+			Data(0,  'NOP',  0xEA, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1),
+			Data(0,  'ORA', -1, -1,  0x09,  0x05,  0x15, -1,  0x0D,  0x1D,  0x19,  0x112,  0x01,  0x11, -1, -1, -1),
+			Data(0,  'PHA',  0x48, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1),
+			Data(0,  'PHP',  0x08, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1),
+			Data(1,  'PHX',  0x1DA, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1),
+			Data(1,  'PHY',  0x15A, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1),
+			Data(0,  'PLA',  0x68, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1),
+			Data(0,  'PLP',  0x28, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1),
+			Data(1,  'PLX',  0x1FA, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1),
+			Data(1,  'PLY',  0x17A, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1),
+			Data(0,  'ROL', -1,  0x2A, -1,  0x26,  0x36, -1,  0x2E,  0x3E, -1, -1, -1, -1, -1, -1, -1),
+			Data(0,  'ROR', -1,  0x6A, -1,  0x66,  0x76, -1,  0x6E,  0x7E, -1, -1, -1, -1, -1, -1, -1),
+			Data(0,  'RTI',  0x40, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1),
+			Data(0,  'RTS',  0x60, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1),
+			Data(0,  'SBC', -1, -1,  0xE9,  0xE5,  0xF5, -1,  0xED,  0xFD,  0xF9,  0x1F2,  0xE1,  0xF1, -1, -1, -1),
+			Data(0,  'SEC',  0x38, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1),
+			Data(0,  'SED',  0xF8, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1),
+			Data(0,  'SEI',  0x78, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1),
+			Data(0,  'STA', -1, -1, -1,  0x85,  0x95, -1,  0x8D,  0x9D,  0x99,  0x192,  0x81,  0x91, -1, -1, -1),
+			Data(0,  'STX', -1, -1, -1,  0x86, -1,  0x96,  0x8E, -1, -1, -1, -1, -1, -1, -1, -1),
+			Data(0,  'STY', -1, -1, -1,  0x84,  0x94, -1,  0x8C, -1, -1, -1, -1, -1, -1, -1, -1),
+			Data(1,  'STZ', -1, -1, -1,  0x164,  0x174, -1,  0x19C,  0x19E, -1, -1, -1, -1, -1, -1, -1),
+			Data(0,  'TAX',  0xAA, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1),
+			Data(0,  'TAY',  0xA8, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1),
+			Data(1,  'TRB', -1, -1, -1,  0x114, -1, -1,  0x11C, -1, -1, -1, -1, -1, -1, -1, -1),
+			Data(1,  'TSB', -1, -1, -1,  0x104, -1, -1,  0x10C, -1, -1, -1, -1, -1, -1, -1, -1),
+			Data(0,  'TSX',  0xBA, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1),
+			Data(0,  'TXA',  0x8A, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1),
+			Data(0,  'TXS',  0x9A, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1),
+			Data(0,  'TYA',  0x98, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1)
 		];
 		LineParser._gaUnaryOperatorTable = [
-			{ token: "(",	precedence: -1, parameterCount:	0, handler: "" }, // special case
-			{ token: "[", precedence: -1, parameterCount: 0, handler: "" }, // special case
-			{ token: "-", precedence: 8, parameterCount: 0, handler: "EvalNegate" },
-			{ token: "+", precedence: 8, parameterCount: 0, handler: "EvalPosate" },
-			{ token: "HI(", precedence: 10, parameterCount: 1, handler: "EvalHi" },
-			{ token: "LO(", precedence: 10, parameterCount: 1, handler: "EvalLo" },
-			{ token: ">", precedence: 10, parameterCount: 0, handler: "EvalHi" },
-			{ token: "<", precedence: 10, parameterCount: 0, handler: "EvalLo" },
-			{ token: "SIN(", precedence: 10, parameterCount: 1, handler: "EvalSin" },
-			{ token: "COS(", precedence: 10, parameterCount: 1, handler: "EvalCos" },
-			{ token: "TAN(", precedence: 10, parameterCount: 1, handler: "EvalTan" },
-			{ token: "ASN(", precedence: 10, parameterCount: 1, handler: "EvalArcSin" },
-			{ token: "ACS(", precedence: 10, parameterCount: 1, handler: "EvalArcCos" },
-			{ token: "ATN(", precedence: 10, parameterCount: 1, handler: "EvalArcTan" },
-			{ token: "SQR(", precedence: 10, parameterCount: 1, handler: "EvalSqrt" },
-			{ token: "RAD(", precedence: 10, parameterCount: 1, handler: "EvalDegToRad" },
-			{ token: "DEG(", precedence: 10, parameterCount: 1, handler: "EvalRadToDeg" },
-			{ token: "INT(", precedence: 10, parameterCount: 1, handler: "EvalInt" },
-			{ token: "ABS(", precedence: 10, parameterCount: 1, handler: "EvalAbs" },
-			{ token: "SGN(", precedence: 10, parameterCount: 1, handler: "EvalSgn" },
-			{ token: "RND(", precedence: 10, parameterCount: 1, handler: "EvalRnd" },
-			{ token: "NOT(", precedence: 10, parameterCount: 1, handler: "EvalNot" },
-			{ token: "LOG(", precedence: 10, parameterCount: 1, handler: "EvalLog" },
-			{ token: "LN(", precedence: 10, parameterCount: 1, handler: "EvalLn" },
-			{ token: "EXP(", precedence: 10, parameterCount: 1, handler: "EvalExp" },
-			{ token: "TIME$(", precedence: 10, parameterCount: 1, handler: "EvalTime" },
-			{ token: "STR$(", precedence: 10, parameterCount: 1, handler: "EvalStr" },
-			{ token: "STR$~(", precedence: 10, parameterCount: 1, handler: "EvalStrHex" },
-			{ token: "VAL(", precedence: 10, parameterCount: 1, handler: "EvalVal" },
-			{ token: "EVAL(", precedence: 10, parameterCount: 1, handler: "EvalEval" },
-			{ token: "LEN(", precedence: 10, parameterCount: 1, handler: "EvalLen" },
-			{ token: "CHR$(", precedence: 10, parameterCount: 1, handler: "EvalChr" },
-			{ token: "ASC(", precedence: 10, parameterCount: 1, handler: "EvalAsc" },
-			{ token: "MID$(", precedence: 10, parameterCount: 3, handler: "EvalMid" },
-			{ token: "LEFT$(", precedence: 10, parameterCount: 2, handler: "EvalLeft" },
-			{ token: "RIGHT$(", precedence: 10, parameterCount: 2, handler: "EvalRight" },
-			{ token: "STRING$(", precedence: 10, parameterCount: 2, handler: "EvalString" },
-			{ token: "UPPER$(", precedence: 10, parameterCount: 1, handler: "EvalUpper" },
-			{ token: "LOWER$(", precedence: 10, parameterCount: 1, handler: "EvalLower" }
+			{ token: '(',	precedence: -1, parameterCount:	0, handler: '' }, // special case
+			{ token: '[', precedence: -1, parameterCount: 0, handler: '' }, // special case
+			{ token: '-', precedence: 8, parameterCount: 0, handler: 'EvalNegate' },
+			{ token: '+', precedence: 8, parameterCount: 0, handler: 'EvalPosate' },
+			{ token: 'HI(', precedence: 10, parameterCount: 1, handler: 'EvalHi' },
+			{ token: 'LO(', precedence: 10, parameterCount: 1, handler: 'EvalLo' },
+			{ token: '>', precedence: 10, parameterCount: 0, handler: 'EvalHi' },
+			{ token: '<', precedence: 10, parameterCount: 0, handler: 'EvalLo' },
+			{ token: 'SIN(', precedence: 10, parameterCount: 1, handler: 'EvalSin' },
+			{ token: 'COS(', precedence: 10, parameterCount: 1, handler: 'EvalCos' },
+			{ token: 'TAN(', precedence: 10, parameterCount: 1, handler: 'EvalTan' },
+			{ token: 'ASN(', precedence: 10, parameterCount: 1, handler: 'EvalArcSin' },
+			{ token: 'ACS(', precedence: 10, parameterCount: 1, handler: 'EvalArcCos' },
+			{ token: 'ATN(', precedence: 10, parameterCount: 1, handler: 'EvalArcTan' },
+			{ token: 'SQR(', precedence: 10, parameterCount: 1, handler: 'EvalSqrt' },
+			{ token: 'RAD(', precedence: 10, parameterCount: 1, handler: 'EvalDegToRad' },
+			{ token: 'DEG(', precedence: 10, parameterCount: 1, handler: 'EvalRadToDeg' },
+			{ token: 'INT(', precedence: 10, parameterCount: 1, handler: 'EvalInt' },
+			{ token: 'ABS(', precedence: 10, parameterCount: 1, handler: 'EvalAbs' },
+			{ token: 'SGN(', precedence: 10, parameterCount: 1, handler: 'EvalSgn' },
+			{ token: 'RND(', precedence: 10, parameterCount: 1, handler: 'EvalRnd' },
+			{ token: 'NOT(', precedence: 10, parameterCount: 1, handler: 'EvalNot' },
+			{ token: 'LOG(', precedence: 10, parameterCount: 1, handler: 'EvalLog' },
+			{ token: 'LN(', precedence: 10, parameterCount: 1, handler: 'EvalLn' },
+			{ token: 'EXP(', precedence: 10, parameterCount: 1, handler: 'EvalExp' },
+			{ token: 'TIME$(', precedence: 10, parameterCount: 1, handler: 'EvalTime' },
+			{ token: 'STR$(', precedence: 10, parameterCount: 1, handler: 'EvalStr' },
+			{ token: 'STR$~(', precedence: 10, parameterCount: 1, handler: 'EvalStrHex' },
+			{ token: 'VAL(', precedence: 10, parameterCount: 1, handler: 'EvalVal' },
+			{ token: 'EVAL(', precedence: 10, parameterCount: 1, handler: 'EvalEval' },
+			{ token: 'LEN(', precedence: 10, parameterCount: 1, handler: 'EvalLen' },
+			{ token: 'CHR$(', precedence: 10, parameterCount: 1, handler: 'EvalChr' },
+			{ token: 'ASC(', precedence: 10, parameterCount: 1, handler: 'EvalAsc' },
+			{ token: 'MID$(', precedence: 10, parameterCount: 3, handler: 'EvalMid' },
+			{ token: 'LEFT$(', precedence: 10, parameterCount: 2, handler: 'EvalLeft' },
+			{ token: 'RIGHT$(', precedence: 10, parameterCount: 2, handler: 'EvalRight' },
+			{ token: 'STRING$(', precedence: 10, parameterCount: 2, handler: 'EvalString' },
+			{ token: 'UPPER$(', precedence: 10, parameterCount: 1, handler: 'EvalUpper' },
+			{ token: 'LOWER$(', precedence: 10, parameterCount: 1, handler: 'EvalLower' }
 		];
 		LineParser._gaBinaryOperatorTable = [
-			{ token: ")", precedence: -1, parameterCount: 0, handler: "" }, // special case
-			{ token: "]", precedence: -1, parameterCount: 0, handler: "" }, // special case
-			{ token: ",", precedence: -1, parameterCount: 0, handler: "" }, // special case
-			{ token: "^", precedence: 7, parameterCount: 0, handler: "EvalPower" },
-			{ token: "*", precedence: 6, parameterCount: 0, handler: "EvalMultiply" },
-			{ token: "/", precedence: 6, parameterCount: 0, handler: "EvalDivide" },
-			{ token: "%", precedence: 6, parameterCount: 0, handler: "EvalMod" },
-			{ token: "DIV", precedence: 6, parameterCount: 0, handler: "EvalDiv" },
-			{ token: "MOD", precedence: 6, parameterCount: 0, handler: "EvalMod" },
-			{ token: "<<", precedence: 6, parameterCount: 0, handler: "EvalShiftLeft" },
-			{ token: ">>", precedence: 6, parameterCount: 0, handler: "EvalShiftRight" },
-			{ token: "+", precedence: 5, parameterCount: 0, handler: "EvalAdd" },
-			{ token: "-", precedence: 5, parameterCount: 0, handler: "EvalSubtract" },
-			{ token: "==", precedence: 4, parameterCount: 0, handler: "EvalEqual" },
-			{ token: "=", precedence: 4, parameterCount: 0, handler: "EvalEqual" },
-			{ token: "<>", precedence: 4, parameterCount: 0, handler: "EvalNotEqual" },
-			{ token: "!=", precedence: 4, parameterCount: 0, handler: "EvalNotEqual" },
-			{ token: "<=", precedence: 4, parameterCount: 0, handler: "EvalLessThanOrEqual" },
-			{ token: ">=", precedence: 4, parameterCount: 0, handler: "EvalMoreThanOrEqual" },
-			{ token: "<", precedence: 4, parameterCount: 0, handler: "EvalLessThan" },
-			{ token: ">", precedence: 4, parameterCount: 0, handler: "EvalMoreThan" },
-			{ token: "AND", precedence: 3, parameterCount: 0, handler: "EvalAnd" },
-			{ token: "OR", precedence: 2, parameterCount: 0, handler: "EvalOr" },
-			{ token: "EOR", precedence: 2, parameterCount: 0, handler: "EvalEor" }
+			{ token: ')', precedence: -1, parameterCount: 0, handler: '' }, // special case
+			{ token: ']', precedence: -1, parameterCount: 0, handler: '' }, // special case
+			{ token: ',', precedence: -1, parameterCount: 0, handler: '' }, // special case
+			{ token: '^', precedence: 7, parameterCount: 0, handler: 'EvalPower' },
+			{ token: '*', precedence: 6, parameterCount: 0, handler: 'EvalMultiply' },
+			{ token: '/', precedence: 6, parameterCount: 0, handler: 'EvalDivide' },
+			{ token: '%', precedence: 6, parameterCount: 0, handler: 'EvalMod' },
+			{ token: 'DIV', precedence: 6, parameterCount: 0, handler: 'EvalDiv' },
+			{ token: 'MOD', precedence: 6, parameterCount: 0, handler: 'EvalMod' },
+			{ token: '<<', precedence: 6, parameterCount: 0, handler: 'EvalShiftLeft' },
+			{ token: '>>', precedence: 6, parameterCount: 0, handler: 'EvalShiftRight' },
+			{ token: '+', precedence: 5, parameterCount: 0, handler: 'EvalAdd' },
+			{ token: '-', precedence: 5, parameterCount: 0, handler: 'EvalSubtract' },
+			{ token: '==', precedence: 4, parameterCount: 0, handler: 'EvalEqual' },
+			{ token: '=', precedence: 4, parameterCount: 0, handler: 'EvalEqual' },
+			{ token: '<>', precedence: 4, parameterCount: 0, handler: 'EvalNotEqual' },
+			{ token: '!=', precedence: 4, parameterCount: 0, handler: 'EvalNotEqual' },
+			{ token: '<=', precedence: 4, parameterCount: 0, handler: 'EvalLessThanOrEqual' },
+			{ token: '>=', precedence: 4, parameterCount: 0, handler: 'EvalMoreThanOrEqual' },
+			{ token: '<', precedence: 4, parameterCount: 0, handler: 'EvalLessThan' },
+			{ token: '>', precedence: 4, parameterCount: 0, handler: 'EvalMoreThan' },
+			{ token: 'AND', precedence: 3, parameterCount: 0, handler: 'EvalAnd' },
+			{ token: 'OR', precedence: 2, parameterCount: 0, handler: 'EvalOr' },
+			{ token: 'EOR', precedence: 2, parameterCount: 0, handler: 'EvalEor' }
 		];
-		this._tree = { type: ASTType.Line, value: "", startColumn: this._column, children: [] };
+		this._tree = { type: ASTType.Line, value: '', startColumn: this._column, children: [] };
 		this._parentAST = this._tree; // start at the root, change as enter subexpressions
 		this._currentAST = this._tree; // not used, just placeholder until gets set
 	}
@@ -509,8 +509,8 @@ export class LineParser {
 				}
 			}
 
-		// If we got this far, we didn't recognise anything, so throw an error
-		throw new AsmException.SyntaxError_UnrecognisedToken( this._line, oldColumn );
+			// If we got this far, we didn't recognise anything, so throw an error
+			throw new AsmException.SyntaxError_UnrecognisedToken( this._line, oldColumn );
 		}
 
 		// If we didn't process anything, i.e. this is a blank line, we must still call SkipStatement()
@@ -594,7 +594,7 @@ export class LineParser {
 	}
 
 	public AdvanceAndCheckEndOfStatement(): boolean {
-		return this.MoveToNextAtom(";:\\{}");
+		return this.MoveToNextAtom(';:\\{}');
 	}
 
 	private MoveToNextAtom(terminators?: string): boolean {
@@ -658,16 +658,16 @@ export class LineParser {
 
 	private AdvanceAndCheckEndOfSubStatement(includeComma: boolean): boolean {
 		if (includeComma) {
-			return this.MoveToNextAtom(";:\\,{}");
+			return this.MoveToNextAtom(';:\\,{}');
 		} else {
-			return this.MoveToNextAtom(";:\\{}");
+			return this.MoveToNextAtom(';:\\{}');
 		}
 	}
 
 	// No doubt there is some smart way to do this by either iterating over _gaTokenTable or getting methods matching desired signature ()=>void
 	// Or just set to ignore??? Probably best!
 	private Execute(member: string) {
-        // if (member === "HandleDefineLabel" || member === "HandleDefineComment" || member === "HandleDefineComment" 
+		// if (member === "HandleDefineLabel" || member === "HandleDefineComment" || member === "HandleDefineComment" 
 		// || member === "HandleStatementSeparator" || member === "HandlePrint" || member === "HandleCpu" 
 		// || member === "HandleOrg" || member === "HandleInclude" || member === "HandleEqub" 
 		// || member === "HandleEqud" || member === "HandleEquw" || member === "HandleEqu" 
@@ -696,13 +696,13 @@ export class LineParser {
 		// @ts-expect-error avoid having to specify every possible member - can uncomment above if really needed
 		this[member]();
 		// }
-    }
+	}
 
 	private HandleToken(i: integer, oldColumn: integer): void {
 		// assert(i >= 0);
 		this._currentAST = { type: ASTType.Command, value: this._gaTokenTable[i].name, startColumn: oldColumn, children: [] };
 
-		if (this._gaTokenTable[i].directiveHandler !== "") {
+		if (this._gaTokenTable[i].directiveHandler !== '') {
 			this._sourceCode.Execute(this._gaTokenTable[i].directiveHandler, this._line, this._column);
 		}
 
@@ -727,7 +727,7 @@ export class LineParser {
 		} else if (this._column < this._line.length && (this._line[this._column] == '\\' || this._line[this._column] == ';')) {
 			this._column = this._line.length;
 		} else {
-			while (this._column < this._line.length && (bInQuotes || bInSingleQuotes || this.MoveToNextAtom(":;\\{}"))) {
+			while (this._column < this._line.length && (bInQuotes || bInSingleQuotes || this.MoveToNextAtom(':;\\{}'))) {
 				if (this._column < this._line.length && this._line[this._column] == '"' && !bInSingleQuotes) {
 					// This handles quoted quotes in strings (like "a""b") because it views
 					// them as two adjacent strings.
@@ -809,7 +809,7 @@ export class LineParser {
 					}
 					let value: number | string;
 					let isSymbol: boolean;
-					const ast = { type: ASTType.Value, value: "", startColumn: this._column, children: [], parent: null }; 
+					const ast = { type: ASTType.Value, value: '', startColumn: this._column, children: [], parent: null }; 
 					try {
 						[value, isSymbol] = this.GetValue();
 						if (isSymbol) {
@@ -834,12 +834,12 @@ export class LineParser {
 					// If unary operator *was* found...
 					const thisOp = LineParser._gaUnaryOperatorTable[matchedToken];
 					const ast = { type: ASTType.UnaryOp, value: thisOp.token, startColumn: this._column - thisOp.token.length + 1, children: [] as AST[], parent: null };
-					if ( thisOp.handler !== "" ) {
+					if ( thisOp.handler !== '' ) {
 						// not an open bracket - we may have to juggle the stack
 						while ( this._operatorStackPtr > 0 && thisOp.precedence < this._operatorStack[this._operatorStackPtr - 1].precedence ) {
 							this._operatorStackPtr--;
 							const opHandler = this._operatorStack[this._operatorStackPtr].handler;
-							if ( opHandler === "" ) {
+							if ( opHandler === '' ) {
 								// mismatched brackets
 								throw new AsmException.SyntaxError_MismatchedParentheses(this._line, this._column);
 							}
@@ -896,7 +896,7 @@ export class LineParser {
 				}
 				// we found binary operator
 				const thisOp = LineParser._gaBinaryOperatorTable[matchedToken];
-				if ( thisOp.handler !== "" ) {
+				if ( thisOp.handler !== '' ) {
 					// not a close bracket
 					const ast = { type: ASTType.BinaryOp, value: thisOp.token, startColumn: this._column, children: [] as AST[], parent: null };
 					while ( this._operatorStackPtr > 0 && thisOp.precedence <= this._operatorStack[this._operatorStackPtr - 1].precedence ) {
@@ -932,7 +932,7 @@ export class LineParser {
 						this._operatorStackPtr--;
 						const ast = this._ASTOpStack.pop();
 						const opHandler = this._operatorStack[this._operatorStackPtr].handler;
-						if ( opHandler !== "" ) {
+						if ( opHandler !== '' ) {
 							if (ast !== undefined) { // should never be undefined but have to for type checking
 								let numParams: number;
 								// check if operator is unary or binary (hacky to use precedence, but it works for now)
@@ -1000,7 +1000,7 @@ export class LineParser {
 		while ( this._operatorStackPtr > 0 ) {
 			this._operatorStackPtr--;
 			const opHandler = this._operatorStack[this._operatorStackPtr].handler;
-			if ( opHandler === "" ) {
+			if ( opHandler === '' ) {
 				// mismatched brackets
 				throw new AsmException.SyntaxError_MismatchedParentheses(this._line, this._column);
 			}
@@ -1038,7 +1038,7 @@ export class LineParser {
 
 	private EvaluateExpressionAsInt(bAllowOneMismatchedCloseBracket = false): number {
 		const value = this.EvaluateExpression(bAllowOneMismatchedCloseBracket);
-		if (typeof value === "number") {
+		if (typeof value === 'number') {
 			return Math.trunc(value);
 		}
 		else {
@@ -1048,7 +1048,7 @@ export class LineParser {
 
 	private EvaluateExpressionAsDouble(bAllowOneMismatchedCloseBracket = false): number {
 		const value = this.EvaluateExpression(bAllowOneMismatchedCloseBracket);
-		if (typeof value === "number") {
+		if (typeof value === 'number') {
 			return value;
 		}
 		else {
@@ -1058,7 +1058,7 @@ export class LineParser {
 
 	private EvaluateExpressionAsString(bAllowOneMismatchedCloseBracket = false): string {
 		const value = this.EvaluateExpression(bAllowOneMismatchedCloseBracket);
-		if (typeof value === "string") {
+		if (typeof value === 'string') {
 			return value;
 		}
 		else {
@@ -1136,9 +1136,9 @@ export class LineParser {
 			// get a symbol
 			const oldColumn: number = this._column;
 			const symbolName: string = this.GetSymbolName();
-			if (symbolName == "TIME$") {
+			if (symbolName == 'TIME$') {
 				// Handle TIME$ with no parameters
-				value = this.FormatAssemblyTime("%a,%d %b %Y.%H:%M:%S");
+				value = this.FormatAssemblyTime('%a,%d %b %Y.%H:%M:%S');
 			}
 			else {
 				// Regular symbol
@@ -1162,7 +1162,7 @@ export class LineParser {
 		else {
 			// expected value
 			throw new AsmException.SyntaxError_InvalidCharacter( this._line, this._column );
-			value = "Syntax Error: Invalid Character";
+			value = 'Syntax Error: Invalid Character';
 		}
 		return [value, isSymbol];
 	}
@@ -1177,7 +1177,7 @@ export class LineParser {
 		}
 		if ( is_decimal_digit(line[index]) || line[index] == '.' || line[index] == '-' ) {
 			// Copy the number without underscores to this buffer
-			let buffer = "";
+			let buffer = '';
 			if ( line[index] == '-' )
 			{
 				buffer += '-';
@@ -1672,7 +1672,7 @@ export class LineParser {
 		}
 		this._currentAST.value = opcode; // Rewrite as using this as index into hover text
 		if (mode == ADDRESSING_MODE.ACC) {
-			this._currentAST.children.push({type: ASTType.Value, value: "A", startColumn: registerPosition, children: []});
+			this._currentAST.children.push({type: ASTType.Value, value: 'A', startColumn: registerPosition, children: []});
 		}
 		this._parentAST = this._tree;
 	}
@@ -1692,10 +1692,10 @@ export class LineParser {
 		this._currentAST.value = opcode;
 		this._currentAST.children.push(this._ASTValueStack[0]);
 		if (mode == ADDRESSING_MODE.ZPX || mode == ADDRESSING_MODE.INDX) {
-			this._currentAST.children.push({type: ASTType.Value, value: "X", startColumn: registerPosition, children: []});
+			this._currentAST.children.push({type: ASTType.Value, value: 'X', startColumn: registerPosition, children: []});
 		}
 		if (mode == ADDRESSING_MODE.ZPY || mode == ADDRESSING_MODE.INDY) {
-			this._currentAST.children.push({type: ASTType.Value, value: "Y", startColumn: registerPosition, children: []});
+			this._currentAST.children.push({type: ASTType.Value, value: 'Y', startColumn: registerPosition, children: []});
 		}
 		this._parentAST = this._tree;
 	}
@@ -1715,10 +1715,10 @@ export class LineParser {
 		this._currentAST.value = opcode;
 		this._currentAST.children.push(this._ASTValueStack[0]);
 		if (mode == ADDRESSING_MODE.ABSX || mode == ADDRESSING_MODE.IND16X) {
-			this._currentAST.children.push({type: ASTType.Value, value: "X", startColumn: registerPosition, children: []});
+			this._currentAST.children.push({type: ASTType.Value, value: 'X', startColumn: registerPosition, children: []});
 		}
 		if (mode == ADDRESSING_MODE.ABSY) {
-			this._currentAST.children.push({type: ASTType.Value, value: "Y", startColumn: registerPosition, children: []});
+			this._currentAST.children.push({type: ASTType.Value, value: 'Y', startColumn: registerPosition, children: []});
 		}
 		this._parentAST = this._tree;
 	}
@@ -1737,7 +1737,7 @@ export class LineParser {
 			throw new AsmException.SyntaxError_MissingValue(this._line, this._column);
 		}
 		const value = this._valueStack[this._valueStackPtr - 1];
-		if (typeof value !== "string") {
+		if (typeof value !== 'string') {
 			throw new AsmException.SyntaxError_TypeMismatch(this._line, this._column);
 		}
 		return value;
@@ -1748,7 +1748,7 @@ export class LineParser {
 			throw new AsmException.SyntaxError_MissingValue(this._line, this._column);
 		}
 		const value = this._valueStack[this._valueStackPtr - 1];
-		if (typeof value !== "number") {
+		if (typeof value !== 'number') {
 			throw new AsmException.SyntaxError_TypeMismatch(this._line, this._column);
 		}
 		return value;
@@ -1772,7 +1772,7 @@ export class LineParser {
 		}
 		const value1 = this._valueStack[this._valueStackPtr - 2];
 		const value2 = this._valueStack[this._valueStackPtr - 1];
-		if (typeof value1 !== "number" && typeof value2 !== "number") {
+		if (typeof value1 !== 'number' && typeof value2 !== 'number') {
 			throw new AsmException.SyntaxError_TypeMismatch(this._line, this._column);
 		}
 		return [value1 as number, value2 as number];
@@ -1833,7 +1833,7 @@ export class LineParser {
 			else {
 				// on the second pass, check that the label would be assigned the same numeric value
 				const value = SymbolTable.Instance.GetSymbol(fullSymbolName);
-				if ((typeof value !== "number") || (value !== ObjectCode.Instance.GetPC())) {
+				if ((typeof value !== 'number') || (value !== ObjectCode.Instance.GetPC())) {
 					// TODO - reenable ideally but may not be possible if want to avoid iterating loops (needs multi-file symbol resolution too)
 					// throw new AsmException.SyntaxError_SecondPassProblem(this._line, oldColumn);
 				}
@@ -1854,7 +1854,7 @@ export class LineParser {
 	private HandlePrint(): void { 
 		let demandComma = false;
 		while ( this.AdvanceAndCheckEndOfStatement() ) {
-			if (this._line[this._column] === ",") {
+			if (this._line[this._column] === ',') {
 				// print separator - skip
 				demandComma = false;
 				this._column++;
@@ -1862,7 +1862,7 @@ export class LineParser {
 			else if ( demandComma ) {
 				throw new AsmException.SyntaxError_MissingComma( this._line, this._column );
 			}
-			else if ( this._line[this._column] === "~" ) {
+			else if ( this._line[this._column] === '~' ) {
 				// print in hex
 				this._column++;
 				let value: number;
@@ -1883,9 +1883,9 @@ export class LineParser {
 			}
 			else {
 				this.EatWhitespace();
-				const filelineKeyword = "FILELINE$";
+				const filelineKeyword = 'FILELINE$';
 				const filelineKeywordLength = 9;
-				const callstackKeyword = "CALLSTACK$";
+				const callstackKeyword = 'CALLSTACK$';
 				const callstackKeywordLength = 10;
 				if ( this._line.substring(this._column, this._column + filelineKeywordLength) === filelineKeyword ) {
 					this._column += filelineKeywordLength ;
@@ -1928,7 +1928,7 @@ export class LineParser {
 		args.CheckComplete();
 
 		ObjectCode.Instance.SetPC(newPC);
-		SymbolTable.Instance.ChangeSymbol("P%", newPC);
+		SymbolTable.Instance.ChangeSymbol('P%', newPC);
 	}
 
 	private HandleInclude(): void {
@@ -1936,11 +1936,11 @@ export class LineParser {
 			// disallow an include within a FOR loop
 			throw new AsmException.SyntaxError_CantInclude( this._line, this._column );
 		}
-		const filename = this.EvaluateExpressionAsString().replace(/\\/g, "/");
+		const filename = this.EvaluateExpressionAsString().replace(/\\/g, '/');
 		const fspath = URI.parse(path.resolve(filename)).fsPath;
 		let includeFile: string;
-		if (process.platform === "win32") {
-			includeFile = URI.parse("file:///" + path.resolve(filename)).toString()
+		if (process.platform === 'win32') {
+			includeFile = URI.parse('file:///' + path.resolve(filename)).toString();
 			// if (includeFile.endsWith('/')) {
 			// 	includeFile = includeFile.substring(0, includeFile.length - 1);
 			// }
@@ -1971,11 +1971,11 @@ export class LineParser {
 		let value = args.ParseValue().AcceptUndef();
 		// eslint-disable-next-line no-constant-condition
 		while (true) {
-			if (typeof value.Value() === "string") {
+			if (typeof value.Value() === 'string') {
 				// handle equs
 				this.HandleEqus(value.Value() as string);
 			}
-			else if (typeof value.Value() === "number") {
+			else if (typeof value.Value() === 'number') {
 				// handle byte
 				const number = value.Value() as integer;
 				if (number > 0xFF) {
@@ -2011,7 +2011,7 @@ export class LineParser {
 		const args = new ArgListParser(this);
 		let value = args.ParseInt().AcceptUndef();
 		// eslint-disable-next-line no-constant-condition
-		if (typeof value.Value() === "number") {
+		if (typeof value.Value() === 'number') {
 			const number = value.Value() as integer;
 			// eslint-disable-next-line no-constant-condition
 			while (true) {
@@ -2171,8 +2171,8 @@ export class LineParser {
 			throw new AsmException.SyntaxError_BadStep(this._line, this._column);
 		}
 		this._sourceCode.AddFor(symbolName, start, end, step,
-								this._column + this._sourceCode.GetLineStartPointer(),
-								this._line, oldColumn, this._lineno);
+			this._column + this._sourceCode.GetLineStartPointer(),
+			this._line, oldColumn, this._lineno);
 	}
 	private HandleNext(): void {
 		const oldColumn = this._column;
@@ -2340,8 +2340,8 @@ export class LineParser {
 			const startColumn = this._ASTValueStack[0].startColumn + 1;
 			const endColumn = startColumn + hostFilename.length;
 			let filelink: string;
-			if (process.platform === "win32") {
-				filelink = URI.parse("file:///" + path.resolve(hostFilename)).toString()
+			if (process.platform === 'win32') {
+				filelink = URI.parse('file:///' + path.resolve(hostFilename)).toString();
 				if (filelink.endsWith('/')) {
 					filelink = filelink.substring(0, filelink.length - 1);
 				}
@@ -2366,8 +2366,8 @@ export class LineParser {
 			const startColumn = this._ASTValueStack[0].startColumn + 1;
 			const endColumn = startColumn + hostFilename.length;
 			let filelink: string;
-			if (process.platform === "win32") {
-				filelink = URI.parse("file:///" + path.resolve(hostFilename)).toString()
+			if (process.platform === 'win32') {
+				filelink = URI.parse('file:///' + path.resolve(hostFilename)).toString();
 				if (filelink.endsWith('/')) {
 					filelink = filelink.substring(0, filelink.length - 1);
 				}
@@ -2400,7 +2400,7 @@ export class LineParser {
 		if (!this.AdvanceAndCheckEndOfStatement()) {
 			throw new AsmException.SyntaxError_EmptyExpression(this._line, this._column);
 		}
-		let macroName = "";
+		let macroName = '';
 		if (isalpha(this._line[this._column]) || this._line[this._column] == '_') {
 			macroName = this.GetSymbolName();
 			if (GlobalData.Instance.IsFirstPass()) {
@@ -2443,7 +2443,7 @@ export class LineParser {
 		// If there is nothing else on the line following the MACRO command, put a newline at the
 		// beginning of the macro definition, so any errors are reported on the correct line
 		if (this._column == this._line.length && GlobalData.Instance.IsFirstPass()) {
-			this._sourceCode.GetCurrentMacro()!.AddLine("\n");
+			this._sourceCode.GetCurrentMacro()!.AddLine('\n');
 		}
 		// Set the IF condition to false - this is a cheaty way of ensuring that the macro body
 		// is not assembled as it is parsed
@@ -2686,7 +2686,7 @@ export class LineParser {
 		const value1 = this._valueStack[this._valueStackPtr - 3];
 		const value2 = this._valueStack[this._valueStackPtr - 2];
 		const value3 = this._valueStack[this._valueStackPtr - 1];
-		if ((typeof value1 !== "string") || (typeof value2 !== "number") || (typeof value3 !== "number")) {
+		if ((typeof value1 !== 'string') || (typeof value2 !== 'number') || (typeof value3 !== 'number')) {
 			throw new AsmException.SyntaxError_TypeMismatch(this._line, this._column);
 		}
 		this._valueStackPtr -= 2;
@@ -2704,7 +2704,7 @@ export class LineParser {
 		}
 		const value1 = this._valueStack[this._valueStackPtr - 2];
 		const value2 = this._valueStack[this._valueStackPtr - 1];
-		if ((typeof value1 !== "string") || (typeof value2 !== "number")) {
+		if ((typeof value1 !== 'string') || (typeof value2 !== 'number')) {
 			throw new AsmException.SyntaxError_TypeMismatch(this._line, this._column);
 		}
 		this._valueStackPtr -= 1;
@@ -2721,7 +2721,7 @@ export class LineParser {
 		}
 		const value1 = this._valueStack[this._valueStackPtr - 2];
 		const value2 = this._valueStack[this._valueStackPtr - 1];
-		if ((typeof value1 !== "string") || (typeof value2 !== "number")) {
+		if ((typeof value1 !== 'string') || (typeof value2 !== 'number')) {
 			throw new AsmException.SyntaxError_TypeMismatch(this._line, this._column);
 		}
 		this._valueStackPtr -= 1;
@@ -2738,7 +2738,7 @@ export class LineParser {
 		}
 		const value1 = this._valueStack[this._valueStackPtr - 2];
 		const value2 = this._valueStack[this._valueStackPtr - 1];
-		if ((typeof value1 !== "number") || (typeof value2 !== "string")) {
+		if ((typeof value1 !== 'number') || (typeof value2 !== 'string')) {
 			throw new AsmException.SyntaxError_TypeMismatch(this._line, this._column);
 		}
 		this._valueStackPtr -= 1;
@@ -2846,7 +2846,7 @@ export class LineParser {
 	}
 	private EvalAdd(): void {
 		const values = this.StackTopTwoValues();
-		if (typeof values[0] === "number") {
+		if (typeof values[0] === 'number') {
 			this._valueStack[this._valueStackPtr - 2] = (values[0] as number) + (values[1] as number);
 		}
 		else {
@@ -2960,7 +2960,7 @@ class Argument {
 	}
 	Range(mn: number, mx: number): Argument {
 		if ( this.Found() ) {
-			if ( typeof this._value === "number" ) {
+			if ( typeof this._value === 'number' ) {
 				if ( this._value < mn || this._value > mx ) {
 					throw new AsmException.SyntaxError_OutOfRange(this._line, this._column);
 				}
@@ -2970,7 +2970,7 @@ class Argument {
 	}
 	Maximum(mx: number): Argument {
 		if ( this.Found() ) {
-			if ( typeof this._value === "number" ) {
+			if ( typeof this._value === 'number' ) {
 				if ( this._value > mx ) {
 					throw new AsmException.SyntaxError_NumberTooBig(this._line, this._column);
 				}
@@ -2982,7 +2982,7 @@ class Argument {
 	Default(value: number | string): Argument {
 		if ( !this.Found() )
 		{
-			if ( typeof this._value === "string" ) {
+			if ( typeof this._value === 'string' ) {
 				this._value = value;
 				this._state = State.StateFound;
 			}
@@ -2999,7 +2999,7 @@ class Argument {
 	}
 	// Permit this parameter to be an undefined symbol unless string type.
 	AcceptUndef(): Argument {
-		if ( typeof this._value === "string" ) {
+		if ( typeof this._value === 'string' ) {
 			if ( this._state == State.StateUndefined)
 			{
 				throw new AsmException.SyntaxError_SymbolNotDefined(this._line, this._column);
@@ -3045,7 +3045,7 @@ class ArgListParser {
 		{
 			return new Argument(this._lineParser._line, this._paramColumn, State.StateUndefined);
 		}
-		if ( typeof this._pendingValue !== "string" )
+		if ( typeof this._pendingValue !== 'string' )
 		{
 			return new Argument(this._lineParser._line, this._paramColumn, State.StateTypeMismatch);
 		}
@@ -3077,7 +3077,7 @@ class ArgListParser {
 			this._pending = false;
 			return new Argument(this._lineParser._line, this._paramColumn, State.StateUndefined);
 		}
-		if ( typeof this._pendingValue !== "number" )
+		if ( typeof this._pendingValue !== 'number' )
 		{
 			return new Argument(this._lineParser._line, this._paramColumn, State.StateTypeMismatch);
 		}

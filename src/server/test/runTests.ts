@@ -6,7 +6,7 @@ const mocha = new Mocha({
 });
 mocha.timeout(100000);
 
-mocha.addFile("./server/out/test/tests.js");
+mocha.addFile('./server/out/test/tests.js');
 mocha.run(failures => {
 	if (failures > 0) {
 		new Error(`${failures} tests failed.`);

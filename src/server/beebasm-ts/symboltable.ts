@@ -61,31 +61,31 @@ type ScopeDetails = {
 	endLine: integer;
 }
 
-const noLocation = { uri: "", range: { start: { line: 0, character: 0 }, end: { line: 0, character: 0 } } };
+const noLocation = { uri: '', range: { start: { line: 0, character: 0 }, end: { line: 0, character: 0 } } };
 
 export class SymbolTable {
 	private static _instance: SymbolTable | null = null;
 	private _labelScopes: number; // Just like For stack index?
-    private readonly _map: Map<string, SymbolData> = new Map<string, SymbolData>();
-	private _lastLabel: Label = { _addr: 0, _scope: 0, _identifier: ""};
+	private readonly _map: Map<string, SymbolData> = new Map<string, SymbolData>();
+	private _lastLabel: Label = { _addr: 0, _scope: 0, _identifier: ''};
 	private _labelStack: Label[] = [];
 	private _labelList: Label[] = [];
 	private _scopeDetails: ScopeDetails[] = [];
 	private _references = new Map<string, Location[]>();
 
-    private constructor()
-    {
-        this.Reset();
+	private constructor()
+	{
+		this.Reset();
 		this._labelScopes = 0;
-    }
+	}
 
-    public static get Instance()
-    {
-        if (this._instance === null) {
+	public static get Instance()
+	{
+		if (this._instance === null) {
 			this._instance = new SymbolTable();
 		}
-        return this._instance;
-    }
+		return this._instance;
+	}
 
 	// get all symbols where location is not noLocation	
 	public GetSymbols(): Map<string, SymbolData> {
@@ -95,7 +95,7 @@ export class SymbolTable {
 
 	GetSymbolByLine(symbolname: string, uri: string, line: number): [SymbolData | undefined, string] {
 		// Relies on scopeLevel matching ForScopePtr when each scopeDetail was created
-		let search = "";
+		let search = '';
 		for ( let scopeLevel = this._labelScopes - 1; scopeLevel >= 0; scopeLevel-- ) {
 			if ( scopeLevel < this._scopeDetails.length
 				&& line >= this._scopeDetails[scopeLevel].startLine
@@ -114,19 +114,19 @@ export class SymbolTable {
 			// console.log("Found symbol " + symbolname);
 			return [this._map.get(symbolname), symbolname];
 		}
-		return [undefined, ""];
+		return [undefined, ''];
 	}
 
 	Reset(): void {
 		this._map.clear();
-        this._labelScopes = 0;
+		this._labelScopes = 0;
 		this._scopeDetails = [];
 		this._references.clear();
-		this.AddSymbol( "PI", Math.PI, noLocation );
-		this.AddSymbol( "P%", 0, noLocation );
-		this.AddSymbol( "TRUE", -1, noLocation );
-		this.AddSymbol( "FALSE", 0, noLocation );
-		this.AddSymbol( "CPU", 0, noLocation ); // easier than having to set in objectcode constructor
+		this.AddSymbol( 'PI', Math.PI, noLocation );
+		this.AddSymbol( 'P%', 0, noLocation );
+		this.AddSymbol( 'TRUE', -1, noLocation );
+		this.AddSymbol( 'FALSE', 0, noLocation );
+		this.AddSymbol( 'CPU', 0, noLocation ); // easier than having to set in objectcode constructor
 	}
 
 	AddSymbol(symbol: string, value: number | string, location: Location, isLabel?: boolean): void {
@@ -181,7 +181,7 @@ export class SymbolTable {
 	AddLabel(symbol: string): void {
 		if (GlobalData.Instance.IsSecondPass()) {
 			const addr = ObjectCode.Instance.GetPC();
-			const identifier = (this._labelStack.length === 0 ? "" : this._labelStack[this._labelStack.length - 1]._identifier) + "." + symbol;
+			const identifier = (this._labelStack.length === 0 ? '' : this._labelStack[this._labelStack.length - 1]._identifier) + '.' + symbol;
 			this._lastLabel = { _addr: addr, _scope: this._labelScopes, _identifier: identifier };
 			this._labelList.push(this._lastLabel);
 		}
@@ -192,8 +192,8 @@ export class SymbolTable {
 		if (GlobalData.Instance.IsSecondPass()) {
 			const addr = ObjectCode.Instance.GetPC();
 			if (this._lastLabel!._addr !== addr) {
-				const label = "._" + (this._labelScopes - this._lastLabel!._scope);
-				this._lastLabel!._identifier = (this._labelStack.length === 0 ? "" : this._labelStack[this._labelStack.length - 1]._identifier) + label;
+				const label = '._' + (this._labelScopes - this._lastLabel!._scope);
+				this._lastLabel!._identifier = (this._labelStack.length === 0 ? '' : this._labelStack[this._labelStack.length - 1]._identifier) + label;
 				this._lastLabel!._addr = addr;
 			}
 			this._lastLabel!._scope = this._labelScopes;
@@ -206,7 +206,7 @@ export class SymbolTable {
 	PopScope(endLine = -1, forID = -1): void {
 		if (GlobalData.Instance.IsSecondPass()) {
 			this._labelStack.pop();
-			this._lastLabel = (this._labelStack.length === 0 ? { _addr: 0, _scope: 0, _identifier: ""} : this._labelStack[this._labelStack.length - 1]);
+			this._lastLabel = (this._labelStack.length === 0 ? { _addr: 0, _scope: 0, _identifier: ''} : this._labelStack[this._labelStack.length - 1]);
 			if ( forID !== -1 ) {
 				this._scopeDetails[forID].endLine = endLine;
 			}
@@ -217,12 +217,12 @@ export class SymbolTable {
 		if (GlobalData.Instance.IsSecondPass()) {
 			const addr = ObjectCode.Instance.GetPC();
 			symbol = symbol.substr(0, symbol.indexOf('@'));
-			const label = "._" + symbol + "_" + value;
+			const label = '._' + symbol + '_' + value;
 			this._lastLabel!._identifier += label;
 			this._lastLabel!._addr = addr;
 			this._lastLabel!._scope = this._labelScopes;
 			if ( startLine !== -1) {
-				this._scopeDetails.push({ uri: uri, startLine: startLine, endLine: -1 });
+			    this._scopeDetails.push({ uri: uri, startLine: startLine, endLine: -1 });
 			}
 			this._labelScopes++;
 			this._labelStack.push(this._lastLabel!);
