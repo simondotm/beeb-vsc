@@ -32,7 +32,7 @@
     "assembly"
   ],
   "engines": {
-    "vscode": "^1.75.0"
+    "vscode": "^1.85.0"
   },
   "configurations": [
     {
@@ -54,7 +54,7 @@
       "internalConsoleOptions": "openOnSessionStart"
     }
   ],
-  "main": "./out/main.js",
+  "main": "./dist/main.js",
   "contributes": {
     "languages": [
       {
@@ -145,15 +145,23 @@
     ]
   },
   "scripts": {
-    "vscode:prepublish": "npm-run-all --parallel \"esbuild-base -- --minify\" \"esbuild-server -- --minify\"",
-    "esbuild-base": "esbuild ./client/src/extension.ts --bundle --outfile=out/main.js --external:vscode --format=cjs --platform=node",
-    "esbuild-server": "esbuild ./server/src/server.ts --bundle --outfile=out/server.js --external:vscode --format=cjs --platform=node",
+    "vscode:prepublish": "npm run build:prod",
+    "bundle:client": "esbuild ./src/client/extension.ts --bundle --outfile=dist/main.js --external:vscode --format=cjs --platform=node --sourcemap",
+    "bundle:server": "esbuild ./src/server/server.ts --bundle --outfile=dist/server.js --external:vscode --format=cjs --platform=node --sourcemap",
+    "compile": "tsc --preserveWatchOutput",
+    "build": "npm-run-all compile bundle:client bundle:server",
+    "build:prod": "npm-run-all \"bundle:client -- --minify\" \"bundle:server -- --minify\"",
+    "watch": "npm-run-all --parallel \"compile -- -w\" \"bundle:client -- --watch\" \"bundle:server -- --watch\"",
     "compile-for-tests": "tsc -b -w",
-    "esbuild": "npm-run-all --parallel \"esbuild-base -- --sourcemap\" \"esbuild-server -- --sourcemap\"",
-    "esbuild-watch": "npm-run-all --parallel \"esbuild-base -- --sourcemap --watch\" \"esbuild-server -- --sourcemap --watch\" \"compile-for-tests\"",
     "lint": "eslint ./client/src ./server/src --ext .ts,.tsx",
-    "postinstall": "cd client && npm install && cd ../server && npm install && cd ..",
-    "package": "vsce package"
+    "package": "vsce package",
+    "compile:client": "tsc -p ./client",
+    "watch:client": "tsc -watch -p ./client",
+    "test:server": "ts-mocha server/src/test/*.ts",
+    "lint:client": "eslint src --ext ts",
+    "pretest:client": "npm run compile && npm run lint",
+    "test_orig:client": "node ./client/out/test/runTest.js",
+    "test:client": "node ./server/out/test/tests.js"
   },
   "devDependencies": {
     "@types/mocha": "^10.0.6",
@@ -165,9 +173,16 @@
     "eslint": "^8.56.0",
     "mocha": "^10.2.0",
     "npm-run-all": "^4.1.5",
-    "typescript": "^5.3.3"
+    "typescript": "^5.3.3",
+    "ts-mocha": "^10.0.0",
+    "@types/vscode": "^1.85.0",
+    "@vscode/test-electron": "^2.3.8"
   },
   "dependencies": {
-    "source-map-support": "^0.5.21"
+    "source-map-support": "^0.5.21",
+    "vscode-languageserver": "^9.0.1",
+    "vscode-languageserver-textdocument": "^1.0.11",
+    "vscode-uri": "^3.0.8",
+    "vscode-languageclient": "^9.0.1"
   }
 }

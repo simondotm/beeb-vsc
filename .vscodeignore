@@ -13,3 +13,4 @@ images/**
 !images/icon.png
 .github
 .nvmrc
+out

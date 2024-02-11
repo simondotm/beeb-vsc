@@ -13,7 +13,7 @@
 			"autoAttachChildProcesses": true,
 			"preLaunchTask": {
 				"type": "npm",
-				"script": "esbuild"
+				"script": "build"
 			}
 		},
 	]
