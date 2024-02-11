@@ -30,7 +30,7 @@ export class RenameProvider {
 				return null;
 			}
 			// check not a built in symbol
-			if (matched.GetLocation().uri === "") {
+			if (matched.GetLocation().uri === '') {
 				return null;
 			}
 			return matched.GetLocation().range;
@@ -115,12 +115,12 @@ export class SymbolProvider {
 				if (symboldata.GetLocation().uri === cleanPath) {
 					symbolList.push({
 						name: symbolname,
-						detail: "",
+						detail: '',
 						kind: symboldata.IsLabel() ? SymbolKind.Function : SymbolKind.Variable,
 						range: symboldata.GetLocation().range, // Could include any trailing comments for full scope of definition
 						selectionRange: symboldata.GetLocation().range
 					});}
-				}
+			}
 			);
 			return symbolList;
 		}

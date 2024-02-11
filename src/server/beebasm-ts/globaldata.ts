@@ -25,19 +25,19 @@ export class GlobalData {
 	private _pass = 0;
 	private _forId = 0;
 	private _numAnonSaves = 0;
-	private _outputFile = "";
+	private _outputFile = '';
 	private _assemblyTime = new Date();
 
-    private constructor()
-    {
+	private constructor()
+	{
 		//TBD
-    }
+	}
 
-    public static get Instance()
-    {
-        // Do you need arguments? Make it a regular static method instead.
-        return this._instance || (this._instance = new this());
-    }
+	public static get Instance()
+	{
+		// Do you need arguments? Make it a regular static method instead.
+		return this._instance || (this._instance = new this());
+	}
 
 	IsFirstPass(): boolean {
 		return this._pass === 0;

@@ -12,7 +12,7 @@ export class HoverProvider {
 		this.trees = trees;
 	}
 
-    onHover(params: HoverParams): Hover | null {
+	onHover(params: HoverParams): Hover | null {
 		const fspath = URI.parse(params.textDocument.uri).fsPath;
 		const docTrees = this.trees.get(fspath);
 		const location = params.position;
@@ -89,9 +89,9 @@ Return: ${cmd.return}`
 					const mdText: MarkupContent = {
 						kind: 'markdown',
 						value: [
-							"```beebasm",
+							'```beebasm',
 							line,
-							"```"
+							'```'
 						].join('\n')
 					};
 					return {contents: mdText};

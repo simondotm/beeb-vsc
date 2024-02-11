@@ -128,13 +128,13 @@ FileHandler.Instance.documents.onDidChangeContent(change => {
 // TODO - move to FileHandler?
 // TODO - cache the workspace root? Seems to only return sometimes
 async function getSourceFileName(): Promise<string> {
-	let workspaceroot = "";
+	let workspaceroot = '';
 	const folders = await connection.workspace.getWorkspaceFolders();
 	if (folders !== null) {
 		if (folders.length > 0) {
 			workspaceroot = URI.parse(folders[0].uri).fsPath;
 		}
-		let filename = "";
+		let filename = '';
 		const item: ConfigurationItem = { scopeUri: workspaceroot, section: 'beebvsc' };
 		const settings = await connection.workspace.getConfiguration(item);
 		filename = settings['sourceFile'];
@@ -142,8 +142,8 @@ async function getSourceFileName(): Promise<string> {
 		return filename;
 	}
 	else {
-		connection.console.log(`No workspace folders`);
-		return "";
+		connection.console.log('No workspace folders');
+		return '';
 	}
 }
 
@@ -158,8 +158,8 @@ async function ParseDocument(textDocument: TextDocument): Promise<void> {
 
 	// Get the source file name
 	let sourceFilePath = await getSourceFileName();
-	if (sourceFilePath === "") {
-		connection.console.log(`No source file name set, using current document`);
+	if (sourceFilePath === '') {
+		connection.console.log('No source file name set, using current document');
 		sourceFilePath = URI.parse(textDocument.uri).fsPath; // TODO - note return includes textDocument.uri and that mustn't change
 	}
 	// Get the document text
@@ -227,7 +227,7 @@ connection.onDocumentLinks((params) => {
 	const doc = URI.parse(params.textDocument.uri).fsPath;
 	const docLinks = links.get(doc);
 	if (docLinks !== undefined) {
-				return docLinks;
+		return docLinks;
 	}
 	return [];
 });

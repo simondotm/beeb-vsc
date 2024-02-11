@@ -22,7 +22,7 @@
 */
 /*************************************************************************************************/
 
-import { Macro, MacroTable } from "./macro";
+import { Macro, MacroTable } from './macro';
 import { LineParser } from './lineparser';
 import { SymbolTable } from './symboltable';
 import { GlobalData } from './globaldata';
@@ -247,7 +247,7 @@ export class SourceCode {
 			level = this._forStackPtr;
 		}
 
-		let suffix = "";
+		let suffix = '';
 
 		for (let i = 0; i < level; i++) {
 			// suffix += `@${this._forStack[i].id}_${this._forStack[i].count}`;
@@ -269,7 +269,7 @@ export class SourceCode {
 	GetURI(): string {
 		let uri = this._uri;
 		if (process.platform === 'win32') {
-			uri = URI.parse("file:///" + path.resolve(this._uri)).toString()
+			uri = URI.parse('file:///' + path.resolve(this._uri)).toString();
 		}
 		return uri;
 	}
@@ -326,10 +326,10 @@ export class SourceCode {
 	}
 
 	Execute(member: string, line: string, column: integer){
-        if ( member === "AddIfLevel" || member === "StartElIf" || member === "StartElse" || member === "RemoveIfLevel" || member === "StartMacro" || member === "EndMacro" ) {
+		if ( member === 'AddIfLevel' || member === 'StartElIf' || member === 'StartElse' || member === 'RemoveIfLevel' || member === 'StartMacro' || member === 'EndMacro' ) {
 			this[member](line, column);
 		}
-    }
+	}
 
 	SetCurrentIfCondition(b: boolean) {
 		// 	assert( m_ifStackPtr > 0 );
@@ -408,11 +408,11 @@ export class SourceCode {
 
 	OpenBrace(line: string, column: number): void {
 		if (this._forStackPtr == MAX_FOR_LEVELS) {
-			throw new Error(`Too many FORs`); //TODO - integrate with error handling/reporting
+			throw new Error('Too many FORs'); //TODO - integrate with error handling/reporting
 		}
 		// Fill in FOR block
 		this._forStack[this._forStackPtr] = {
-			varName: "",
+			varName: '',
 			current: 1,
 			end: 0,
 			step: 0,
