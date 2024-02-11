@@ -385,7 +385,6 @@ function createTargetCommand(): void
 				bootTarget = 'Main';
 			}
 			console.log('Booting to \'' + bootTarget + '\'');
-			bootTarget = bootTarget;
 			FinaliseThenSaveTasks(task, tasks, tasksObject, label, selection, target, bootTarget, rootPath);
 		});
 
