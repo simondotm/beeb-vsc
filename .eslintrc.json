@@ -20,7 +20,7 @@
         "@typescript-eslint/no-explicit-any": ["warn"],
         "indent": [
             "error",
-            4
+            "tab"
         ],
         "no-mixed-spaces-and-tabs": [
             "warn",
