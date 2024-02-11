@@ -40,12 +40,51 @@ interface BeebVSCSettings {
 	}
 }
 
+interface VSTaskGroup {
+	kind: string;
+	isDefault: boolean;
+}
+interface VSTask {
+	label: string;
+	type: string;
+	script?: string
+	problemMatcher?: string[] | VSProblemMatcher;
+	command: string;
+	args?: string[];
+	group?: string | VSTaskGroup;
+	presentation?: {
+		panel: string;
+		reveal: string;
+	}
+
+}
+
+interface VSTasks {
+	version: string;
+	tasks: VSTask[];
+}
+
+interface VSProblemMatcher {
+	owner: string;
+	fileLocation: string[];
+	pattern: {
+		regexp: string;
+		file: number;
+		line: number;
+		severity: number;
+		message: number;
+	}
+
+}
+
 // utils
 const getWorkspacePath = () => workspace.workspaceFolders ? workspace.workspaceFolders[0].uri.fsPath : "./";
 const getVSCodePath = () => path.join(getWorkspacePath(), ".vscode"); 
 const getTasksPath = () => path.join(getVSCodePath(), "tasks.json");
 const fileExists = (path: string) => fs.existsSync(path) && fs.statSync(path).isFile();
 const dirExists = (path: string) => fs.existsSync(path) && fs.statSync(path).isDirectory();
+const getAssemblerPath = () => workspace.getConfiguration('beebvsc').get<string>('assembler') ?? "./";
+const getEmulatorPath = () => workspace.getConfiguration('beebvsc').get<string>('emulator') ?? "./";
 
 //----------------------------------------------------------------------------------------
 // the list of source filename extensions we recognize as assembler/source files
@@ -67,7 +106,7 @@ const targetExt = ".ssd";
 // BeebAsm output format is <filename>:<line>: <errortype>: <error details>
 // BeebAsm doesn't indicate column of the error, but BeebAsm usually emits the offending line with a '^' underneath pointing to the problem area
 //----------------------------------------------------------------------------------------
-const problemMatcher = {
+const problemMatcher: VSProblemMatcher = {
     "owner": "6502",
     "fileLocation": ["relative", "${workspaceRoot}"],
     "pattern": {
@@ -183,9 +222,6 @@ function checkConfiguration(): boolean {
 	return true;
 }
 
-const getAssemblerPath = () => workspace.getConfiguration('beebvsc').get('assembler');
-
-const getEmulatorPath = () => workspace.getConfiguration('beebvsc').get('emulator');
 
 function CreateNewLocalSettingsJson(sourceFile: string, targetName: string) {
 	// create a new settings.json file in the .vscode folder
@@ -207,44 +243,44 @@ function CreateNewLocalSettingsJson(sourceFile: string, targetName: string) {
 // sets the build target with the given named 'target' as the default build command
 // also sets the test target to run the given named 'target'
 //----------------------------------------------------------------------------------------
-function setCurrentTarget(tasksObject: any, targetLabel: string, targetFile: string = ""): void {
+function setCurrentTarget(tasksObject: VSTasks, targetLabel: string, targetFile: string = ""): void {
 	// first find the target and set it as the default build
 	const tasks = tasksObject["tasks"];
 	for (let i = 0; i < tasks.length; i++) {
 		const task = tasks[i];
-		if ("group" in task && task["group"]["kind"] === "build") {
-			if (task["label"] === targetLabel) {
+		if (typeof task.group === 'object' && task.group.kind === "build") {
+			if (task.label === targetLabel) {
 				if (targetFile === "") {
 					// no target file specified, so use the default target file
-					targetFile = getTargetName(workspace.getConfiguration('beebvsc').get('sourceFile'));
+					targetFile = getTargetName(workspace.getConfiguration('beebvsc').get<string>('sourceFile') ?? "main.asm");
 				}
 			}
 			else {
 				// not the target we want to set as default, so set it as false
-				task["group"]["isDefault"] = false;
+				task.group.isDefault = false;
 			}
 		}
 	}
 
 	// next, find the test task and update it to run the new target
-	let task = null;
+	let foundTestTask = false
 	for (let i = 0; i < tasks.length; i++) {
-		if ("group" in tasks[i] && tasks[i]["group"]["kind"] === "test") {
-			task = tasks[i];
-			task["args"] = [targetFile];
+		const task = tasks[i];
+		if (typeof task.group === 'object' && task.group.kind === "test") {
+			foundTestTask = true
 			break;
-		}
+		} 
 	}
 
 	// if no test task was found, create one.
-	if (task === null) {
-		task = {};
-		task["label"] = "BeebVSC Test Target";
-		task["type"] = "shell";
-		task["command"] = getEmulatorPath();
-		task["args"] = [targetFile];
-		task["group"] = {"kind": "test", "isDefault": true};
-		tasks.push(task);
+	if (!foundTestTask) {
+		tasks.push({
+			label: "BeebVSC Test Target",
+			type: "shell",
+			command: getEmulatorPath(),
+			args: [targetFile],
+			group: { kind: "test", isDefault: true }
+		});
 	}
 }
 
@@ -294,12 +330,12 @@ function createTargetCommand(): void
 		const target = getTargetName(selection);
 
 		// get the tasks array, we will add out new target here
-		const tasks = tasksObject["tasks"];
+		const tasks = tasksObject.tasks;
 
 		// Check if this target is already present, we don't hanlde this presently
 		// TODO: offer option to replace
 		for (let i = 0; i < tasks.length; i++) {
-			if (target.toLowerCase() === tasks[i]["label"].toLowerCase()) {
+			if (target.toLowerCase() === tasks[i].label.toLowerCase()) {
 				window.showErrorMessage("BeebVSC: Can't add target '" + target + "' as it already exists");
 				return;
 			}
@@ -307,11 +343,12 @@ function createTargetCommand(): void
 
 		// Create the new build target
 		const label = "BeebVSC Build Target " + "'" + target + "'";
-		const task = {};
-		task["label"] = label;
-		task["type"] = "shell";
-		task["problemMatcher"] = problemMatcher;
-		task["command"] = getAssemblerPath();
+		const task: VSTask = {
+			label,
+			type: "shell",
+			problemMatcher,
+			command: getAssemblerPath(),
+		};
 
 		// Create BeebAsm commandline arguments
 		let bootTarget: string | undefined;
@@ -355,9 +392,9 @@ function createTargetCommand(): void
 	});
 }
 
-function FinaliseThenSaveTasks(task: object, tasks: object[], tasksObject: object, label: string, selection: string, target: string, bootTarget: string, rootPath: string) {
-	task["args"] = ["-v", "-i", selection, "-do", target, "-boot", bootTarget];
-	task["group"] = {"kind": "build", "isDefault": true};
+function FinaliseThenSaveTasks(task: VSTask, tasks: VSTask[], tasksObject: VSTasks, label: string, selection: string, target: string, bootTarget: string, rootPath: string) {
+	task.args = ["-v", "-i", selection, "-do", target, "-boot", bootTarget];
+	task.group = { kind: "build", isDefault: true};
 
 	// Add the new task to the tasks array
 	tasks.push(task);
@@ -371,7 +408,7 @@ function FinaliseThenSaveTasks(task: object, tasks: object[], tasksObject: objec
 	SaveJSONFiles(tasksObject, target, selection, rootPath);
 }
 
-function SaveJSONFiles(tasksObject, target: string, selection: string, rootPath: string): void {
+function SaveJSONFiles(tasksObject: VSTasks, target: string, selection: string, rootPath: string): void {
 	// write the new tasks.json file
 	if (saveTasks(tasksObject)) {
 		window.showInformationMessage("BeebVSC: New build target '" + target + "' created");
@@ -443,15 +480,16 @@ function selectTargetCommand(): void
 	}
 
 	const targetList = [];
-	const tasks = tasksObject["tasks"];
+	const tasks = tasksObject.tasks;
 	if (tasks.length === 0) {
 		window.showErrorMessage("BeebVSC: No targets available in tasks.json file");
 		return;
 	}
 
 	for (let i = 0; i < tasks.length; i++) {
-		if ("group" in tasks[i] && tasks[i]["group"]["kind"] === "build") {
-			targetList.push(tasks[i]["label"]);
+		const task = tasks[i];
+		if (typeof task.group === 'object' && task.group.kind === "build") {
+			targetList.push(task.label);
 		}
 	}
 
@@ -502,7 +540,7 @@ function GetSAVECommands(ASMFilename: string): string[] {
 // returns the file as a JS object or null if there was an error
 // if no tasks.json file exists, a default will be created.
 //----------------------------------------------------------------------------------------
-function loadTasks()
+function loadTasks(): VSTasks | null
 {
     if (!checkConfiguration())
     {
@@ -540,7 +578,7 @@ function loadTasks()
 	return tasksObject;
 }
 
-function saveTasks(tasksObject: object): boolean {
+function saveTasks(tasksObject: VSTasks): boolean {
 	const vscodePath = getVSCodePath();
 	// sanity check that .vscode is not a file
 	if (fileExists(vscodePath)) {
