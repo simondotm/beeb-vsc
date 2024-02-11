@@ -19,8 +19,12 @@
         "@typescript-eslint/no-unused-vars": ["warn"],
         "@typescript-eslint/no-explicit-any": ["warn"],
         "indent": [
+            "error",
+            4
+        ],
+        "no-mixed-spaces-and-tabs": [
             "warn",
-            "tab"
+            "smart-tabs"
         ],
         "quotes": [
             "warn",
