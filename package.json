@@ -32,7 +32,7 @@
     "assembly"
   ],
   "engines": {
-    "vscode": "^1.75.0"
+    "vscode": "^1.85.0"
   },
   "configurations": [
     {
@@ -145,7 +145,7 @@
     ]
   },
   "scripts": {
-    "vscode:prepublish": "npm run compile:client & npm-run-all --parallel \"esbuild-base -- --minify\" \"esbuild-server -- --minify\"",
+    "vscode:prepublish": "npm run build:prod",
     "build:client": "esbuild ./src/client/extension.ts --bundle --outfile=dist/main.js --external:vscode --format=cjs --platform=node --sourcemap",
     "build:server": "esbuild ./src/server/server.ts --bundle --outfile=dist/server.js --external:vscode --format=cjs --platform=node --sourcemap",
     "compile": "tsc",
