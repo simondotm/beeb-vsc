@@ -157,7 +157,7 @@ export function activate(context: ExtensionContext) {
 
 	
 	const serverModule = context.asAbsolutePath(
-		path.join('out', 'server.js')
+		path.join('dist', 'server.js')
 	);
 
 	// If the extension is launched in debug mode then the debug server options are used
