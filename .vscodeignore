@@ -11,3 +11,5 @@ node_modules/**
 test/**
 images/**
 !images/icon.png
+.github
+.nvmrc
