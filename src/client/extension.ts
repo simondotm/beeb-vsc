@@ -22,7 +22,7 @@ import {
 	workspace,
 	ExtensionContext,
 	window,
-	commands
+	commands,
 } from 'vscode';
 import {
 	LanguageClient,
@@ -32,6 +32,14 @@ import {
 } from 'vscode-languageclient/node';
 
 let client: LanguageClient;
+
+interface BeebVSCSettings {
+	beebvsc: {
+		sourceFile: string;
+		targetName: string;
+	}
+}
+
 
 //----------------------------------------------------------------------------------------
 // the list of source filename extensions we recognize as assembler/source files
@@ -78,7 +86,7 @@ export function activate(context: ExtensionContext) {
 	// Use the console to output diagnostic information (console.log) and errors (console.error)
     // This line of code will only be executed once when your extension is activated
     console.log('BeebVSC extension activated!');
-    console.log("path " + workspace.workspaceFolders[0]?.uri.fsPath);
+		console.log("path " + getWorkspacePath());
 	
 
 	// The command has been defined in the package.json file
@@ -177,16 +185,15 @@ function CreateNewLocalSettingsJson(sourceFile: string, targetName: string) {
 	// create a new settings.json file in the .vscode folder
 	// this will be used to store local settings for the current workspace
 	// (eg. assembler/emulator paths)
-	const settingsPath = path.join(workspace.workspaceFolders[0].uri.fsPath, ".vscode", "settings.json");
-	const sourcePath = path.join(workspace.workspaceFolders[0].uri.fsPath, sourceFile);
-	// const settingsJson = {
-	// 	"beebvsc.sourceFile": sourcePath,
-	// 	"beebvsc.targetName": targetName
-	// };
-	const settingsObject = {};
-	settingsObject["beebvsc"] = {};
-	settingsObject["beebvsc"]["sourceFile"] = sourcePath;
-	settingsObject["beebvsc"]["targetName"] = targetName;
+	const settingsPath = path.join(getWorkspacePath(), ".vscode", "settings.json");
+	const sourcePath = path.join(getWorkspacePath(), sourceFile);
+
+	const settingsObject: BeebVSCSettings = {
+		beebvsc: {
+			sourceFile: sourcePath,
+			targetName: targetName
+		}
+	};
 	fs.writeFileSync(settingsPath, JSON.stringify(settingsObject, null, 4));
 }
 
@@ -253,7 +260,7 @@ function createTargetCommand(): void
 	}
 
 	// Create list of files in the root folder with the supported file extensions
-	const rootPath = workspace.workspaceFolders[0].uri.fsPath;
+	const rootPath = getWorkspacePath();
 	let targetList = fs.readdirSync(rootPath);
 	targetList = targetList.filter(file => supportedFileTypes.includes(file.split('.').pop()!));
 	// check that files are really files not folders
@@ -301,7 +308,7 @@ function createTargetCommand(): void
 		task["command"] = getAssemblerPath();
 
 		// Create BeebAsm commandline arguments
-		let bootTarget: string;
+		let bootTarget: string | undefined;
 		let DFSBootTargetList: string[] = [];
 		// add selection to list, excluding the extension (could check for valid name here?)
 		let ext = selection.lastIndexOf('.');
@@ -368,7 +375,7 @@ function SaveJSONFiles(tasksObject, target: string, selection: string, rootPath:
 	}
 	// Now want to save the selection to the settings.json file in the .vscode folder
 	// Check if it exists first
-	const settingsPath = path.join(workspace.workspaceFolders[0].uri.fsPath, ".vscode", "settings.json");
+	const settingsPath = path.join(getWorkspacePath(), ".vscode", "settings.json");
 	if (!fileExists(settingsPath)) {
 		CreateNewLocalSettingsJson(selection, target);
 	}
@@ -467,7 +474,7 @@ function selectTargetCommand(): void
 
 function GetSAVECommands(ASMFilename: string): string[] {
 	const saveList: string[] = [];
-	const rootPath = workspace.workspaceFolders[0].uri.fsPath;
+	const rootPath = getWorkspacePath();
 	// Confident this exists as we've already checked for it in calling function
 	const textFile = fs.readFileSync(path.join(rootPath, ASMFilename), 'utf8');
 	const lines = textFile.split('\n');
@@ -565,7 +572,9 @@ function getTargetName(sourceFile: string) {
 	}
 }
 
-const getVSCodePath = () => path.join(workspace.workspaceFolders[0].uri.fsPath, ".vscode"); 
+const getWorkspacePath = () => workspace.workspaceFolders ? workspace.workspaceFolders[0].uri.fsPath : "./";
+
+const getVSCodePath = () => path.join(getWorkspacePath(), ".vscode"); 
 
 const getTasksPath = () => path.join(getVSCodePath(), "tasks.json");
 
