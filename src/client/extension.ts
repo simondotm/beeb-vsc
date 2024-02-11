@@ -40,6 +40,12 @@ interface BeebVSCSettings {
 	}
 }
 
+// utils
+const getWorkspacePath = () => workspace.workspaceFolders ? workspace.workspaceFolders[0].uri.fsPath : "./";
+const getVSCodePath = () => path.join(getWorkspacePath(), ".vscode"); 
+const getTasksPath = () => path.join(getVSCodePath(), "tasks.json");
+const fileExists = (path: string) => fs.existsSync(path) && fs.statSync(path).isFile();
+const dirExists = (path: string) => fs.existsSync(path) && fs.statSync(path).isDirectory();
 
 //----------------------------------------------------------------------------------------
 // the list of source filename extensions we recognize as assembler/source files
@@ -571,13 +577,3 @@ function getTargetName(sourceFile: string) {
 		return sourceFile.substring(0, ext) + targetExt;
 	}
 }
-
-const getWorkspacePath = () => workspace.workspaceFolders ? workspace.workspaceFolders[0].uri.fsPath : "./";
-
-const getVSCodePath = () => path.join(getWorkspacePath(), ".vscode"); 
-
-const getTasksPath = () => path.join(getVSCodePath(), "tasks.json");
-
-const fileExists = (path: string) => fs.existsSync(path) && fs.statSync(path).isFile();
-
-const dirExists = (path: string) => fs.existsSync(path) && fs.statSync(path).isDirectory();
