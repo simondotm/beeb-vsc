@@ -10,7 +10,8 @@ node_modules/**
 **/tsconfig.json
 test/**
 images/**
-!images/icon.png
 .github
 .nvmrc
 out
+docs
+!icon.png
