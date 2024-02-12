@@ -20,9 +20,10 @@ import { RenameProvider, SymbolProvider } from './symbolhandler';
 import { MacroTable } from './beebasm-ts/macro';
 import { FileHandler } from './filehandler';
 import { HoverProvider } from './hoverprovider';
+import { AST } from './ast';
 
 const connection = createConnection(ProposedFeatures.all);
-const trees: Map<string, any[]> = new Map<string, any[]>();
+const trees: Map<string, AST[]> = new Map<string, AST[]>();
 const links: Map<string, DocumentLink[]> = new Map<string, DocumentLink[]>();
 // GlobalData and ObjectCode objects are static and will be set up when called in ParseDocument
 

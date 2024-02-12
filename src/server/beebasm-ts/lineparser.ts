@@ -73,7 +73,7 @@ function isspace(ch: string): boolean {
 
 type Token = {
 	name: string;
-	handler: any;//: string;//() => void;
+	handler: string;//() => void;
 	directiveHandler: string; //(line:string, column:number) => void; // These are pointers to functions in c++ but not sure if need yet
 }
 
@@ -120,7 +120,7 @@ type Operator = {
 	token: string;
 	precedence: integer;
 	parameterCount: integer;
-	handler: any; //OperatorHandler;
+	handler: string; //OperatorHandler;
 }
 
 
