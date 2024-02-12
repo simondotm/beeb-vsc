@@ -63,20 +63,20 @@ By default, BeebVSC configures `BeebAsm.exe` as the default assembler, and `Beeb
 ## 3. Load your project
 Open your project folder in VSC. Syntax colouring will automatically activate when `.6502`, `.asm`, or `.s` files are opened in the editor.
 
-![Screenshot](https://github.com/simondotm/beeb-vsc/blob/master/images/example.png?raw=true)
+![Screenshot](./docs/images/example.png?raw=true)
 
 ## 4. Create a new build target
 Press `F10` and the extension will provide a drop down list of compatible source files it has found in the current workspace. 
 
-![Screenshot](https://github.com/simondotm/beeb-vsc/blob/master/images/createtarget.png?raw=true)
+![Screenshot](./docs/images/createtarget.png?raw=true)
 
 Select the one that you wish to assemble with `BeebAsm`, and a new build target will be created in your workspace.
 
-![Screenshot](https://github.com/simondotm/beeb-vsc/blob/master/images/targetcreated.png?raw=true)
+![Screenshot](./docs/images/targetcreated.png?raw=true)
 
 A `tasks.json` file will be created in a `.vscode` folder in your workspace containing the required tasks to build or run your targets.
 
-![Screenshot](https://github.com/simondotm/beeb-vsc/blob/master/images/tasksjson.png?raw=true)
+![Screenshot](./docs/images/tasksjson.png?raw=true)
 
 
 ## 5. Build the target
@@ -94,7 +94,7 @@ Press `F9` or `Ctrl+Shift+T` and Visual Studio Code will run your disk image wit
 ## Changing Assembler and/or Emulator configuration
 If you wish to change your Assembler or Emulator configuration, go to `File->Preferences->User Settings` in Visual Studio Code, the editor will present current user preferences. Scroll to the bottom of the configuration until you see the BeebVSC settings. Copy the settings `"beebvsc.assembler"` and `"beebvsc.emulator"` across to your user settings and modify accordingly. Note that although full paths to executables can be included here, we do not recommend this since they are not portable if your project source is shared.
 
-![Screenshot](https://github.com/simondotm/beeb-vsc/blob/master/images/usersettings.PNG?raw=true)
+![Screenshot](./docs/images/usersettings.PNG?raw=true)
 
 ## Managing multiple build targets
 You can run the add build target command multiple times to add additional source files to the list of build targets in the `tasks.json` file.
@@ -104,7 +104,7 @@ It is possible to switch between build targets as follows:
 
 Press `F6` and the extension will provide a drop down list of build targets currently in the `tasks.json` file. 
 
-![Screenshot](https://github.com/simondotm/beeb-vsc/blob/master/images/selecttarget.png?raw=true)
+![Screenshot](./docs/images/selecttarget.png?raw=true)
 
 The selection you make will become the new default 'build' and 'test' target, which can then be built as normal by pressing `F7` or `Ctrl+Shift+B`, or similarly, pressing `F9` or `Ctrl+Shift+T` to run in the emulator.
 
@@ -113,12 +113,12 @@ The selection you make will become the new default 'build' and 'test' target, wh
 ## Listing commands
 Press `Ctrl+Shift+P` to open the command palette. In here you will see the BeebVSC commands listed for reference/convenience.
 
-![Screenshot](https://github.com/simondotm/beeb-vsc/blob/master/images/commands.png?raw=true)
+![Screenshot](./docs/images/commands.png?raw=true)
 
 ## Running specific tasks
 BeebVSC takes advantage of standard Visual Studio Code 'tasks', which are just a list of named shell commands stored in the `.vscode/tasks.json` file. Each task is 'runnable' in its own right, so another useful shortcut is `Ctrl+Shift+R` to list all of the current tasks, which you can then manually select.
 
-![Screenshot](https://github.com/simondotm/beeb-vsc/blob/master/images/runtasks.png?raw=true)
+![Screenshot](./docs/images/runtasks.png?raw=true)
 
 ## Adding custom tasks
 The BeebVSC extension is careful to preserve the contents of the `tasks.json` file. Therefore once targets(tasks) have been added, is very easy to manually configure or override them by simply making modifications to the `tasks.json` file directly:

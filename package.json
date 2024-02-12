@@ -1,188 +1,188 @@
 {
-  "name": "beeb-vsc",
-  "displayName": "Beeb VSC",
-  "description": "6502 developmemnt environment (BBC Micro/BeebAsm)",
-  "version": "0.1.0",
-  "icon": "images/icon.png",
-  "galleryBanner": {
-    "color": "#5c2d91",
-    "theme": "dark"
-  },
-  "publisher": "simondotm",
-  "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/simondotm/beeb-vsc/issues"
-  },
-  "homepage": "https://github.com/simondotm/beeb-vsc/",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/simondotm/beeb-vsc.git"
-  },
-  "sponsor": {
-    "url": "https://ko-fi.com/simondotm"
-  },
-  "categories": [
-    "Programming Languages"
-  ],
-  "keywords": [
-    "6502",
-    "bbc",
-    "micro",
-    "beebasm",
-    "assembly"
-  ],
-  "engines": {
-    "vscode": "^1.85.0"
-  },
-  "configurations": [
-    {
-      "type": "node",
-      "request": "launch",
-      "name": "Mocha Tests",
-      "program": "${workspaceFolder}/node_modules/mocha/bin/_mocha",
-      "args": [
-        "--require",
-        "ts-node/register",
-        "-u",
-        "tdd",
-        "--timeout",
-        "999999",
-        "--colors",
-        "--recursive",
-        "${workspaceFolder}/server/src/test/*.ts"
-      ],
-      "internalConsoleOptions": "openOnSessionStart"
-    }
-  ],
-  "main": "./dist/main.js",
-  "contributes": {
-    "languages": [
-      {
-        "id": "beebasm",
-        "extensions": [
-          ".6502",
-          ".s",
-          ".asm"
-        ],
-        "aliases": [
-          "6502/BeebAsm Assembly"
-        ],
-        "configuration": "./beeb-vsc.configuration.json"
-      }
-    ],
-    "grammars": [
-      {
-        "language": "beebasm",
-        "scopeName": "source.asm.6502",
-        "path": "./syntaxes/6502.tmLanguage.json"
-      }
-    ],
-    "configuration": {
-      "type": "object",
-      "title": "BeebVSC configuration",
-      "properties": {
-        "beebvsc.assembler": {
-          "type": "string",
-          "default": "BeebAsm.exe",
-          "description": "Your assembler executable (eg. BeebAsm.exe)."
-        },
-        "beebvsc.emulator": {
-          "type": "string",
-          "default": "BeebEm.exe",
-          "description": "Your preferred emulator executable (eg. BeebEm.exe)."
-        }
-      }
-    },
-    "commands": [
-      {
-        "command": "extension.target.create",
-        "title": "BeebVSC: Create new build target"
-      },
-      {
-        "command": "extension.target.select",
-        "title": "BeebVSC: Select default build target"
-      },
-      {
-        "command": "extension.target.run",
-        "title": "BeebVSC: Run the currently selected target"
-      },
-      {
-        "command": "extension.target.build",
-        "title": "BeebVSC: Build the currently selected target"
-      }
-    ],
-    "keybindings": [
-      {
-        "command": "extension.target.create",
-        "key": "f10",
-        "mac": "f10"
-      },
-      {
-        "command": "extension.target.select",
-        "key": "f6",
-        "mac": "f6"
-      },
-      {
-        "command": "extension.target.run",
-        "key": "Ctrl+Shift+T",
-        "mac": "Ctrl+Shift+T"
-      },
-      {
-        "command": "extension.target.run",
-        "key": "F9",
-        "mac": "F9"
-      },
-      {
-        "command": "extension.target.build",
-        "key": "F7",
-        "mac": "F7"
-      },
-      {
-        "command": "workbench.action.tasks.runTask",
-        "key": "Ctrl+Shift+R",
-        "mac": "Ctrl+Shift+R"
-      }
-    ]
-  },
-  "scripts": {
-    "vscode:prepublish": "npm run build:prod",
-    "bundle:client": "esbuild ./src/client/extension.ts --bundle --outfile=dist/main.js --external:vscode --format=cjs --platform=node --sourcemap",
-    "bundle:server": "esbuild ./src/server/server.ts --bundle --outfile=dist/server.js --external:vscode --format=cjs --platform=node --sourcemap",
-    "compile": "tsc --preserveWatchOutput",
-    "build": "npm-run-all compile bundle:client bundle:server",
-    "build:prod": "npm-run-all \"bundle:client -- --minify\" \"bundle:server -- --minify\"",
-    "watch": "npm-run-all --parallel \"compile -- -w\" \"bundle:client -- --watch\" \"bundle:server -- --watch\"",
-    "compile-for-tests": "tsc -b -w",
-    "lint": "eslint ./src --ext .ts,.tsx",
-    "package": "vsce package",
-    "compile:client": "tsc -p ./client",
-    "watch:client": "tsc -watch -p ./client",
-    "test:server": "ts-mocha server/src/test/*.ts",
-    "lint:client": "eslint src --ext ts",
-    "pretest:client": "npm run compile && npm run lint",
-    "test_orig:client": "node ./client/out/test/runTest.js",
-    "test:client": "node ./server/out/test/tests.js"
-  },
-  "devDependencies": {
-    "@types/mocha": "^10.0.6",
-    "@types/node": "^20.10.5",
-    "@types/vscode": "^1.85.0",
-    "@typescript-eslint/eslint-plugin": "^6.21.0",
-    "@typescript-eslint/parser": "^6.21.0",
-    "@vscode/test-electron": "^2.3.8",
-    "@vscode/vsce": "^2.23.0",
-    "esbuild": "^0.19.11",
-    "eslint": "^8.56.0",
-    "mocha": "^10.2.0",
-    "npm-run-all": "^4.1.5",
-    "ts-mocha": "^10.0.0",
-    "typescript": "^5.3.3"
-  },
-  "dependencies": {
-    "source-map-support": "^0.5.21",
-    "vscode-languageclient": "^9.0.1",
-    "vscode-languageserver": "^9.0.1",
-    "vscode-languageserver-textdocument": "^1.0.11",
-    "vscode-uri": "^3.0.8"
-  }
+	"name": "beeb-vsc",
+	"displayName": "Beeb VSC",
+	"description": "6502 developmemnt environment (BBC Micro/BeebAsm)",
+	"version": "0.1.0",
+	"icon": "icon.png",
+	"galleryBanner": {
+		"color": "#5c2d91",
+		"theme": "dark"
+	},
+	"publisher": "simondotm",
+	"license": "MIT",
+	"bugs": {
+		"url": "https://github.com/simondotm/beeb-vsc/issues"
+	},
+	"homepage": "https://github.com/simondotm/beeb-vsc/",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/simondotm/beeb-vsc.git"
+	},
+	"sponsor": {
+		"url": "https://ko-fi.com/simondotm"
+	},
+	"categories": [
+		"Programming Languages"
+	],
+	"keywords": [
+		"6502",
+		"bbc",
+		"micro",
+		"beebasm",
+		"assembly"
+	],
+	"engines": {
+		"vscode": "^1.85.0"
+	},
+	"configurations": [
+		{
+			"type": "node",
+			"request": "launch",
+			"name": "Mocha Tests",
+			"program": "${workspaceFolder}/node_modules/mocha/bin/_mocha",
+			"args": [
+				"--require",
+				"ts-node/register",
+				"-u",
+				"tdd",
+				"--timeout",
+				"999999",
+				"--colors",
+				"--recursive",
+				"${workspaceFolder}/server/src/test/*.ts"
+			],
+			"internalConsoleOptions": "openOnSessionStart"
+		}
+	],
+	"main": "./dist/main.js",
+	"contributes": {
+		"languages": [
+			{
+				"id": "beebasm",
+				"extensions": [
+					".6502",
+					".s",
+					".asm"
+				],
+				"aliases": [
+					"6502/BeebAsm Assembly"
+				],
+				"configuration": "./beeb-vsc.configuration.json"
+			}
+		],
+		"grammars": [
+			{
+				"language": "beebasm",
+				"scopeName": "source.asm.6502",
+				"path": "./syntaxes/6502.tmLanguage.json"
+			}
+		],
+		"configuration": {
+			"type": "object",
+			"title": "BeebVSC configuration",
+			"properties": {
+				"beebvsc.assembler": {
+					"type": "string",
+					"default": "BeebAsm.exe",
+					"description": "Your assembler executable (eg. BeebAsm.exe)."
+				},
+				"beebvsc.emulator": {
+					"type": "string",
+					"default": "BeebEm.exe",
+					"description": "Your preferred emulator executable (eg. BeebEm.exe)."
+				}
+			}
+		},
+		"commands": [
+			{
+				"command": "extension.target.create",
+				"title": "BeebVSC: Create new build target"
+			},
+			{
+				"command": "extension.target.select",
+				"title": "BeebVSC: Select default build target"
+			},
+			{
+				"command": "extension.target.run",
+				"title": "BeebVSC: Run the currently selected target"
+			},
+			{
+				"command": "extension.target.build",
+				"title": "BeebVSC: Build the currently selected target"
+			}
+		],
+		"keybindings": [
+			{
+				"command": "extension.target.create",
+				"key": "f10",
+				"mac": "f10"
+			},
+			{
+				"command": "extension.target.select",
+				"key": "f6",
+				"mac": "f6"
+			},
+			{
+				"command": "extension.target.run",
+				"key": "Ctrl+Shift+T",
+				"mac": "Ctrl+Shift+T"
+			},
+			{
+				"command": "extension.target.run",
+				"key": "F9",
+				"mac": "F9"
+			},
+			{
+				"command": "extension.target.build",
+				"key": "F7",
+				"mac": "F7"
+			},
+			{
+				"command": "workbench.action.tasks.runTask",
+				"key": "Ctrl+Shift+R",
+				"mac": "Ctrl+Shift+R"
+			}
+		]
+	},
+	"scripts": {
+		"vscode:prepublish": "npm run build:prod",
+		"bundle:client": "esbuild ./src/client/extension.ts --bundle --outfile=dist/main.js --external:vscode --format=cjs --platform=node --sourcemap",
+		"bundle:server": "esbuild ./src/server/server.ts --bundle --outfile=dist/server.js --external:vscode --format=cjs --platform=node --sourcemap",
+		"compile": "tsc --preserveWatchOutput",
+		"build": "npm-run-all compile bundle:client bundle:server",
+		"build:prod": "npm-run-all \"bundle:client -- --minify\" \"bundle:server -- --minify\"",
+		"watch": "npm-run-all --parallel \"compile -- -w\" \"bundle:client -- --watch\" \"bundle:server -- --watch\"",
+		"compile-for-tests": "tsc -b -w",
+		"lint": "eslint ./src --ext .ts,.tsx",
+		"package": "vsce package",
+		"compile:client": "tsc -p ./client",
+		"watch:client": "tsc -watch -p ./client",
+		"test:server": "ts-mocha server/src/test/*.ts",
+		"lint:client": "eslint src --ext ts",
+		"pretest:client": "npm run compile && npm run lint",
+		"test_orig:client": "node ./client/out/test/runTest.js",
+		"test:client": "node ./server/out/test/tests.js"
+	},
+	"devDependencies": {
+		"@types/mocha": "^10.0.6",
+		"@types/node": "^20.10.5",
+		"@types/vscode": "^1.85.0",
+		"@typescript-eslint/eslint-plugin": "^6.21.0",
+		"@typescript-eslint/parser": "^6.21.0",
+		"@vscode/test-electron": "^2.3.8",
+		"@vscode/vsce": "^2.23.0",
+		"esbuild": "^0.19.11",
+		"eslint": "^8.56.0",
+		"mocha": "^10.2.0",
+		"npm-run-all": "^4.1.5",
+		"ts-mocha": "^10.0.0",
+		"typescript": "^5.3.3"
+	},
+	"dependencies": {
+		"source-map-support": "^0.5.21",
+		"vscode-languageclient": "^9.0.1",
+		"vscode-languageserver": "^9.0.1",
+		"vscode-languageserver-textdocument": "^1.0.11",
+		"vscode-uri": "^3.0.8"
+	}
 }
