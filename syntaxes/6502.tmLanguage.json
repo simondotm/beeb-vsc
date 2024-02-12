@@ -23,7 +23,7 @@
           "name": "keyword.other.opcode.6502.legal"
         },
         {
-          "match": "(?i)(^|\\s+|(?<=:))(stz|phx|phy|plx|ply)(?=\\s+|[:$#(])",
+          "match": "(?i)(^|\\s+|(?<=:))(stz|phx|phy|plx|ply|clr|dea|ina|trb|tsb|bra)(?=\\s+|[:$#(])",
           "name": "keyword.other.opcode.6502.illegal"
         }
       ]
