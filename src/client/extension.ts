@@ -556,7 +556,7 @@ function loadTasks(): VSTasks | null
 	}
 
 	// load the tasks.json file
-	let tasksObject: any = null;
+	let tasksObject: VSTasks | null = null;
 	try {
 		const contents = fs.readFileSync(tasksPath, 'utf8');
 		tasksObject = JSON.parse(contents);
@@ -566,13 +566,6 @@ function loadTasks(): VSTasks | null
 		window.showErrorMessage('Could not load tasks.json file');
 		return null;
 	}
-
-	// sanity check - ensure a tasks array exists
-	if (!('tasks' in tasksObject)) {
-		tasksObject['tasks'] = [];
-		console.log('Added tasks array to tasks.json');
-	}
-
 	return tasksObject;
 }
 
