@@ -423,7 +423,7 @@ function SaveJSONFiles(tasksObject: VSTasks, target: string, selection: string, 
 	}
 	else {
 		// settings.json exists, so load it
-		let settingsObject: any = null;
+		let settingsObject: Partial<BeebVSCSettings> = {};
 		try {
 			settingsObject = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
 			console.log('settings.json loaded');
@@ -432,14 +432,13 @@ function SaveJSONFiles(tasksObject: VSTasks, target: string, selection: string, 
 			window.showErrorMessage('Could not load settings.json file');
 			return;
 		}
-		// sanity check - ensure beebvsc settings are included exists
-		if (!('beebvsc' in settingsObject)) {
-			settingsObject['beebvsc'] = {};
-			console.log('Added beebvsc object to settings.json');
-		}
 		// now add the new settings
-		settingsObject['beebvsc']['sourceFile'] = path.join(rootPath, selection);
-		settingsObject['beebvsc']['targetName'] = target;
+		console.log('Setting beebvsc object to settings.json');
+		settingsObject.beebvsc = {
+			sourceFile: path.join(rootPath, selection),
+			targetName: target,
+		};
+
 		// save the settings.json file
 		try {
 			const output = JSON.stringify(settingsObject, null, 4);
