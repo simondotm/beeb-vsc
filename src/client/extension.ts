@@ -30,6 +30,7 @@ import {
 	ServerOptions,
 	TransportKind
 } from 'vscode-languageclient/node';
+import { createWebView } from './webview';
 
 let client: LanguageClient;
 
@@ -155,7 +156,9 @@ export function activate(context: ExtensionContext) {
 		commands.executeCommand('workbench.action.tasks.build');
 	}));
 
-	
+	createWebView(context);
+
+
 	const serverModule = context.asAbsolutePath(
 		path.join('dist', 'server.js')
 	);

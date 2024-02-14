@@ -14,32 +14,37 @@
     "plugins": [
         "@typescript-eslint"
     ],
-    "rules": {
-        "no-unused-vars": "off",
-        "@typescript-eslint/no-unused-vars": [
-            "warn",
-            {
-                "argsIgnorePattern": "^_",
-                "varsIgnorePattern": "^_",
-                "caughtErrorsIgnorePattern": "^_"
-            }            
-        ],
-        "@typescript-eslint/no-explicit-any": ["warn"],
-        "indent": [
-            "error",
-            "tab"
-        ],
-        "no-mixed-spaces-and-tabs": [
-            "warn",
-            "smart-tabs"
-        ],
-        "quotes": [
-            "warn",
-            "single"
-        ],
-        "semi": [
-            "warn",
-            "always"
-        ]
-    }
+     "overrides": [
+        {
+            "files": [ "src/**/*.ts" ],
+            "rules": {
+                "no-unused-vars": "off",
+                "@typescript-eslint/no-unused-vars": [
+                    "warn",
+                    {
+                        "argsIgnorePattern": "^_",
+                        "varsIgnorePattern": "^_",
+                        "caughtErrorsIgnorePattern": "^_"
+                    }            
+                ],
+                "@typescript-eslint/no-explicit-any": ["warn"],
+                "indent": [
+                    "error",
+                    "tab"
+                ],
+                "no-mixed-spaces-and-tabs": [
+                    "warn",
+                    "smart-tabs"
+                ],
+                "quotes": [
+                    "warn",
+                    "single"
+                ],
+                "semi": [
+                    "warn",
+                    "always"
+                ]
+            }                
+        }
+    ] 
 }
