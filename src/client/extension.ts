@@ -250,9 +250,14 @@ function setCurrentTarget(tasksObject: VSTasks, targetLabel: string, targetFile:
 		const task = tasks[i];
 		if (typeof task.group === 'object' && task.group.kind === 'build') {
 			if (task.label === targetLabel) {
+				task.group.isDefault = true;
 				if (targetFile === '') {
-					// no target file specified, so use the default target file
-					targetFile = getTargetName(workspace.getConfiguration('beebvsc').get<string>('sourceFile') ?? 'main.asm');
+					// try to get target file (disk image) from the task args
+					targetFile = findTargetName(targetLabel, tasks);
+					if (targetFile === '') {
+						// no target file specified, so use the default target file
+						targetFile = getTargetName(workspace.getConfiguration('beebvsc').get<string>('sourceFile') ?? 'main.asm');
+					}
 				}
 			}
 			else {
@@ -268,6 +273,7 @@ function setCurrentTarget(tasksObject: VSTasks, targetLabel: string, targetFile:
 		const task = tasks[i];
 		if (typeof task.group === 'object' && task.group.kind === 'test') {
 			foundTestTask = true;
+			task.args = [targetFile];
 			break;
 		} 
 	}
@@ -398,19 +404,16 @@ function FinaliseThenSaveTasks(task: VSTask, tasks: VSTask[], tasksObject: VSTas
 	// Add the new task to the tasks array
 	tasks.push(task);
 
-	// set as the default build and test target if this is the first task
-	// TODO: check if other targets already exist, but are not set as the default build? Can do this with target select.
-	if (tasks.length === 1) {
-		setCurrentTarget(tasksObject, label, target);
-	}
+	// set as the default build and create test task to point to it
+	setCurrentTarget(tasksObject, label, target);
 
 	SaveJSONFiles(tasksObject, target, selection, rootPath);
 }
 
-function SaveJSONFiles(tasksObject: VSTasks, target: string, selection: string, rootPath: string): void {
+function SaveJSONFiles(tasksObject: VSTasks, targetDiskImage: string, selection: string, rootPath: string): void {
 	// write the new tasks.json file
 	if (saveTasks(tasksObject)) {
-		window.showInformationMessage('BeebVSC: New build target \'' + target + '\' created');
+		window.showInformationMessage('BeebVSC: New build target \'' + targetDiskImage + '\' created');
 	} 
 	else {
 		window.showErrorMessage('BeebVSC: \'Error saving tasks.json file\' - contact developer');
@@ -419,7 +422,7 @@ function SaveJSONFiles(tasksObject: VSTasks, target: string, selection: string, 
 	// Check if it exists first
 	const settingsPath = path.join(getWorkspacePath(), '.vscode', 'settings.json');
 	if (!fileExists(settingsPath)) {
-		CreateNewLocalSettingsJson(selection, target);
+		CreateNewLocalSettingsJson(selection, targetDiskImage);
 	}
 	else {
 		// settings.json exists, so load it
@@ -436,7 +439,7 @@ function SaveJSONFiles(tasksObject: VSTasks, target: string, selection: string, 
 		console.log('Setting beebvsc object to settings.json');
 		settingsObject.beebvsc = {
 			sourceFile: path.join(rootPath, selection),
-			targetName: target,
+			targetName: targetDiskImage,
 		};
 
 		// save the settings.json file
@@ -504,13 +507,10 @@ function selectTargetCommand(): void
 		// set the selection as the new default build target + test command
 		setCurrentTarget(tasksObject, selection);
 
-		// write the new tasks.json file
-		if (saveTasks(tasksObject)) {
-			window.showInformationMessage('BeebVSC - selected new build target \'' + selection + '\'');
-		} 
-		else {
-			window.showErrorMessage('BeebVSC Error updating tasks.json - build target \' ' + selection + '\'');
-		}
+		// write the new tasks.json file and update settings.json
+		const targetDiskImage = findTargetName(selection, tasks);
+		const sourceFile = findSourceFile(selection, tasks);
+		SaveJSONFiles(tasksObject, targetDiskImage, sourceFile, getWorkspacePath());
 	});
 }
 
@@ -605,4 +605,30 @@ function getTargetName(sourceFile: string) {
 	else {
 		return sourceFile.substring(0, ext) + targetExt;
 	}
+}
+
+function findTargetName(taskLabel: string, tasks: VSTask[]) {
+	return findArgument('-do', taskLabel, tasks);
+}
+
+function findSourceFile(taskLabel: string, tasks: VSTask[]) {
+	return findArgument('-i', taskLabel, tasks);
+}
+
+function findArgument(commandLineArg: string, taskLabel: string, tasks: VSTask[]) {
+	for (let i = 0; i < tasks.length; i++) {
+		const task = tasks[i];
+		if (task.label === taskLabel) {
+			const args = task.args;
+			if (args === undefined) {
+				return '';
+			}
+			for (let i = 0; i < args.length - 1; i++) {
+				if (args[i] === commandLineArg) {
+					return args[i + 1];
+				}
+			}
+		}
+	}
+	return '';
 }
