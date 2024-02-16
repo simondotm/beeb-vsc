@@ -177,6 +177,7 @@
 		"typescript": "^5.3.3"
 	},
 	"dependencies": {
+		"jsbeeb": "git+https://github.com/mattgodbolt/jsbeeb.git#636f0b9e7668e2a1eaf45b7b1967ff9a045f66cc",
 		"source-map-support": "^0.5.21",
 		"vscode-languageclient": "^9.0.1",
 		"vscode-languageserver": "^9.0.1",
