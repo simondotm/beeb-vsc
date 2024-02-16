@@ -1,8 +1,7 @@
 .gitignore
 .vscode/**
 typings/**
-client/**
-server/**
+src/**
 **/*.ts
 **/*.map
 node_modules/**
@@ -14,4 +13,4 @@ images/**
 .nvmrc
 out
 docs
-!icon.png
+esbuild.config.js
