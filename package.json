@@ -109,6 +109,10 @@
 			{
 				"command": "extension.target.build",
 				"title": "BeebVSC: Build the currently selected target"
+			},
+			{
+				"command": "extension.emulator.start",
+				"title": "BeebVSC: Launch the emulator"
 			}
 		],
 		"keybindings": [
