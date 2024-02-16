@@ -13,5 +13,4 @@ images/**
 .nvmrc
 out
 docs
-!icon.png
 esbuild.config.js

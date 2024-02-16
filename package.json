@@ -3,7 +3,7 @@
 	"displayName": "Beeb VSC",
 	"description": "6502 developmemnt environment (BBC Micro/BeebAsm)",
 	"version": "0.1.0",
-	"icon": "icon.png",
+	"icon": "./assets/icon.png",
 	"galleryBanner": {
 		"color": "#5c2d91",
 		"theme": "dark"
