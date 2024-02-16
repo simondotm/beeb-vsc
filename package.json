@@ -115,6 +115,13 @@
 				"title": "BeebVSC: Launch the emulator"
 			}
 		],
+		"menus": {
+			"explorer/context": [{
+				"when": "resourceExtname == .ssd || resourceExtname == .dsd",
+				"command": "extension.emulator.start",
+				"group": "YourGroup@1"
+			}]
+		},	
 		"keybindings": [
 			{
 				"command": "extension.target.create",
