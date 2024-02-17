@@ -3,11 +3,18 @@ import { ExtensionContext, Uri, ViewColumn, commands, window } from 'vscode';
 import { emulatorAssetPath } from './assets';
 
 
-
 export function createWebView(context: ExtensionContext) {
+	context.subscriptions.push(
+		commands.registerCommand('extension.emulator.option1', (contextSelection: Uri, allSelections: Uri[]) => {
+			window.showInformationMessage('BeebVSC: extension.emulator.option1 selected');
+		}));
+	context.subscriptions.push(
+		commands.registerCommand('extension.emulator.option2', (contextSelection: Uri, allSelections: Uri[]) => {
+			window.showInformationMessage('BeebVSC: extension.emulator.option2 selected');
+		}));
 
 	context.subscriptions.push(
-		commands.registerCommand('extension.emulator.start', () => {
+		commands.registerCommand('extension.emulator.start', (contextSelection: Uri, allSelections: Uri[]) => {
 			// Create and show a new webview
 			const panel = window.createWebviewPanel(
 				'emulator', // Identifies the type of the webview. Used internally
@@ -33,12 +40,12 @@ export function createWebView(context: ExtensionContext) {
 
 			// And set its HTML content
 
-			panel.webview.html = getWebviewContent(); //getWebviewContent2(context);
+			panel.webview.html = getWebviewContent(contextSelection); //getWebviewContent2(context);
 		}));
 }
 
 
-function getWebviewContent() {
+function getWebviewContent(contextSelection: Uri) {
 	return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -48,7 +55,8 @@ function getWebviewContent() {
 </head>
 <body>
 
-Hello world
+Hello world<br>
+You selected file ${contextSelection.fsPath}<br>
 </body>
 </html>`;
 }

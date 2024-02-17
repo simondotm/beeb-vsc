@@ -113,15 +113,35 @@
 			{
 				"command": "extension.emulator.start",
 				"title": "BeebVSC: Launch the emulator"
+			},
+			{
+				"command": "extension.emulator.option1",
+				"title": "BeebVSC: Emulator option1"
+			},
+			{
+				"command": "extension.emulator.option2",
+				"title": "BeebVSC: Emulator option2"
 			}
 		],
 		"menus": {
-			"explorer/context": [{
-				"when": "resourceExtname == .ssd || resourceExtname == .dsd",
-				"command": "extension.emulator.start",
-				"group": "YourGroup@1"
-			}]
-		},	
+			"explorer/context": [
+				{
+					"when": "resourceExtname == .ssd || resourceExtname == .dsd",
+					"command": "extension.emulator.start",
+					"group": "YourGroup@1"
+				}
+			],
+			"webview/context": [
+				{
+					"command": "extension.emulator.option1",
+					"when": "webviewId == 'emulator'"
+				},
+				{
+					"command": "extension.emulator.option2",
+					"when": "webviewId == 'emulator' && webviewSection == 'editor'"
+				}
+			]
+		},
 		"keybindings": [
 			{
 				"command": "extension.target.create",
