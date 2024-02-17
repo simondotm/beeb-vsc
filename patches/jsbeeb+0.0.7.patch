@@ -1,0 +1,62 @@
+diff --git a/node_modules/jsbeeb/.DS_Store b/node_modules/jsbeeb/.DS_Store
+new file mode 100644
+index 0000000..37c90b2
+Binary files /dev/null and b/node_modules/jsbeeb/.DS_Store differ
+diff --git a/node_modules/jsbeeb/utils.js b/node_modules/jsbeeb/utils.js
+index 4fdd011..52817c0 100644
+--- a/node_modules/jsbeeb/utils.js
++++ b/node_modules/jsbeeb/utils.js
+@@ -2,7 +2,9 @@ define(['jsunzip', 'promise'], function (jsunzip) {
+     "use strict";
+     var exports = {};
+ 
+-    exports.runningInNode = typeof window === 'undefined';
++    // SM: Disabled this to ensure esbuild is browser only
++    // exports.runningInNode = typeof window === 'undefined';
++    exports.runningInNode = false;
+ 
+     exports.isFirefox = function () {
+         // With thanks to http://stackoverflow.com/questions/9847580/how-to-detect-safari-chrome-ie-firefox-and-opera-browser
+@@ -850,23 +852,26 @@ define(['jsunzip', 'promise'], function (jsunzip) {
+         });
+     }
+ 
++    // SM: Disabled this to prevent unwanted require of fs in browser esbuilds
++    // function loadDataNode(url) {
++    //     return new Promise(function (resolve, reject) {
++    //         if (typeof readbuffer !== "undefined") {
++    //             // d8 shell
++    //             var buffer = readbuffer(url); // jshint ignore:line
++    //             resolve(new Uint8Array(buffer));
++    //         } else if (typeof read !== "undefined") {
++    //             // SpiderMonkey shell
++    //             var bytes = read(url, "binary"); // jshint ignore:line
++    //             resolve(bytes);
++    //         } else {
++    //             // Node
++    //             var fs = require('fs');
++    //             if (url[0] === '/') url = "." + url;
++    //             resolve(fs.readFileSync(url));
++    //         }
++    //     });
++    // }
+     function loadDataNode(url) {
+-        return new Promise(function (resolve, reject) {
+-            if (typeof readbuffer !== "undefined") {
+-                // d8 shell
+-                var buffer = readbuffer(url); // jshint ignore:line
+-                resolve(new Uint8Array(buffer));
+-            } else if (typeof read !== "undefined") {
+-                // SpiderMonkey shell
+-                var bytes = read(url, "binary"); // jshint ignore:line
+-                resolve(bytes);
+-            } else {
+-                // Node
+-                var fs = require('fs');
+-                if (url[0] === '/') url = "." + url;
+-                resolve(fs.readFileSync(url));
+-            }
+-        });
+     }
+ 
+     if (exports.runningInNode) {
