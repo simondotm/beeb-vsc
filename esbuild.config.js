@@ -32,6 +32,9 @@ const extensionConfig = {
 	],
 	platform: 'node',
 	// target: 'node12',
+	plugins: [
+		copyAssets(['assets', '**', '*'], ['dist', 'assets']),
+	],	
 };
 
 const webConfig = {
@@ -44,16 +47,22 @@ const webConfig = {
 	],
 	platform: 'browser',
 	plugins: [
-		copyAssets('roms'),
-		copyAssets('sounds'),
+		copyJsBeebAssets('roms'),
+		copyJsBeebAssets('sounds'),
 	],
 };
 
-function copyAssets(dir) {
-	const from = join('node_modules', 'jsbeeb', dir, '**', '*');
-	const to = join('dist', 'assets', 'jsbeeb', dir);
+function copyJsBeebAssets(dir) {
+	return copyAssets(['node_modules', 'jsbeeb', dir, '**', '*'], ['dist', 'assets', 'jsbeeb', dir]);
+}
+
+function copyAssets(src, dst) {
+	// const from = join('node_modules', 'jsbeeb', dir, '**', '*');
+	// const to = join('dist', 'assets', 'jsbeeb', dir);
+	const from = join(...src);
+	const to = join(...dst);
 	console.log(`copying assets from '${from}' to '${to}'`);
-	return 	copy({
+	return copy({
 		// this is equal to process.cwd(), which means we use cwd path as base path to resolve `to` path
 		// if not specified, this plugin uses ESBuild.build outdir/outfile options as base path.
 		resolveFrom: 'cwd',
