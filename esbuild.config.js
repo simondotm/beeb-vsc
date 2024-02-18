@@ -12,7 +12,7 @@ const sharedConfig = {
 	logLevel: 'info',
 	bundle: true,
 	format: 'cjs',
-	outdir: 'dist',
+	outdir: 'dist',	
 	sourcemap: true,
 	minify,
 	external: ['vscode'], //Object.keys(require('../package.json').dependencies),
@@ -33,16 +33,17 @@ const extensionConfig = {
 	platform: 'node',
 	// target: 'node12',
 	plugins: [
-		copyAssets(['assets', '**', '*'], ['dist', 'assets']),
+		copyAssets(['assets', '**', '*'], ['dist', 'webview']),
 	],	
 };
 
 const webConfig = {
 	...sharedConfig,
+	outdir: 'dist/webview',
 	entryPoints: [
 		{
-			out: 'emulator',
-			in: './src/emulator/index.ts'
+			out: 'main',
+			in: './src/scripts/index.ts'
 		},
 	],
 	platform: 'browser',
@@ -53,7 +54,7 @@ const webConfig = {
 };
 
 function copyJsBeebAssets(dir) {
-	return copyAssets(['node_modules', 'jsbeeb', dir, '**', '*'], ['dist', 'assets', 'jsbeeb', dir]);
+	return copyAssets(['node_modules', 'jsbeeb', dir, '**', '*'], ['dist', 'webview', 'jsbeeb', dir]);
 }
 
 function copyAssets(src, dst) {
@@ -61,7 +62,7 @@ function copyAssets(src, dst) {
 	// const to = join('dist', 'assets', 'jsbeeb', dir);
 	const from = join(...src);
 	const to = join(...dst);
-	console.log(`copying assets from '${from}' to '${to}'`);
+	console.log(`assets will be copied from '${from}' to '${to}'`);
 	return copy({
 		// this is equal to process.cwd(), which means we use cwd path as base path to resolve `to` path
 		// if not specified, this plugin uses ESBuild.build outdir/outfile options as base path.
@@ -78,7 +79,9 @@ function copyAssets(src, dst) {
 
 
 async function main() {
+	console.log('cleaning...');
 	await rimraf(sharedConfig.outdir);
+	console.log('building...');
 	await Promise.all([
 		esbuild.build(extensionConfig),
 		esbuild.build(webConfig),
