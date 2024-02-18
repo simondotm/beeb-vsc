@@ -29,7 +29,7 @@ const functionCompletions: CompletionItem[] = beebasmFunctions.map((item) =>
 	}));
 const commandCompletions: CompletionItem[] = beebasmCommands.map((item) =>
 	({
-		label: item.label,
+		label: item.command,
 		kind: CompletionItemKind.Method, 
 		insertTextFormat: InsertTextFormat.Snippet,
 		insertText: `${item.label} $0`,
@@ -42,19 +42,15 @@ export class CompletionProvider
 {
 	async onCompletion(_textDocumentPosition: TextDocumentPositionParams) {
 		// The parameter contains the position of the text document in
-		// which code complete got requested. We always provide the same 
-		// completion items regardless. Let VS Code filter the results.
-		const symbolTemplate: CompletionItem = {
-			label: 'symbol',
-			kind: CompletionItemKind.Variable,
-			insertTextFormat: InsertTextFormat.PlainText,
-			insertText: 'symbol',
-			command: triggerParameterHints,
-			detail: 'symbol',
-			documentation: 'Insert a symbol'
-		};
+		// which code complete got requested. This filters output by:
+		// 1) Symbols and labels in scope at the current position
+		// 2) TODO: See if want to filter out commands (if not at the start of a statement)
+		// VS Code is then left to filter the remaining results by characters typed so far.
+
 		// Collect all symbols and labels from the SymbolTable
-		const symbols = SymbolTable.Instance.GetSymbols();
+		const uri = _textDocumentPosition.textDocument.uri;
+		const lineno = _textDocumentPosition.position.line;
+		const symbols = SymbolTable.Instance.GetSymbolsByLocation(uri, lineno);
 		const symbolCompletionItems: CompletionItem[] = [...symbols.entries()].map((item) =>
 			({
 				label: item[0],
