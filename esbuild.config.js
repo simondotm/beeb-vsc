@@ -15,7 +15,7 @@ const sharedConfig = {
 	outdir: 'dist',	
 	sourcemap: true,
 	minify,
-	external: ['vscode'], //Object.keys(require('../package.json').dependencies),
+	external: ['vscode*'], //Object.keys(require('../package.json').dependencies),
 };
 
 const extensionConfig = {
