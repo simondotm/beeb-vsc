@@ -8,7 +8,9 @@
 		"rootDir": "src",
 		"sourceMap": true,
 		"strict": true,
-		"allowJs": true		
+		"allowJs": true,
+		"importHelpers": true,
+		"esModuleInterop": true
 	},
 	"include": [
 		"src/**/*.ts"
