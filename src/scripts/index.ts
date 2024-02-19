@@ -1,25 +1,30 @@
 // This script is loaded by the WebView
 console.log('Hello, Wordffld!');
 
-const window: any = {};
+declare global {
+    interface Window { theEmulator: Emulator; }
+}
+
+// let window: any;
+// let document: any;
 
 import _ from 'underscore';
-import cpuLib from 'jsbeeb/6502';
-import canvasLib from 'jsbeeb/canvas';
-import videoLib from 'jsbeeb/video';
-import debug from 'jsbeeb/debug';
-import soundchip from 'jsbeeb/soundchip';
-import ddnoise from 'jsbeeb/ddnoise';
-import models from 'jsbeeb/models';
-import cmosLib from 'jsbeeb/cmos';
-import utils from 'jsbeeb/utils';
+import { Cpu6502 } from 'jsbeeb/6502';
+import { Canvas, GlCanvas, bestCanvas} from 'jsbeeb/canvas';
+import { Video } from 'jsbeeb/video';
+import { Debugger } from 'jsbeeb/web/debug';
+import { SoundChip, FakeSoundChip } from 'jsbeeb/soundchip';
+import { DdNoise, FakeDdNoise } from 'jsbeeb/ddnoise';
+import { Model, findModel } from 'jsbeeb/models';
+import { Cmos, CmosData } from 'jsbeeb/cmos';
+import * as utils from 'jsbeeb/utils';
 // import Promise from 'promise';
 import ResizeObserver from 'resize-observer-polyfill';
 import Snapshot from './snapshot';
  
-let document: any;
 
-utils.runningInNode = false;
+
+// utils.runningInNode = false;
 
 utils.setBaseUrl('jsbeeb/');
 
@@ -30,7 +35,7 @@ const urlParams = new URLSearchParams(window.location.search);
 
 let modelName = 'BBC Micro Model B';
 const beebjit_incoming = false;
-const Model = models.findModel('B');
+const model = findModel('B');
 
 class ScreenResizer {
 	screen: any;
@@ -67,7 +72,7 @@ class ScreenResizer {
 export class Emulator {
 
 	root: any; // root element
-	canvas: canvasLib.Canvas | canvasLib.GlCanvas;
+	canvas: Canvas | GlCanvas;
 	emuStatus: any; // document.getElementById('emu_status');
 	frames: number;
 	frameSkip: number;
@@ -83,11 +88,11 @@ export class Emulator {
 	snapshot: Snapshot;
 	loop: boolean;
 	showCoords: boolean;
-	video: videoLib.Video;
-	soundChip: soundchip.SoundChip | soundchip.FakeSoundChip;
-	ddNoise: ddnoise.DdNoise | ddnoise.FakeDdNoise;
-	dbgr: debug.Debugger;
-	cpu: cpuLib.Cpu6502;
+	video: Video;
+	soundChip: SoundChip | FakeSoundChip;
+	ddNoise: DdNoise | FakeDdNoise;
+	dbgr: Debugger;
+	cpu: Cpu6502;
 	ready: any;
 	lastFrameTime: number;
 	onAnimFrame: any;
@@ -101,7 +106,7 @@ export class Emulator {
 	constructor(root: any) {
 		this.root = root;
 		const screen = this.root.find('.screen');
-		this.canvas = canvasLib.bestCanvas(screen[0]);
+		this.canvas = bestCanvas(screen[0]);
 		this.emuStatus = document.getElementById('emu_status');
 		this.frames = 0;
 		this.frameSkip = 0;
@@ -120,26 +125,26 @@ export class Emulator {
 
 		window.theEmulator = this;
 
-		this.video = new videoLib.Video(Model.isMaster, this.canvas.fb32, _.bind(this.paint, this));
+		this.video = new Video(model.isMaster, this.canvas.fb32, _.bind(this.paint, this));
 
-		this.soundChip = new soundchip.FakeSoundChip();
-		this.ddNoise = new ddnoise.FakeDdNoise();
+		this.soundChip = new FakeSoundChip();
+		this.ddNoise = new FakeDdNoise();
 
-		this.dbgr = new debug.Debugger(this.video);
-		const cmos = new cmosLib.Cmos({
+		this.dbgr = new Debugger(this.video);
+		const cmos = new Cmos({
 			load: function () {
 				if (window.localStorage.cmosRam) {
 					return JSON.parse(window.localStorage.cmosRam);
 				}
 				return null;
 			},
-			save: function (data: cmosLib.CmosData) {
+			save: function (data: CmosData) {
 				window.localStorage.cmosRam = JSON.stringify(data);
 			},
 		});
 		const config = {};
-		this.cpu = new cpuLib.Cpu6502(
-			Model,
+		this.cpu = new Cpu6502(
+			model,
 			this.dbgr,
 			this.video,
 			this.soundChip,
@@ -175,7 +180,7 @@ export class Emulator {
 	}
 
 	gxr(){
-		Model.os.push('gxr.rom');
+		model.os.push('gxr.rom');
 		modelName += ' | GXR';
 	}
 

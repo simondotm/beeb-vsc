@@ -1,4 +1,4 @@
-declare module 'jsbeeb/debug' {
+declare module 'jsbeeb/web/debug' {
 	import type { Video } from 'jsbeeb/video';
 	export class Debugger {
 		constructor(video: Video);
