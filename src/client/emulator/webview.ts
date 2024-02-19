@@ -67,6 +67,10 @@ function getWebviewContent(context: ExtensionContext, webview: Webview, contextS
 		'discs/elite.ssd',
 	]);
 	console.log('JSBEEB_RESOURCES=' + JSON.stringify(JSBEEB_RESOURCES));
+	const mainScriptUrl = scriptAssetUri(context, webview, ['main.js']).toString();
+	console.log('mainScriptUrl=' + mainScriptUrl);
+
+	// <script nonce="${getNonce()}" defer="defer" src="${mainScriptUrl}"></script>		
 
 	return `<!DOCTYPE html>
 <html lang="en">
@@ -74,7 +78,12 @@ function getWebviewContent(context: ExtensionContext, webview: Webview, contextS
 		<meta charset="UTF-8">
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
 		<title>JSBeeb</title>
-
+		<script type='text/javascript'>
+			console.log("running script");
+			const JSBEEB_RESOURCES=${JSON.stringify(JSBEEB_RESOURCES)};
+		 	console.log("Window JSBEEB_RESOURCES Config=" + JSBEEB_RESOURCES);
+		</script>
+		<script defer="defer" src="${mainScriptUrl}"></script>				
 </head>
 <body>
 
