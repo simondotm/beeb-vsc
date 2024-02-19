@@ -1,62 +1,73 @@
 diff --git a/node_modules/jsbeeb/.DS_Store b/node_modules/jsbeeb/.DS_Store
 new file mode 100644
-index 0000000..37c90b2
+index 0000000..1984dcb
 Binary files /dev/null and b/node_modules/jsbeeb/.DS_Store differ
 diff --git a/node_modules/jsbeeb/utils.js b/node_modules/jsbeeb/utils.js
-index 4fdd011..52817c0 100644
+index 2bdc511..4063358 100644
 --- a/node_modules/jsbeeb/utils.js
 +++ b/node_modules/jsbeeb/utils.js
-@@ -2,7 +2,9 @@ define(['jsunzip', 'promise'], function (jsunzip) {
-     "use strict";
-     var exports = {};
+@@ -1,7 +1,8 @@
+ "use strict";
+ import * as jsunzip from "./lib/jsunzip.js";
  
--    exports.runningInNode = typeof window === 'undefined';
-+    // SM: Disabled this to ensure esbuild is browser only
-+    // exports.runningInNode = typeof window === 'undefined';
-+    exports.runningInNode = false;
+-export const runningInNode = typeof window === "undefined";
++// export const runningInNode = typeof window === "undefined";
++export const runningInNode = false;
  
-     exports.isFirefox = function () {
-         // With thanks to http://stackoverflow.com/questions/9847580/how-to-detect-safari-chrome-ie-firefox-and-opera-browser
-@@ -850,23 +852,26 @@ define(['jsunzip', 'promise'], function (jsunzip) {
-         });
-     }
+ export function isFirefox() {
+     // With thanks to http://stackoverflow.com/questions/9847580/how-to-detect-safari-chrome-ie-firefox-and-opera-browser
+@@ -836,29 +837,33 @@ function loadDataHttp(url) {
+     });
+ }
  
-+    // SM: Disabled this to prevent unwanted require of fs in browser esbuilds
-+    // function loadDataNode(url) {
-+    //     return new Promise(function (resolve, reject) {
-+    //         if (typeof readbuffer !== "undefined") {
-+    //             // d8 shell
-+    //             var buffer = readbuffer(url); // jshint ignore:line
-+    //             resolve(new Uint8Array(buffer));
-+    //         } else if (typeof read !== "undefined") {
-+    //             // SpiderMonkey shell
-+    //             var bytes = read(url, "binary"); // jshint ignore:line
-+    //             resolve(bytes);
-+    //         } else {
-+    //             // Node
-+    //             var fs = require('fs');
-+    //             if (url[0] === '/') url = "." + url;
-+    //             resolve(fs.readFileSync(url));
-+    //         }
-+    //     });
-+    // }
-     function loadDataNode(url) {
--        return new Promise(function (resolve, reject) {
--            if (typeof readbuffer !== "undefined") {
--                // d8 shell
--                var buffer = readbuffer(url); // jshint ignore:line
--                resolve(new Uint8Array(buffer));
--            } else if (typeof read !== "undefined") {
--                // SpiderMonkey shell
--                var bytes = read(url, "binary"); // jshint ignore:line
--                resolve(bytes);
--            } else {
--                // Node
--                var fs = require('fs');
--                if (url[0] === '/') url = "." + url;
--                resolve(fs.readFileSync(url));
--            }
--        });
-     }
+-async function loadDataNode(url) {
+-    if (typeof readbuffer !== "undefined") {
+-        // d8 shell
+-        /*global readbuffer*/
+-        return new Uint8Array(readbuffer(url));
+-    } else if (typeof read !== "undefined") {
+-        // SpiderMonkey shell
+-        /*global read*/
+-        return read(url, "binary");
+-    } else {
+-        // Node
+-        const fs = await import("fs");
+-        if (url[0] === "/") url = "." + url;
+-        return fs.readFileSync(url);
+-    }
+-}
++// async function loadDataNode(url) {
++//     if (typeof readbuffer !== "undefined") {
++//         // d8 shell
++//         /*global readbuffer*/
++//         return new Uint8Array(readbuffer(url));
++//     } else if (typeof read !== "undefined") {
++//         // SpiderMonkey shell
++//         /*global read*/
++//         return read(url, "binary");
++//     } else {
++//         // Node
++//         const fs = await import("fs");
++//         if (url[0] === "/") url = "." + url;
++//         return fs.readFileSync(url);
++//     }
++// }
++
++// export function loadData(url) {
++//     if (runningInNode) {
++//         return loadDataNode(url);
++//     } else {
++//         return loadDataHttp(url);
++//     }
++// }
  
-     if (exports.runningInNode) {
+ export function loadData(url) {
+-    if (runningInNode) {
+-        return loadDataNode(url);
+-    } else {
+-        return loadDataHttp(url);
+-    }
++    return loadDataHttp(url);
+ }
+ 
+ export function readInt32(data, offset) {
