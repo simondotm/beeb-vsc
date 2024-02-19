@@ -1,9 +1,11 @@
+// let window: any;
+
 export default class Snapshot {
 	constructor() {
 	}
-	load(state,processor){
+	load(state: any, processor: any){
 
-		function copyRegion(data, startAddr, endAddr) {
+		function copyRegion(data: any, startAddr: number, endAddr: number) {
 			for (let i = startAddr; i <= endAddr; i++) {
 				processor.writemem(i, data.charCodeAt(i));
 			}
@@ -43,17 +45,17 @@ export default class Snapshot {
 
 	}
 
-	save(processor){
-		function copyRegion(startAddr, endAddr) {
+	save(processor: any){
+		function copyRegion(startAddr: number, endAddr: number) {
 			let out = '';
 			for (let i = startAddr; i <= endAddr; i++) {
-				let b = processor.readmem(i);
+				const b = processor.readmem(i);
 				out+=String.fromCharCode(b);
 			}
 			return out;
 		}
 
-		let state = {};
+		const state: any = {};
 
 		const mem = copyRegion(0x0000, 0x7fff);
 		state.RAM = btoa(mem);
@@ -85,11 +87,11 @@ export default class Snapshot {
 		// write ULA Palette - see https://beebwiki.mdfs.net/Video_ULA
 		state.ULApalette = [];
 		for (let p=0;p<16;p++){
-			let pal = (~processor.video.actualPal[p] & 0b00000111) | (processor.video.actualPal[p] & 0b00001000);
+			const pal = (~processor.video.actualPal[p] & 0b00000111) | (processor.video.actualPal[p] & 0b00001000);
 			state.ULApalette.push(pal);
 		}
 
-		let sampleBytes = new Int8Array(1024*32);
+		const sampleBytes = new Int8Array(1024*32);
 		for (let i = 0; i <= 0x7fff; i++) {
 			sampleBytes[i] = mem.charCodeAt(i);
 		}
