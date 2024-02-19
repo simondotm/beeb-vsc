@@ -11,7 +11,6 @@ const watch = argv['watch'] ?? false;
 const sharedConfig = {
 	logLevel: 'info',
 	bundle: true,
-	format: 'cjs',
 	outdir: 'dist',	
 	sourcemap: true,
 	minify,
@@ -31,6 +30,7 @@ const extensionConfig = {
 		},
 	],
 	platform: 'node',
+	format: 'cjs',
 	// target: 'node12',
 	plugins: [
 		copyAssets(['assets', '**', '*'], ['dist', 'webview']),
@@ -47,6 +47,7 @@ const webConfig = {
 		},
 	],
 	platform: 'browser',
+	format: 'iife',
 	plugins: [
 		copyJsBeebAssets('roms'),
 		copyJsBeebAssets('sounds'),
