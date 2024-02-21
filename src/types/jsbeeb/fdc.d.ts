@@ -15,16 +15,18 @@ declare module 'jsbeeb/fdc' {
 	} // This is actually a BaseDisc but with the interface hard coded to return empty disc results. Needs fixing
 	export class I8271 {
 		constructor(cpu: Cpu6502, noise: DdNoise, scheduler: any);
+		loadDisc(drive: number, disc: BaseDisc): void;
 	}
 	export class WD1770 {
 		constructor(cpu: Cpu6502, noise: DdNoise, scheduler: any);	
+		loadDisc(drive: number, disc: BaseDisc): void;
 	}
 
 	export class BaseDisc {
 		constructor(fdc: Fdc, name: string, data: Uint8Array, flusher: () => void);
 	}
 
-	export function load(name: string): void;
+	export function load(name: string): Promise<any>;
 	export function localDisc(fdc: Fdc, name: string): BaseDisc;
 	export function emptySsd(fdc: Fdc): DiscState;
 	export function discFor(fdc: Fdc, name: string, stringData: string | Uint8Array, onChange: (data: Uint8Array) => void): BaseDisc;

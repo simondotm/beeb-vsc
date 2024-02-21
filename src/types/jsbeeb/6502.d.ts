@@ -1,4 +1,3 @@
-
 declare module 'jsbeeb/6502' {
 	import type { Model } from 'jsbeeb/models';
 	import type { Cmos } from 'jsbeeb/cmos';
@@ -7,6 +6,7 @@ declare module 'jsbeeb/6502' {
 	import type { FakeSoundChip, SoundChip } from 'jsbeeb/soundchip';
 	import type { Video } from 'jsbeeb/video';
 	import type { SysVia } from 'jsbeeb/via';
+	import type { Fdc } from 'jsbeeb/fdc';
 
 	export class Flags {
 		c: boolean;
@@ -29,6 +29,8 @@ declare module 'jsbeeb/6502' {
 
 		video: Video;
 		sysvia: SysVia;
+
+		fdc: Fdc;
 		
 		targetCycles: number;
 		currentCycles: number;

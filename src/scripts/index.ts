@@ -5,6 +5,7 @@ declare global {
     interface Window {
 			theEmulator: Emulator;
 			JSBEEB_RESOURCES: Record<string, string>
+			JSBEEB_DISC?: string
 		}
 }
 
@@ -25,6 +26,7 @@ import * as utils from 'jsbeeb/utils';
 // import Promise from 'promise';
 import ResizeObserver from 'resize-observer-polyfill';
 import Snapshot from './snapshot';
+import { BaseDisc } from 'jsbeeb/fdc';
  
 
 // utils.runningInNode = false;
@@ -512,6 +514,14 @@ async function initialise() {
 	const root = $('#emulator'); // document.getElementById('emulator');
 	const emulator = new Emulator(root);
 	await emulator.initialise();
+
+	const discUrl = window.JSBEEB_DISC;
+	if (discUrl) {
+		const fdc = emulator.cpu.fdc;
+		const discData = await utils.defaultLoadData(discUrl);
+		const discImage = new BaseDisc(fdc, 'disc', discData, () => {});
+		emulator.cpu.fdc.loadDisc(0, discImage);
+	}
 	emulator.start();
 
 

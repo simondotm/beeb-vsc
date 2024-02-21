@@ -1,5 +1,5 @@
-import { ExtensionContext, Uri, ViewColumn, Webview, commands, window } from 'vscode';
-import { scriptAssetPath, scriptAssetUri } from './assets';
+import { ExtensionContext, Uri, ViewColumn, Webview, commands, window, workspace } from 'vscode';
+import { getJsBeebResources, localUri, scriptUri, scriptUrl, webviewUri } from './assets';
 
 export function createWebView(context: ExtensionContext) {
 	context.subscriptions.push(
@@ -12,15 +12,17 @@ export function createWebView(context: ExtensionContext) {
 		}));
 
 	context.subscriptions.push(
-		commands.registerCommand('extension.emulator.start', (contextSelection: Uri, allSelections: Uri[]) => {
+		commands.registerCommand('extension.emulator.start', (contextSelection: Uri | undefined, allSelections: Uri[]) => {
 			
 			const localResourceRoots =  [
-				Uri.file(context.extensionPath),
-				scriptAssetPath(context, []),
-				scriptAssetPath(context, ['images']),
-				scriptAssetPath(context, ['jsbeeb']),
-				scriptAssetPath(context, ['jsbeeb', 'roms']),
-				scriptAssetPath(context, ['jsbeeb', 'sounds']),
+				// localUri(context, []),
+				//contextSelection,
+				workspace.workspaceFolders ? workspace.workspaceFolders[0].uri : context.extensionUri,
+				scriptUri(context, []),
+				scriptUri(context, ['images']),
+				scriptUri(context, ['jsbeeb']),
+				scriptUri(context, ['jsbeeb', 'roms']),
+				scriptUri(context, ['jsbeeb', 'sounds']),
 			];
 
 			console.log('localResourceRoots=' + JSON.stringify(localResourceRoots));
@@ -45,61 +47,18 @@ export function createWebView(context: ExtensionContext) {
 }
 
 
-function getWebviewContent(context: ExtensionContext, webview: Webview, contextSelection: Uri) {
+function getWebviewContent(context: ExtensionContext, webview: Webview, contextSelection?: Uri) {
 
-	function getResources(filenames: string[]) {
-		const resources: Record<string, string> = {};
-		for (const filename of filenames) {
-			resources[filename] = scriptAssetUri(context, webview, ['jsbeeb', ...filename.split('/')]).toString();	
-		}
-		return resources;
-	}
-
-	const JSBEEB_RESOURCES = getResources([
-		'roms/a01/BASIC1.ROM',
-		'roms/b/DFS-0.9.rom',
-		'roms/b/DFS-1.2.rom',
-		'roms/b1770/dfs1770.rom',
-		'roms/b1770/zADFS.ROM',
-		'roms/bp/dfs.rom',
-		'roms/bp/zADFS.ROM',
-		'roms/compact/adfs210.rom',
-		'roms/compact/basic48.rom',
-		'roms/compact/basic486.rom',
-		'roms/compact/os51.rom',
-		'roms/compact/utils.rom',
-		'roms/master/anfs-4.25.rom',
-		'roms/master/mos3.20',
-		'roms/tube/6502Tube.rom',
-		'roms/tube/ARMeval_100.rom',
-		'roms/tube/BIOS.ROM',
-		'roms/tube/ReCo6502ROM_816',
-		'roms/tube/Z80_120.rom',
-		'roms/us/USBASIC.rom',
-		'roms/us/USDNFS.rom',
-		'roms/ADFS1-53.rom',
-		'roms/ample.rom',
-		'roms/ats-3.0.rom',
-		'roms/BASIC.ROM',
-		'roms/bpos.rom',
-		'roms/deos.rom',
-		'roms/os.rom',
-		'roms/os01.rom',
-		'roms/usmos.rom',
-		'sounds/disc525/motoron.wav',
-		'sounds/disc525/motoroff.wav',
-		'sounds/disc525/motor.wav',
-		'sounds/disc525/step.wav',
-		'sounds/disc525/seek.wav',
-		'sounds/disc525/seek2.wav',
-		'sounds/disc525/seek3.wav',
-		'discs/elite.ssd',
-	]);
+	const JSBEEB_RESOURCES = getJsBeebResources(context, webview);
 	console.log('JSBEEB_RESOURCES=' + JSON.stringify(JSBEEB_RESOURCES));
-	const mainScriptUrl = scriptAssetUri(context, webview, ['main.js']).toString();
+	const mainScriptUrl = scriptUrl(context, webview, ['main.js']).toString();
 	console.log('mainScriptUrl=' + mainScriptUrl);
 
-	// const discFile = 
+	let discFileUrl = '';
+	if (contextSelection) {
+		const discFile = contextSelection.fsPath;
+		discFileUrl = webview.asWebviewUri(contextSelection).toString();
+	}
 
 	// <script nonce="${getNonce()}" defer="defer" src="${mainScriptUrl}"></script>		
 
@@ -112,7 +71,7 @@ function getWebviewContent(context: ExtensionContext, webview: Webview, contextS
 		<script type='text/javascript'>
 			console.log("running script");
 			window.JSBEEB_RESOURCES=${JSON.stringify(JSBEEB_RESOURCES)};
-			window.JSBEEB_DISC=
+			window.JSBEEB_DISC="${discFileUrl}";
 		 	console.log("Window JSBEEB_RESOURCES Config=" + window.JSBEEB_RESOURCES);
 		</script>
 		<script defer="defer" src="${mainScriptUrl}"></script>				
@@ -129,7 +88,7 @@ function getWebviewContent(context: ExtensionContext, webview: Webview, contextS
     </div>
 
 Hello world<br>
-You selected file ${contextSelection.fsPath}<br>
+You selected disc file '${discFileUrl}'<br>
 
 <h1>Heading1</h1>
 <h2>Heading2</h2>
@@ -145,7 +104,7 @@ You selected file ${contextSelection.fsPath}<br>
 <button>⏹</button>
 
 
-<img src="${ scriptAssetUri(context, webview, ['images', 'test-card.webp']) }">
+<img src="${ scriptUrl(context, webview, ['images', 'test-card.webp']) }">
 
     <div class="toolbar" id="emu_toolbar">
         <button data-action="run" title="Run the program (ctrl-enter)"><i class="fa-solid fa-play" style="pointer-events: none;"></i></button>
