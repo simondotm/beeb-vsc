@@ -2,12 +2,16 @@
 console.log('Hello, Wordffld!');
 
 declare global {
-    interface Window { theEmulator: Emulator; }
+    interface Window {
+			theEmulator: Emulator;
+			JSBEEB_RESOURCES: Record<string, string>
+		}
 }
 
 // let window: any;
 // let document: any;
 
+import $ from 'jquery';
 import _ from 'underscore';
 import { Cpu6502 } from 'jsbeeb/6502';
 import { Canvas, GlCanvas, bestCanvas} from 'jsbeeb/canvas';
@@ -23,19 +27,24 @@ import ResizeObserver from 'resize-observer-polyfill';
 import Snapshot from './snapshot';
  
 
-
 // utils.runningInNode = false;
 
-utils.setBaseUrl('jsbeeb/');
+// utils.setBaseUrl('jsbeeb/');
+
+utils.setLoader( (url: string) => {
+	const newUrl = window.JSBEEB_RESOURCES[url];
+	console.log('Loading ' + url + ' as ' + newUrl);
+	return utils.defaultLoadData(newUrl);
+});
 
 const BotStartCycles = 725000; // bbcmicrobot start time
 const ClocksPerSecond = (2 * 1000 * 1000) | 0;
 const MaxCyclesPerFrame = ClocksPerSecond / 10;
 const urlParams = new URLSearchParams(window.location.search);
 
-let modelName = 'BBC Micro Model B';
 const beebjit_incoming = false;
-const model = findModel('B');
+const model = findModel('MasterADFS');
+let modelName = model.name; //'BBC Micro Model B';
 
 class ScreenResizer {
 	screen: any;
@@ -71,9 +80,10 @@ class ScreenResizer {
 
 export class Emulator {
 
-	root: any; // root element
+	root: JQuery<HTMLElement>; // root element
+	screen: JQuery<HTMLElement>; // screen element
 	canvas: Canvas | GlCanvas;
-	emuStatus: any; // document.getElementById('emu_status');
+	emuStatus: HTMLElement; // = document.getElementById('emu_status');
 	frames: number;
 	frameSkip: number;
 	resizer: ScreenResizer;
@@ -103,18 +113,36 @@ export class Emulator {
 
 
 
-	constructor(root: any) {
+	constructor(root: JQuery<HTMLElement>) {
+		console.log('Emulator constructor');
 		this.root = root;
 		const screen = this.root.find('.screen');
+		if (!screen) {
+			throw new Error('No screen element found');
+		}
+		this.screen = screen;
+		//this.screen = document.getElementById('screen');
+		//		const screen = document.getElementById('screen'); // this.root.find('.screen');
 		this.canvas = bestCanvas(screen[0]);
-		this.emuStatus = document.getElementById('emu_status');
+		const emuStatus = document.getElementById('emu_status'); 
+		if (!emuStatus) {
+			throw new Error('No emu_status element found');
+		}
+		this.emuStatus = emuStatus;
 		this.frames = 0;
 		this.frameSkip = 0;
 		this.resizer = new ScreenResizer(screen);
+		// margin sets how much of the fully emulated screen is visible/cropped
 		this.leftMargin = 115;
 		this.rightMargin = 130;
 		this.topMargin = 45;
 		this.bottomMargin = 30;
+		// this.leftMargin = 0;
+		// this.rightMargin = 0;
+		// this.topMargin = 0;
+		// this.bottomMargin = 0;
+
+
 		this.loopEnabled = true;
 		this.loopStart =  60680000;
 		this.loopLength = 6000000 + 320000;
@@ -149,8 +177,10 @@ export class Emulator {
 			this.video,
 			this.soundChip,
 			this.ddNoise,
+			undefined, // music5000
 			cmos,
-			config
+			config,
+			undefined // econet
 		);
 
 		// Patch this version of JSbeeb to stop it reseting cycle count.
@@ -355,7 +385,7 @@ export class Emulator {
 	mouseMove(event: any) {
 		this.showCoords = true;
 		const processor = this.cpu;
-		const screen = this.root.find('.screen');
+		const screen = this.screen; // this.root.find('.screen');
 		const screenMode = processor.readmem(0x0355);
 		let W;
 		let H;
@@ -383,8 +413,8 @@ export class Emulator {
 		// canvas - not sure exactly where that comes from...
 		let x = event.offsetX - 8;
 		let y = event.offsetY - 8;
-		const sw = screen.width() - 16;
-		const sh = screen.height() - 16;
+		const sw = (screen.width() ?? 16) - 16;
+		const sh = (screen.height() ?? 16) - 16;
 		const X = Math.floor(x * W / sw);
 		const Y = Math.floor(y * H / sh);
 		let html = `Text: (${X},${Y})`;
@@ -475,3 +505,18 @@ export class Emulator {
 }
 
 
+
+async function initialise() {
+
+
+	const root = $('#emulator'); // document.getElementById('emulator');
+	const emulator = new Emulator(root);
+	await emulator.initialise();
+	emulator.start();
+
+
+}
+
+initialise().then(() => {
+	// And we're ready to go here.
+});

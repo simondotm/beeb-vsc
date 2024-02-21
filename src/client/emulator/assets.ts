@@ -13,3 +13,7 @@ export function scriptAssetUri(context: ExtensionContext, webview: Webview, fold
 	return webview.asWebviewUri(scriptAssetPath(context, folders));
 }
 
+
+export function webviewUri(context: ExtensionContext, webview: Webview, folders: string[]) {
+	return webview.asWebviewUri(scriptAssetPath(context, folders));
+}
