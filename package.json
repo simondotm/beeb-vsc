@@ -192,6 +192,7 @@
 		"test:client": "node ./server/out/test/tests.js"
 	},
 	"devDependencies": {
+		"@types/jquery": "^3.5.29",
 		"@types/mocha": "^10.0.6",
 		"@types/node": "^20.10.5",
 		"@types/underscore": "^1.11.15",
