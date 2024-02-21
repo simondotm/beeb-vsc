@@ -34,7 +34,7 @@ declare module 'jsbeeb/6502' {
 		currentCycles: number;
 		cycleSeconds: number;
 
-		constructor(model: Model, dbgr: Debugger, video_: Video, soundChip_: SoundChip | FakeSoundChip, ddNoise_: DdNoise | FakeDdNoise, cmos: Cmos, config: any);
+		constructor(model: Model, dbgr: Debugger, video_: Video, soundChip_: SoundChip | FakeSoundChip, ddNoise_: DdNoise | FakeDdNoise, music5000_: any, cmos: Cmos, config: any, econet_: any);
 
 		initialise(): Promise<void>;
 		reset(hard: boolean): void;
