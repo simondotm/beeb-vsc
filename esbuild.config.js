@@ -34,6 +34,8 @@ const extensionConfig = {
 	// target: 'node12',
 	plugins: [
 		copyAssets(['assets', '**', '*'], ['dist', 'webview']),
+		copyAssets(['node_modules', '@vscode', 'codicons', 'dist', 'codicon.css'], ['dist', 'webview', 'css']),
+		copyAssets(['node_modules', '@vscode', 'codicons', 'dist', 'codicon.ttf'], ['dist', 'webview', 'css']),
 	],	
 };
 
@@ -55,7 +57,7 @@ const webConfig = {
 };
 
 function copyJsBeebAssets(dir) {
-	return copyAssets(['node_modules', 'jsbeeb', dir, '**', '*'], ['dist', 'webview', 'jsbeeb', dir]);
+	return copyAssets(['node_modules', 'jsbeeb', dir, '**', '*'],	['dist', 'webview', 'jsbeeb', dir]);
 }
 
 function copyAssets(src, dst) {

@@ -79,7 +79,7 @@ export class EmulatorPanel {
 		console.log('JSBEEB_RESOURCES=' + JSON.stringify(JSBEEB_RESOURCES));
 		const mainScriptUrl = scriptUrl(context, webview, ['main.js']).toString();
 		console.log('mainScriptUrl=' + mainScriptUrl);
-
+		const codiconsUrl = scriptUrl(context, webview, ['css', 'codicon.css']).toString();
 
 		// <script nonce="${getNonce()}" defer="defer" src="${mainScriptUrl}"></script>		
 
@@ -95,7 +95,8 @@ export class EmulatorPanel {
 			window.JSBEEB_DISC="${this.discFileUrl}";
 		 	console.log("Window JSBEEB_RESOURCES Config=" + window.JSBEEB_RESOURCES);
 		</script>
-		<script defer="defer" src="${mainScriptUrl}"></script>				
+		<script defer="defer" src="${mainScriptUrl}"></script>		
+		<link href="${codiconsUrl}" rel="stylesheet" />		
 </head>
 <body>
 
@@ -110,6 +111,44 @@ export class EmulatorPanel {
 
 Hello world<br>
 You selected disc file '${this.discFileUrl}'<br>
+
+<vscode-divider></vscode-divider>
+
+<vscode-button id="howdy">Howdy!</vscode-button>
+
+<vscode-divider></vscode-divider>
+
+<vscode-button appearance="primary">Button Text</vscode-button>
+<vscode-button appearance="secondary">Button Text</vscode-button>
+<vscode-button appearance="icon">
+  <span class="codicon codicon-check"></span>
+</vscode-button>
+
+<vscode-divider></vscode-divider>
+
+<vscode-text-field readonly placeholder="Placeholder Text">
+	Text Field Label
+  <span slot="start" class="codicon codicon-git-merge"></span>
+</vscode-text-field>
+
+<vscode-divider></vscode-divider>
+
+<vscode-text-field>
+  Text Field Label
+  <section slot="end" style="display:flex; align-items: center;">
+    <vscode-button appearance="icon" aria-label="Match Case">
+      <span class="codicon codicon-case-sensitive"></span>
+    </vscode-button>
+    <vscode-button appearance="icon" aria-label="Match Whole Word">
+      <span class="codicon codicon-whole-word"></span>
+    </vscode-button>
+    <vscode-button appearance="icon" aria-label="Use Regular Expression">
+      <span class="codicon codicon-regex"></span>
+    </vscode-button>
+  </section>
+</vscode-text-field>
+
+<vscode-divider></vscode-divider>
 
 <h1>Heading1</h1>
 <h2>Heading2</h2>

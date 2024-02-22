@@ -29,6 +29,10 @@ import Snapshot from './snapshot';
 import { BaseDisc } from 'jsbeeb/fdc';
  
 
+import { provideVSCodeDesignSystem, vsCodeButton, vsCodeCheckbox, vsCodeDivider, vsCodeTextField } from '@vscode/webview-ui-toolkit';
+
+provideVSCodeDesignSystem().register(vsCodeButton(), vsCodeCheckbox(), vsCodeTextField(), vsCodeDivider());
+
 // utils.runningInNode = false;
 
 // utils.setBaseUrl('jsbeeb/');
