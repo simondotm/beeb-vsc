@@ -88,7 +88,7 @@ export class Emulator {
 	emuStatus: HTMLElement; // = document.getElementById('emu_status');
 	frames: number;
 	frameSkip: number;
-	resizer: ScreenResizer;
+	// resizer: ScreenResizer;
 	leftMargin: number;
 	rightMargin: number;
 	topMargin: number;
@@ -133,7 +133,8 @@ export class Emulator {
 		this.emuStatus = emuStatus;
 		this.frames = 0;
 		this.frameSkip = 0;
-		this.resizer = new ScreenResizer(screen);
+		// resizer not great in webview
+		// this.resizer = new ScreenResizer(screen);
 		// margin sets how much of the fully emulated screen is visible/cropped
 		this.leftMargin = 115;
 		this.rightMargin = 130;

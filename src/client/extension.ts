@@ -23,6 +23,7 @@ import {
 	ExtensionContext,
 	window,
 	commands,
+	Uri,
 } from 'vscode';
 import {
 	LanguageClient,
@@ -30,7 +31,7 @@ import {
 	ServerOptions,
 	TransportKind
 } from 'vscode-languageclient/node';
-import { createWebView } from './emulator/webview';
+import { EmulatorPanel } from './panels/emulator-panel';
 
 let client: LanguageClient;
 
@@ -156,7 +157,20 @@ export function activate(context: ExtensionContext) {
 		commands.executeCommand('workbench.action.tasks.build');
 	}));
 
-	createWebView(context);
+	context.subscriptions.push(
+		commands.registerCommand('extension.emulator.option1', (contextSelection: Uri, allSelections: Uri[]) => {
+			window.showInformationMessage('BeebVSC: extension.emulator.option1 selected');
+		}));
+	context.subscriptions.push(
+		commands.registerCommand('extension.emulator.option2', (contextSelection: Uri, allSelections: Uri[]) => {
+			window.showInformationMessage('BeebVSC: extension.emulator.option2 selected');
+		}));
+
+	context.subscriptions.push(
+		commands.registerCommand('extension.emulator.start', (contextSelection: Uri | undefined, allSelections: Uri[]) => {
+			EmulatorPanel.render(context, contextSelection, allSelections);
+		}));	
+
 	
 	const serverModule = context.asAbsolutePath(
 		path.join('dist', 'server.js')
