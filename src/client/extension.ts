@@ -168,7 +168,7 @@ export function activate(context: ExtensionContext) {
 
 	context.subscriptions.push(
 		commands.registerCommand('extension.emulator.start', (contextSelection: Uri | undefined, allSelections: Uri[]) => {
-			EmulatorPanel.render(context, contextSelection, allSelections);
+			EmulatorPanel.show(context, contextSelection, allSelections);
 		}));	
 
 	

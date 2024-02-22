@@ -54,7 +54,7 @@ export class EmulatorPanel {
 	}
 
 	
-	static render(context: vscode.ExtensionContext, contextSelection?: vscode.Uri, _allSelections?: vscode.Uri[]) {
+	static show(context: vscode.ExtensionContext, contextSelection?: vscode.Uri, _allSelections?: vscode.Uri[]) {
 		if (EmulatorPanel.instance) {
 			EmulatorPanel.instance.panel.reveal(vscode.ViewColumn.One);
 		} else {
