@@ -23,18 +23,13 @@ import { DdNoise, FakeDdNoise } from 'jsbeeb/ddnoise';
 import { Model, findModel } from 'jsbeeb/models';
 import { Cmos, CmosData } from 'jsbeeb/cmos';
 import * as utils from 'jsbeeb/utils';
-// import Promise from 'promise';
-import ResizeObserver from 'resize-observer-polyfill';
 import Snapshot from './snapshot';
 import { BaseDisc, emptySsd } from 'jsbeeb/fdc';
  
 
-import { provideVSCodeDesignSystem, vsCodeButton, vsCodeCheckbox, vsCodeDivider, vsCodeTextField } from '@vscode/webview-ui-toolkit';
 import { ClientCommand, ClientMessage, HostCommand, HostMessage } from '../types/shared/messages';
 
-provideVSCodeDesignSystem().register(vsCodeButton(), vsCodeCheckbox(), vsCodeTextField(), vsCodeDivider());
-
-const vscode = acquireVsCodeApi();
+import { vscode } from './vscode';
 
 // utils.runningInNode = false;
 
@@ -60,37 +55,6 @@ function postMessage(message: ClientMessage) {
 	vscode.postMessage(message);
 }
 
-class ScreenResizer {
-	screen: any;
-	desiredAspectRatio: any;
-	minHeight: any;
-	minWidth: any;
-	observer: any;
-
-	constructor(screen: any) {
-		this.screen = screen;
-		const origHeight = screen.height();
-		const origWidth = screen.width();
-		this.desiredAspectRatio = origWidth / origHeight;
-		this.minHeight = origHeight / 4;
-		this.minWidth = origWidth / 4;
-		this.observer = new ResizeObserver(() => this.resizeScreen());
-		this.observer.observe(this.screen.parent()[0]);
-		this.resizeScreen();
-	}
-
-	resizeScreen() {
-		const InnerBorder = 0;
-		let width = Math.max(this.minWidth, this.screen.parent().innerWidth() - InnerBorder);
-		let height = Math.max(this.minHeight, this.screen.parent().innerHeight() - InnerBorder);
-		if (width / height <= this.desiredAspectRatio) {
-			height = width / this.desiredAspectRatio;
-		} else {
-			width = height * this.desiredAspectRatio;
-		}
-		this.screen.height(height).width(width);
-	}
-}
 
 export class Emulator {
 
