@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { getJsBeebResources, scriptUri, scriptUrl } from '../emulator/assets';
-import { ClientCommand, HostCommand } from '../../types/shared/messages';
+import { ClientCommand, ClientMessage, HostCommand } from '../../types/shared/messages';
 
 export class EmulatorPanel {
 	static instance: EmulatorPanel | undefined;
@@ -53,10 +53,10 @@ export class EmulatorPanel {
 
 	private setWebviewMessageListener(webview: vscode.Webview) {
 		webview.onDidReceiveMessage(
-			(message: any) => {
+			(message: ClientMessage) => {
 				const command = message.command;
 				// const text = message.text;
-
+				
 				switch (command) {
 				case ClientCommand.PageLoaded:
 					vscode.window.showInformationMessage('loaded page');
@@ -65,6 +65,9 @@ export class EmulatorPanel {
 					console.log('EmulatorReady');
 					this.loadDisc();
 					return;
+				case ClientCommand.Error:
+					vscode.window.showInformationMessage(`${message.text ?? 'An error occurred'}`);
+					return;					
 				}
 				
 			},
@@ -161,7 +164,8 @@ export class EmulatorPanel {
     </div>
 
 		<div class="emulator" id="emulator">
-			<canvas class="screen" display="block" height="512px" id="screen" width="640px" tabindex="1"></canvas>
+			<canvas class="screen" display="block" height="512px" width="640px" id="screen" tabindex="1"></canvas>
+			<img hidden height="512px" width="640px" id="testcard" src="${ scriptUrl(context, webview, ['images', 'test-card.webp']) }">
     </div>
 
 Hello world<br>
@@ -219,7 +223,7 @@ You selected disc file '${this.discFileUrl}'<br>
 <button>⏹</button>
 
 
-<img src="${ scriptUrl(context, webview, ['images', 'test-card.webp']) }">
+
 
 </body>
 </html>`;		

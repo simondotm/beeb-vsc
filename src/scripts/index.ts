@@ -1,7 +1,7 @@
 // This script is loaded by the WebView
 declare global {
     interface Window {
-			theEmulator: Emulator;
+			theEmulator: Emulator | undefined;
 			JSBEEB_RESOURCES: Record<string, string>
 			JSBEEB_DISC?: string
 		}
@@ -47,13 +47,154 @@ function postMessage(message: ClientMessage) {
 	vscode.postMessage(message);
 }
 
+type EmulatorCanvas = Canvas | GlCanvas;
+export class EmulatorView {
+	root: JQuery<HTMLElement>; // root element
+	screen: JQuery<HTMLElement>; // screen element
+	testcard: JQuery<HTMLElement>; // testcard element
+	canvas: EmulatorCanvas;
+	emuStatus: HTMLElement; // = document.getElementById('emu_status');
+	showCoords: boolean;
+	emulator: Emulator | undefined;
+
+	constructor() {
+		console.log('Emulator constructor');
+		const root = $('#emulator'); // document.getElementById('emulator');		
+		this.root = root;
+		const screen = this.root.find('.screen');
+		if (!screen) {
+			throw new Error('No screen element found');
+		}
+		this.testcard = $('#testcard');
+		this.testcard.hide();
+		this.screen = screen;
+		//this.screen = document.getElementById('screen');
+		//		const screen = document.getElementById('screen'); // this.root.find('.screen');
+		this.canvas = bestCanvas(screen[0]);
+		const emuStatus = document.getElementById('emu_status'); 
+		if (!emuStatus) {
+			throw new Error('No emu_status element found');
+		}
+		this.emuStatus = emuStatus;		
+		this.showCoords = false; // coordinate display mode
+
+		// coords handlers
+		screen.mousemove((event: any) => this.mouseMove(event));
+		screen.mouseleave(() => this.mouseLeave());
+
+		// forward key events to emulator
+		screen.keyup((event:any) => this.emulator?.keyUp(event));
+		screen.keydown((event:any) => this.emulator?.keyDown(event));
+		screen.blur(() => this.emulator?.clearKeys());
+
+		setInterval(this.timer.bind(this), 1000);		
+	}
+
+	async boot() {
+
+		try {
+			this.showTestCard(false);
+
+			// any previously running emulator must be paused
+			// before tear down, otherwise it will continue to paint itself
+			if (this.emulator) {
+				this.emulator.pause();
+			}
+
+			this.emulator = new Emulator(this.canvas);
+			window.theEmulator = this.emulator;
+			await this.emulator.initialise();
+
+			const discUrl = window.JSBEEB_DISC;
+			if (discUrl) {
+				const fdc = this.emulator.cpu.fdc;
+				const discData = await utils.defaultLoadData(discUrl);
+				const discImage = new BaseDisc(fdc, 'disc', discData, () => {});
+				this.emulator.cpu.fdc.loadDisc(0, discImage);
+			}
+			this.emulator.start();
+
+		} catch(e: any) {
+			this.showTestCard(true);
+			postMessage({ command: ClientCommand.Error, text: e.message });
+		}
+
+	}
+
+	showTestCard(show: boolean = true) {
+		if (show) {
+			this.screen.hide();
+			this.testcard.show();
+		}else {
+			this.screen.show();
+			this.testcard.hide();
+		}
+	}
+	private timer() {
+
+		if (this.emulator && !this.showCoords) {
+			this.emuStatus.innerHTML = `${modelName} | ${Math.floor(this.emulator.cpu.currentCycles/2000000)} s`;
+		}
+	}
+
+
+	private mouseLeave() {
+		this.showCoords = false;
+		this.timer();
+	}
+
+	private mouseMove(event: any) {
+		if (!this.emulator) return;
+		this.showCoords = true;
+		const processor = this.emulator.cpu;
+		const screen = this.screen; // this.root.find('.screen');
+		const screenMode = processor.readmem(0x0355);
+		let W;
+		let H;
+		let graphicsMode = true;
+		switch (screenMode) {
+		case 0:
+			W = 80; H = 32; break;
+		case 1:
+		case 4:
+			W = 40; H = 32; break;
+		case 2:
+		case 5:
+			W = 20; H = 32; break;
+		case 3:
+			W = 80; H = 25.6; graphicsMode = false; break;
+		case 6:
+			W = 40; H = 25.6; graphicsMode = false; break;
+		case 7:
+			W = 40; H = 25.6; graphicsMode = false; break;
+		default:
+			// Unknown screen mode!
+			return;
+		}
+		// 8 and 16 here are fudges to allow for a margin around the screen
+		// canvas - not sure exactly where that comes from...
+		let x = event.offsetX - 8;
+		let y = event.offsetY - 8;
+		const sw = (screen.width() ?? 16) - 16;
+		const sh = (screen.height() ?? 16) - 16;
+		const X = Math.floor(x * W / sw);
+		const Y = Math.floor(y * H / sh);
+		let html = `Text: (${X},${Y})`;
+		if (graphicsMode) {
+			// Graphics Y increases up the screen.
+			y = sh - y;
+			x = Math.floor(x * 1280 / sw);
+			y = Math.floor(y * 1024 / sh);
+			html += ` &nbsp; Graphics: (${x},${y})`;
+		}
+		this.emuStatus.innerHTML = html;
+	}	
+
+}
 
 export class Emulator {
 
-	root: JQuery<HTMLElement>; // root element
-	screen: JQuery<HTMLElement>; // screen element
-	canvas: Canvas | GlCanvas;
-	emuStatus: HTMLElement; // = document.getElementById('emu_status');
+	canvas: EmulatorCanvas;
 	frames: number;
 	frameSkip: number;
 	// resizer: ScreenResizer;
@@ -67,7 +208,6 @@ export class Emulator {
 	state: any;
 	snapshot: Snapshot;
 	loop: boolean;
-	showCoords: boolean;
 	video: Video;
 	soundChip: SoundChip | FakeSoundChip;
 	ddNoise: DdNoise | FakeDdNoise;
@@ -83,22 +223,9 @@ export class Emulator {
 
 
 
-	constructor(root: JQuery<HTMLElement>) {
-		console.log('Emulator constructor');
-		this.root = root;
-		const screen = this.root.find('.screen');
-		if (!screen) {
-			throw new Error('No screen element found');
-		}
-		this.screen = screen;
-		//this.screen = document.getElementById('screen');
-		//		const screen = document.getElementById('screen'); // this.root.find('.screen');
-		this.canvas = bestCanvas(screen[0]);
-		const emuStatus = document.getElementById('emu_status'); 
-		if (!emuStatus) {
-			throw new Error('No emu_status element found');
-		}
-		this.emuStatus = emuStatus;
+	constructor(canvas: EmulatorCanvas) {
+
+		this.canvas = canvas;
 		this.frames = 0;
 		this.frameSkip = 0;
 		// resizer not great in webview
@@ -120,7 +247,6 @@ export class Emulator {
 		this.state = null;
 		this.snapshot = new Snapshot();
 		this.loop = (urlParams.get('loop')) ? true : false;
-		this.showCoords = false; // coordinate display mode
 
 		this.video = new Video(model.isMaster, this.canvas.fb32, _.bind(this.paint, this));
 
@@ -160,12 +286,6 @@ export class Emulator {
 			return this.executeInternalFast();
 		};
 
-		screen.mousemove((event: any) => this.mouseMove(event));
-		screen.mouseleave(() => this.mouseLeave());
-		screen.keyup((event:any) => this.keyUp(event));
-		screen.keydown((event:any) => this.keyDown(event));
-		screen.blur(() => this.clearKeys());
-		setInterval(this.timer.bind(this), 1000);
 		this.lastFrameTime = 0;
 		this.onAnimFrame = _.bind(this.frameFunc, this);
 		this.ready = false;
@@ -184,13 +304,6 @@ export class Emulator {
 		modelName += ' | GXR';
 	}
 
-	timer() {
-
-		if (!this.showCoords) {
-			this.emuStatus.innerHTML = `${modelName} | ${Math.floor(this.cpu.currentCycles/2000000)} s`;
-		}
-	}
-
 	start() {
 		if (this.running) return;
 		this.running = true;
@@ -201,45 +314,6 @@ export class Emulator {
 		this.running = false;
 	}
 
-	// async beebjit(tokenised: any) {
-	// 	this.pause();
-
-	// 	beebjit_incoming = true;
-
-	// 	function myCounter() {
-	// 		this.emuStatus.innerHTML +='.';
-	// 		if (this.emuStatus.innerHTML.length>18) this.emuStatus.innerHTML = 'Calling beebjit';
-	// 	}
-	// 	this.emuStatus.innerHTML = 'Calling beebjit';
-	// 	const counterInterval = setInterval(myCounter.bind(this), 200);
-	// 	const basic = btoa(tokenised).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-
-	// 	const response = await fetch(
-	// 		'https://api.bbcmic.ro/beta?saveAddress=0&saveLength=8000&basic=' + basic,
-	// 		{
-	// 			headers: {
-	// 				'x-api-key': 'YrqLWPW1mvbEIJs1bT0m3DAoTJLKd9xaGEQaI5xa',
-	// 			},
-	// 		}
-	// 	);
-	// 	beebjit_incoming = false;
-	// 	this.state = await response.json();
-	// 	const t0 = performance.now();
-	// 	this.snapshot.load(this.state,this.cpu);
-	// 	this.cpu.currentCycles = 2000000*60*60*3; // 3 hours
-	// 	this.cpu.targetCycles = 2000000*60*60*3;
-	// 	this.loopStart =  2000000*60*60*3;
-	// 	this.loopLength= 6000000 + 320000;
-
-	// 	const t1 = performance.now();
-	// 	const t2 = Math.round((t1 - t0)*1000)/1000;
-	// 	console.log(`State snapshot loaded in ${t2}ms.`);
-
-	// 	this.start();
-
-	// 	clearInterval(counterInterval);
-	// 	this.timer();
-	// }
 
 	async runProgram(tokenised: any) {
 		if (!this.ready) return;
@@ -316,7 +390,7 @@ export class Emulator {
 		this.lastFrameTime = now;
 	}
 
-	paint(minx: any, miny: any, maxx: any, maxy: any) {
+	paint(minx: number, miny: number, maxx: number, maxy: number) {
 		this.frames++;
 		if (this.frames < this.frameSkip) return;
 		this.frames = 0;
@@ -349,56 +423,6 @@ export class Emulator {
 		if (processor && processor.sysvia) processor.sysvia.clearKeys();
 	}
 
-	mouseLeave() {
-		this.showCoords = false;
-		this.timer();
-	}
-
-	mouseMove(event: any) {
-		this.showCoords = true;
-		const processor = this.cpu;
-		const screen = this.screen; // this.root.find('.screen');
-		const screenMode = processor.readmem(0x0355);
-		let W;
-		let H;
-		let graphicsMode = true;
-		switch (screenMode) {
-		case 0:
-			W = 80; H = 32; break;
-		case 1:
-		case 4:
-			W = 40; H = 32; break;
-		case 2:
-		case 5:
-			W = 20; H = 32; break;
-		case 3:
-			W = 80; H = 25.6; graphicsMode = false; break;
-		case 6:
-			W = 40; H = 25.6; graphicsMode = false; break;
-		case 7:
-			W = 40; H = 25.6; graphicsMode = false; break;
-		default:
-			// Unknown screen mode!
-			return;
-		}
-		// 8 and 16 here are fudges to allow for a margin around the screen
-		// canvas - not sure exactly where that comes from...
-		let x = event.offsetX - 8;
-		let y = event.offsetY - 8;
-		const sw = (screen.width() ?? 16) - 16;
-		const sh = (screen.height() ?? 16) - 16;
-		const X = Math.floor(x * W / sw);
-		const Y = Math.floor(y * H / sh);
-		let html = `Text: (${X},${Y})`;
-		if (graphicsMode) {
-			// Graphics Y increases up the screen.
-			y = sh - y;
-			x = Math.floor(x * 1280 / sw);
-			y = Math.floor(y * 1024 / sh);
-			html += ` &nbsp; Graphics: (${x},${y})`;
-		}
-		this.emuStatus.innerHTML = html;
-	}
 
 	keyUp(event: any) {
 		// Always let the key ups come through.
@@ -477,27 +501,28 @@ export class Emulator {
 }
 
 
-async function bootEmulator() {
+// async function bootEmulator() {
 
-	const root = $('#emulator'); // document.getElementById('emulator');
-	const emulator = new Emulator(root);
-	window.theEmulator = emulator;
-	await emulator.initialise();
+// 	const root = $('#emulator'); // document.getElementById('emulator');
+// 	const emulator = new Emulator(root);
+// 	window.theEmulator = emulator;
+// 	await emulator.initialise();
 
-	const discUrl = window.JSBEEB_DISC;
-	if (discUrl) {
-		const fdc = emulator.cpu.fdc;
-		const discData = await utils.defaultLoadData(discUrl);
-		const discImage = new BaseDisc(fdc, 'disc', discData, () => {});
-		emulator.cpu.fdc.loadDisc(0, discImage);
-	}
-	emulator.start();
+// 	const discUrl = window.JSBEEB_DISC;
+// 	if (discUrl) {
+// 		const fdc = emulator.cpu.fdc;
+// 		const discData = await utils.defaultLoadData(discUrl);
+// 		const discImage = new BaseDisc(fdc, 'disc', discData, () => {});
+// 		emulator.cpu.fdc.loadDisc(0, discImage);
+// 	}
+// 	emulator.start();
 
-}
+// }
 
 async function initialise() {
 
-	await bootEmulator();
+	const emulatorView = new EmulatorView();
+	await emulatorView.boot();
 
 	const $dropdown = $('#model-selector');
 	$.each(models, function() {
@@ -506,8 +531,15 @@ async function initialise() {
 	$('#model-selector').change(function () { 
 		const value = $(this).val() as string;
 		console.log(value);
-		model = findModel(value);
-		bootEmulator();
+		const target = findModel(value);
+		if (target === null) {
+			postMessage({ command: ClientCommand.Error, text: `Failed to select model '${value}'`});
+			emulatorView.showTestCard(true);
+			return;
+		}
+		model = target;
+		console.log(JSON.stringify(model));
+		emulatorView.boot();
 	});	
 
 
@@ -516,7 +548,8 @@ async function initialise() {
 
 async function loadDisc(discUrl: string) {
 	const emulator = window.theEmulator;
-	if (!emulator.ready) {
+	
+	if (!emulator || !emulator.ready) {
 		console.log('Emulator not ready to load disc yet.');
 		return;
 	}
