@@ -26,12 +26,15 @@ import * as utils from 'jsbeeb/utils';
 // import Promise from 'promise';
 import ResizeObserver from 'resize-observer-polyfill';
 import Snapshot from './snapshot';
-import { BaseDisc } from 'jsbeeb/fdc';
+import { BaseDisc, emptySsd } from 'jsbeeb/fdc';
  
 
 import { provideVSCodeDesignSystem, vsCodeButton, vsCodeCheckbox, vsCodeDivider, vsCodeTextField } from '@vscode/webview-ui-toolkit';
+import { ClientCommand, ClientMessage, HostCommand, HostMessage } from '../types/shared/messages';
 
 provideVSCodeDesignSystem().register(vsCodeButton(), vsCodeCheckbox(), vsCodeTextField(), vsCodeDivider());
+
+const vscode = acquireVsCodeApi();
 
 // utils.runningInNode = false;
 
@@ -51,6 +54,11 @@ const urlParams = new URLSearchParams(window.location.search);
 const beebjit_incoming = false;
 const model = findModel('MasterADFS');
 let modelName = model.name; //'BBC Micro Model B';
+
+
+function postMessage(message: ClientMessage) {
+	vscode.postMessage(message);
+}
 
 class ScreenResizer {
 	screen: any;
@@ -158,8 +166,6 @@ export class Emulator {
 		this.loop = (urlParams.get('loop')) ? true : false;
 		this.showCoords = false; // coordinate display mode
 
-		window.theEmulator = this;
-
 		this.video = new Video(model.isMaster, this.canvas.fb32, _.bind(this.paint, this));
 
 		this.soundChip = new FakeSoundChip();
@@ -214,6 +220,7 @@ export class Emulator {
 	async initialise() {
 		await Promise.all([this.cpu.initialise(), this.ddNoise.initialise()]);
 		this.ready = true;
+		postMessage({ command: ClientCommand.EmulatorReady });
 	}
 
 	gxr(){
@@ -518,6 +525,7 @@ async function initialise() {
 
 	const root = $('#emulator'); // document.getElementById('emulator');
 	const emulator = new Emulator(root);
+	window.theEmulator = emulator;
 	await emulator.initialise();
 
 	const discUrl = window.JSBEEB_DISC;
@@ -531,6 +539,45 @@ async function initialise() {
 
 
 }
+
+async function loadDisc(discUrl: string) {
+	const emulator = window.theEmulator;
+	if (!emulator.ready) {
+		console.log('Emulator not ready to load disc yet.');
+		return;
+	}
+	if (discUrl) {
+		console.log('loading disc');
+		const fdc = emulator.cpu.fdc;
+		const discData = await utils.defaultLoadData(discUrl);
+		const discImage = new BaseDisc(fdc, 'disc', discData, () => {});
+		emulator.cpu.fdc.loadDisc(0, discImage);
+	}else{
+		console.log('ejecting disc');
+		emptySsd(emulator.cpu.fdc);
+	}
+}
+
+// Handle the message inside the webview
+window.addEventListener('load', event => {
+	console.log('window loaded');
+	console.log(JSON.stringify(event));
+	postMessage({ command: ClientCommand.PageLoaded });
+});
+window.addEventListener('message', event => {
+	const message = event.data as HostMessage; // The JSON data our extension sent
+	console.log('message received');
+	console.log(JSON.stringify(message));
+
+	switch (message.command) {
+	case HostCommand.LoadDisc:
+		if (message.url) {
+			console.log(`loadDisc=${message.url}`);
+			loadDisc(message.url);
+		}
+		break;
+	}
+});
 
 initialise().then(() => {
 	// And we're ready to go here.

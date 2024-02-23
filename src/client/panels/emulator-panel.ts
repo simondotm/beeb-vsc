@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { getJsBeebResources, scriptUri, scriptUrl } from '../emulator/assets';
+import { ClientCommand, HostCommand } from '../../types/shared/messages';
 
 export class EmulatorPanel {
 	static instance: EmulatorPanel | undefined;
@@ -32,6 +33,7 @@ export class EmulatorPanel {
 			}
 		);
 		this.panel.onDidDispose(() => this.dispose(), null, this.disposables);		
+		this.setWebviewMessageListener(this.panel.webview);
 		this.panel.webview.html = this.getWebviewContent();		
 	}
 
@@ -49,8 +51,36 @@ export class EmulatorPanel {
 		}
 	}
 
+	private setWebviewMessageListener(webview: vscode.Webview) {
+		webview.onDidReceiveMessage(
+			(message: any) => {
+				const command = message.command;
+				// const text = message.text;
+
+				switch (command) {
+				case ClientCommand.PageLoaded:
+					vscode.window.showInformationMessage('loaded page');
+					return;
+				case ClientCommand.EmulatorReady:
+					console.log('EmulatorReady');
+					this.loadDisc();
+					return;
+				}
+				
+			},
+			undefined,
+			this.disposables
+		);
+	}
+
+
 	setDiscFileUrl(discFile?: vscode.Uri) {	
 		this.discFileUrl = discFile ? this.panel.webview.asWebviewUri(discFile).toString() : '';
+		console.log('setDiscFileUrl=' + this.discFileUrl);
+	}
+
+	loadDisc() {
+		this.panel.webview.postMessage({ command: HostCommand.LoadDisc, url: this.discFileUrl }).then((result) => { console.log('loadDisc result=' + result); });
 	}
 
 	
@@ -63,11 +93,12 @@ export class EmulatorPanel {
 
 		// always update the webview content when creating or revealing
 		// todo: load disc using messages rather than html changes. this way the script can reset the emulator, or optionally auto-boot
-		EmulatorPanel.instance.setDiscFileUrl(contextSelection);
+		// EmulatorPanel.instance.setDiscFileUrl(contextSelection);
 		if (contextSelection) {
 			console.log('setting html');
 			// TODO: pass message to webview to update disc file
-			EmulatorPanel.instance.panel.webview.html = EmulatorPanel.instance.getWebviewContent();
+			EmulatorPanel.instance.setDiscFileUrl(contextSelection);
+			// EmulatorPanel.instance.panel.webview.html = EmulatorPanel.instance.getWebviewContent();
 		}
 	}
 	
