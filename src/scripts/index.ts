@@ -15,7 +15,7 @@ import { Video } from 'jsbeeb/video';
 import { Debugger } from 'jsbeeb/web/debug';
 import { SoundChip, FakeSoundChip } from 'jsbeeb/soundchip';
 import { DdNoise, FakeDdNoise } from 'jsbeeb/ddnoise';
-import { Model, findModel } from 'jsbeeb/models';
+import { Model, allModels, findModel } from 'jsbeeb/models';
 import { Cmos, CmosData } from 'jsbeeb/cmos';
 import * as utils from 'jsbeeb/utils';
 import Snapshot from './snapshot';
@@ -38,7 +38,8 @@ const ClocksPerSecond = (2 * 1000 * 1000) | 0;
 const MaxCyclesPerFrame = ClocksPerSecond / 10;
 const urlParams = new URLSearchParams(window.location.search);
 
-const model = findModel('MasterADFS');
+const models = allModels;
+let model = findModel('MasterADFS');
 let modelName = model.name; //'BBC Micro Model B';
 
 
@@ -476,9 +477,7 @@ export class Emulator {
 }
 
 
-
-async function initialise() {
-
+async function bootEmulator() {
 
 	const root = $('#emulator'); // document.getElementById('emulator');
 	const emulator = new Emulator(root);
@@ -493,6 +492,24 @@ async function initialise() {
 		emulator.cpu.fdc.loadDisc(0, discImage);
 	}
 	emulator.start();
+
+}
+
+async function initialise() {
+
+	await bootEmulator();
+
+	const $dropdown = $('#model-selector');
+	$.each(models, function() {
+		$dropdown.append($('<vscode-option />').val(this.synonyms[0]).text(this.name));
+	});
+	$('#model-selector').change(function () { 
+		const value = $(this).val() as string;
+		console.log(value);
+		model = findModel(value);
+		bootEmulator();
+	});	
+
 
 
 }

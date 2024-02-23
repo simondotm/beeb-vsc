@@ -111,7 +111,7 @@ export class EmulatorPanel {
 		const mainScriptUrl = scriptUrl(context, webview, ['main.js']).toString();
 		console.log('mainScriptUrl=' + mainScriptUrl);
 		const codiconsUrl = scriptUrl(context, webview, ['css', 'codicon.css']).toString();
-
+		const cssUrl = scriptUrl(context, webview, ['css', 'styles.css']).toString();
 		// <script nonce="${getNonce()}" defer="defer" src="${mainScriptUrl}"></script>		
 
 		return `<!DOCTYPE html>
@@ -128,8 +128,32 @@ export class EmulatorPanel {
 		</script>
 		<script defer="defer" src="${mainScriptUrl}"></script>		
 		<link href="${codiconsUrl}" rel="stylesheet" />		
+		<link href="${cssUrl}" rel="stylesheet" />		
 </head>
 <body>
+
+
+  <span class="codicon codicon-check"></span>
+	<div class="dropdown-container">
+		<label for="model-selector2">Select Model</label>
+		<vscode-dropdown id="model-selector2">
+			<span slot="indicator" class="codicon codicon-vm"></span>
+			<vscode-option>Option Label #1</vscode-option>
+			<vscode-option>Option Label #2</vscode-option>
+			<vscode-option>Option Label #3</vscode-option>
+		</vscode-dropdown>
+	</div>
+
+	<vscode-dropdown id="model-selector">
+		<span slot="indicator" class="codicon codicon-vm"></span>
+	</vscode-dropdown>
+
+	<vscode-dropdown>
+		<vscode-option>Option Label #1</vscode-option>
+		<vscode-option>Option Label #2</vscode-option>
+		<vscode-option>Option Label #3</vscode-option>
+	</vscode-dropdown>
+
 
     <div id="emu_footer">
 			<div id="emu_status"></div>
