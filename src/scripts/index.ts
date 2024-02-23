@@ -1,6 +1,4 @@
 // This script is loaded by the WebView
-console.log('Hello, Wordffld!');
-
 declare global {
     interface Window {
 			theEmulator: Emulator;
@@ -8,9 +6,6 @@ declare global {
 			JSBEEB_DISC?: string
 		}
 }
-
-// let window: any;
-// let document: any;
 
 import $ from 'jquery';
 import _ from 'underscore';
@@ -31,9 +26,6 @@ import { ClientCommand, ClientMessage, HostCommand, HostMessage } from '../types
 
 import { vscode } from './vscode';
 
-// utils.runningInNode = false;
-
-// utils.setBaseUrl('jsbeeb/');
 
 utils.setLoader( (url: string) => {
 	const newUrl = window.JSBEEB_RESOURCES[url];
@@ -46,7 +38,6 @@ const ClocksPerSecond = (2 * 1000 * 1000) | 0;
 const MaxCyclesPerFrame = ClocksPerSecond / 10;
 const urlParams = new URLSearchParams(window.location.search);
 
-const beebjit_incoming = false;
 const model = findModel('MasterADFS');
 let modelName = model.name; //'BBC Micro Model B';
 
@@ -81,9 +72,9 @@ export class Emulator {
 	ddNoise: DdNoise | FakeDdNoise;
 	dbgr: Debugger;
 	cpu: Cpu6502;
-	ready: any;
+	ready: boolean;
 	lastFrameTime: number;
-	onAnimFrame: any;
+	onAnimFrame: FrameRequestCallback;
 	running: boolean = false;
 	lastShiftLocation: number;
 	lastAltLocation: number;
@@ -194,7 +185,7 @@ export class Emulator {
 
 	timer() {
 
-		if (!beebjit_incoming && !this.showCoords) {
+		if (!this.showCoords) {
 			this.emuStatus.innerHTML = `${modelName} | ${Math.floor(this.cpu.currentCycles/2000000)} s`;
 		}
 	}
@@ -286,7 +277,9 @@ export class Emulator {
 		processor.writemem(IBPaddress, inputBufferPointer);
 	}
 
-	frameFunc(now: any) {
+
+
+	frameFunc(now: number) {
 		window.requestAnimationFrame(this.onAnimFrame);
 		// Take snapshot
 		if (this.loop == true && this.state == null && this.cpu.currentCycles >= this.loopStart) {
