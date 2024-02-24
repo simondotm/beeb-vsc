@@ -10,7 +10,7 @@ import Snapshot from './snapshot';
 import * as utils from 'jsbeeb/utils';
 import { Model } from 'jsbeeb/models';
 import { BaseDisc, emptySsd } from 'jsbeeb/fdc';
-import { sendMessage } from './vscode';
+import { notifyHost } from './vscode';
 import { ClientCommand } from '../types/shared/messages';
 
 const ClocksPerSecond = (2 * 1000 * 1000) | 0;
@@ -168,7 +168,7 @@ export class Emulator {
 			}
 		} catch (e: any) {
 			console.error('Failed to load disc', e);
-			sendMessage({ command: ClientCommand.Error, text: e.message });
+			notifyHost({ command: ClientCommand.Error, text: e.message });
 		}
 	}
 

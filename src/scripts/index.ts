@@ -6,7 +6,7 @@ import _ from 'underscore';
 import { Model, allModels, findModel } from 'jsbeeb/models';
 import { ClientCommand, HostCommand, HostMessage } from '../types/shared/messages';
 
-import { initialiseVSCode, sendMessage } from './vscode';
+import { initialiseVSCode, notifyHost } from './vscode';
 import { EmulatorView } from './emulator-view';
 
 let model: Model = findModel('MasterADFS');
@@ -31,7 +31,7 @@ async function initialise() {
 		console.log(value);
 		const target = findModel(value);
 		if (target === null) {
-			sendMessage({ command: ClientCommand.Error, text: `Failed to select model '${value}'`});
+			notifyHost({ command: ClientCommand.Error, text: `Failed to select model '${value}'`});
 			emulatorView.showTestCard(true);
 			return;
 		}
@@ -49,7 +49,7 @@ async function initialise() {
 window.addEventListener('load', event => {
 	console.log('window loaded');
 	console.log(JSON.stringify(event));
-	sendMessage({ command: ClientCommand.PageLoaded });
+	notifyHost({ command: ClientCommand.PageLoaded });
 });
 window.addEventListener('message', event => {
 	const message = event.data as HostMessage; // The JSON data our extension sent

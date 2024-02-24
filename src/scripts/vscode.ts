@@ -8,6 +8,6 @@ export function initialiseVSCode() {
 
 export const vscode = acquireVsCodeApi();
 
-export function sendMessage(message: ClientMessage) {
+export function notifyHost(message: ClientMessage) {
 	vscode.postMessage(message);
 }

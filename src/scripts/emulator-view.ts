@@ -4,7 +4,7 @@ import { bestCanvas} from 'jsbeeb/canvas';
 import { Emulator, EmulatorCanvas } from './emulator';
 import { ClientCommand } from '../types/shared/messages';
 import { Model } from 'jsbeeb/models';
-import { sendMessage } from './vscode';
+import { notifyHost } from './vscode';
 
 
 export class EmulatorView {
@@ -64,7 +64,7 @@ export class EmulatorView {
 			this.emulator = new Emulator(this.canvas, model);
 			window.theEmulator = this.emulator;
 			await this.emulator.initialise();
-			sendMessage({ command: ClientCommand.EmulatorReady });
+			notifyHost({ command: ClientCommand.EmulatorReady });
 
 			const discUrl = window.JSBEEB_DISC;
 			this.emulator.loadDisc(discUrl);
@@ -78,7 +78,7 @@ export class EmulatorView {
 
 		} catch(e: any) {
 			this.showTestCard(true);
-			sendMessage({ command: ClientCommand.Error, text: e.message });
+			notifyHost({ command: ClientCommand.Error, text: e.message });
 		}
 
 	}
