@@ -10,6 +10,8 @@ import Snapshot from './snapshot';
 import * as utils from 'jsbeeb/utils';
 import { Model } from 'jsbeeb/models';
 import { BaseDisc, emptySsd } from 'jsbeeb/fdc';
+import { sendMessage } from './vscode';
+import { ClientCommand } from '../types/shared/messages';
 
 const ClocksPerSecond = (2 * 1000 * 1000) | 0;
 const BotStartCycles = 725000; // bbcmicrobot start time
@@ -153,15 +155,20 @@ export class Emulator {
 			console.log('Emulator not ready to load disc yet.');
 			return;
 		}
-		if (discUrl) {
-			console.log('loading disc');
-			const fdc = this.cpu.fdc;
-			const discData = await utils.defaultLoadData(discUrl);
-			const discImage = new BaseDisc(fdc, 'disc', discData, () => {});
-			this.cpu.fdc.loadDisc(0, discImage);
-		}else{
-			console.log('ejecting disc');
-			emptySsd(this.cpu.fdc);
+		try {
+			if (discUrl) {
+				console.log('loading disc');
+				const fdc = this.cpu.fdc;
+				const discData = await utils.defaultLoadData(discUrl);
+				const discImage = new BaseDisc(fdc, 'disc', discData, () => {});
+				this.cpu.fdc.loadDisc(0, discImage);
+			}else{
+				console.log('ejecting disc');
+				emptySsd(this.cpu.fdc);
+			}
+		} catch (e: any) {
+			console.error('Failed to load disc', e);
+			sendMessage({ command: ClientCommand.Error, text: e.message });
 		}
 	}
 
