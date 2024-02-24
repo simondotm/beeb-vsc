@@ -1,15 +1,11 @@
-
-
 function getNonce(): string {
-	let text = '';
-	const possible =
-			'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-	for (let i = 0; i < 32; i++) {
-		text += possible.charAt(
-			Math.floor(Math.random() * possible.length)
-		);
-	}
-	return text;
+  let text = ''
+  const possible =
+    'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
+  for (let i = 0; i < 32; i++) {
+    text += possible.charAt(Math.floor(Math.random() * possible.length))
+  }
+  return text
 }
 
 // 			function getResource(context: ExtensionContext, fileName: string, subDirectory1: string = '', subDirectory2: string = '') {
@@ -59,7 +55,7 @@ function getNonce(): string {
 // 						console.log("Window JSBEEB_RESOURCES Config=" + window.JSBEEB_RESOURCES);
 // 					</script>
 // 					<script nonce="${getNonce()}" defer="defer" src="${r.mainJs}"></script>
-// 					<link href="${r.mainCss}" rel="stylesheet">    
+// 					<link href="${r.mainCss}" rel="stylesheet">
 // 				</head>
 
 // 				<body>
@@ -828,7 +824,6 @@ function getNonce(): string {
 // 			// And set its HTML content
 
 // 			panel.webview.html = getWebviewContent(); //getWebviewContent2(context);
-
 
 // 		})
 // 	);

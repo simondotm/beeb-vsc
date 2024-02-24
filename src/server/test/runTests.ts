@@ -1,17 +1,16 @@
-import Mocha from 'mocha';
+import Mocha from 'mocha'
 
 const mocha = new Mocha({
-	ui: 'tdd',
-	color: true
-});
-mocha.timeout(100000);
+  ui: 'tdd',
+  color: true,
+})
+mocha.timeout(100000)
 
-mocha.addFile('./server/out/test/tests.js');
+mocha.addFile('./server/out/test/tests.js')
 mocha.run((failures: number) => {
-	if (failures > 0) {
-		new Error(`${failures} tests failed.`);
-	} else {
-		// resolve();
-	}
-});
-
+  if (failures > 0) {
+    new Error(`${failures} tests failed.`)
+  } else {
+    // resolve();
+  }
+})

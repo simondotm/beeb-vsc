@@ -21,81 +21,79 @@
 /*************************************************************************************************/
 
 export class Macro {
-	private _filename: string;
-	private _lineNumber: number;
-	private _body: string;
-	private _name: string;
-	private _parameters: string[] = [];
+  private _filename: string
+  private _lineNumber: number
+  private _body: string
+  private _name: string
+  private _parameters: string[] = []
 
-	constructor(filename: string, lineNumber: number) {
-		this._filename = filename;
-		this._lineNumber = lineNumber;
-		this._body = '';
-		this._name = '';
-	}
+  constructor(filename: string, lineNumber: number) {
+    this._filename = filename
+    this._lineNumber = lineNumber
+    this._body = ''
+    this._name = ''
+  }
 
-	AddLine(line: string): void {
-		this._body += line;
-	}
+  AddLine(line: string): void {
+    this._body += line
+  }
 
-	GetBody(): string {
-		return this._body;
-	}
+  GetBody(): string {
+    return this._body
+  }
 
-	GetName(): string {
-		return this._name;
-	}
+  GetName(): string {
+    return this._name
+  }
 
-	SetName(name: string): void {
-		this._name = name;
-	}
+  SetName(name: string): void {
+    this._name = name
+  }
 
-	GetNumberOfParameters(): number {
-		return this._parameters.length;
-	}
+  GetNumberOfParameters(): number {
+    return this._parameters.length
+  }
 
-	GetParameter(index: number): string {
-		return this._parameters[index];
-	}
+  GetParameter(index: number): string {
+    return this._parameters[index]
+  }
 
-	AddParameter(parameter: string): void {
-		this._parameters.push(parameter);
-	}
+  AddParameter(parameter: string): void {
+    this._parameters.push(parameter)
+  }
 
-	GetLineNumber(): number {
-		return this._lineNumber;
-	}
+  GetLineNumber(): number {
+    return this._lineNumber
+  }
 }
 
 // export class MacroInstance extends SourceCode {
 // Moved to sourcecode.ts
 
 export class MacroTable {
-	private _macros: Map<string, Macro> = new Map<string, Macro>();
-	private static _instance: MacroTable;
+  private _macros: Map<string, Macro> = new Map<string, Macro>()
+  private static _instance: MacroTable
 
-	public static get Instance()
-	{
-		// Do you need arguments? Make it a regular static method instead.
-		return this._instance || (this._instance = new this());
-	}
+  public static get Instance() {
+    // Do you need arguments? Make it a regular static method instead.
+    return this._instance || (this._instance = new this())
+  }
 
-	Add(macro: Macro): void {
-		if (macro !== undefined) {
-			this._macros.set(macro.GetName(), macro);
-		}
-	}
+  Add(macro: Macro): void {
+    if (macro !== undefined) {
+      this._macros.set(macro.GetName(), macro)
+    }
+  }
 
-	Get(name: string): Macro | undefined {
-		return this._macros.get(name);
-	}
+  Get(name: string): Macro | undefined {
+    return this._macros.get(name)
+  }
 
-	Exists(name: string): boolean {
-		return this._macros.has(name);
-	}
+  Exists(name: string): boolean {
+    return this._macros.has(name)
+  }
 
-	Reset(): void {
-		this._macros.clear();
-	}
-
+  Reset(): void {
+    this._macros.clear()
+  }
 }
