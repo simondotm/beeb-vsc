@@ -526,7 +526,9 @@ async function initialise() {
 
 	const $dropdown = $('#model-selector');
 	$.each(models, function() {
-		$dropdown.append($('<vscode-option />').val(this.synonyms[0]).text(this.name));
+		const name = this.name;
+		const selected = name === modelName ? 'selected' : '';
+		$dropdown.append($(`<vscode-option ${selected} />`).val(name).text(name));
 	});
 	$('#model-selector').change(function () { 
 		const value = $(this).val() as string;
