@@ -165,7 +165,7 @@ export class EmulatorPanel {
 
 		<div class="emulator" id="emulator">
 			<canvas class="screen" display="block" height="512px" width="640px" id="screen" tabindex="1"></canvas>
-			<img hidden height="512px" width="640px" id="testcard" src="${ scriptUrl(context, webview, ['images', 'test-card.webp']) }">
+			<img hidden style="height:512px; width:640px; min-width:640px;" id="testcard" src="${ scriptUrl(context, webview, ['images', 'test-card.webp']) }">
     </div>
 
 Hello world<br>
