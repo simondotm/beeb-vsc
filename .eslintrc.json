@@ -15,10 +15,12 @@
     },
     "plugins": [
         "@typescript-eslint",
-        "prettier"
+        "prettier",
+        "unused-imports"
     ],
     "rules": {
         "no-unused-vars": "off",
+        "unused-imports/no-unused-imports": "warn",
         "@typescript-eslint/no-unused-vars": [
             "warn",
             {
