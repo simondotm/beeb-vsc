@@ -10,6 +10,7 @@ import {
 
 import { initialiseVSCode, notifyHost } from './vscode'
 import { EmulatorView } from './emulator-view'
+import { EmulatorInfoBar } from './emulator-infobar'
 
 let model: Model = findModel('MasterADFS')
 
@@ -19,6 +20,7 @@ async function initialise() {
   // create the emulator view
   const emulatorView = new EmulatorView()
   await emulatorView.boot(model)
+  const emulatorInfoBar = new EmulatorInfoBar(emulatorView)
 
   // this is all webview ui & message handling
   const $dropdown = $('#model-selector')
