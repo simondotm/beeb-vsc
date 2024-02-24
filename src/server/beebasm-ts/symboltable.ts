@@ -23,6 +23,7 @@
 import { integer, Location } from 'vscode-languageserver';
 import { GlobalData } from './globaldata';
 import { ObjectCode } from './objectcode';
+import { URI } from 'vscode-uri';
 
 // can't use Symbol as a type name because it's a reserved word
 export class SymbolData {
@@ -61,7 +62,7 @@ type ScopeDetails = {
 	endLine: integer;
 }
 
-const noLocation = { uri: '', range: { start: { line: 0, character: 0 }, end: { line: 0, character: 0 } } };
+const noLocation: Location = { uri: '', range: { start: { line: 0, character: 0 }, end: { line: 0, character: 0 } } };
 
 export class SymbolTable {
 	private static _instance: SymbolTable | null = null;
@@ -91,6 +92,40 @@ export class SymbolTable {
 	public GetSymbols(): Map<string, SymbolData> {
 		const filtered = new Map(Array.from(this._map.entries()).filter(([_, v]) => v.GetLocation() !== noLocation));
 		return filtered;
+	}
+
+	// Get all symbols in scope for a particular location
+	GetSymbolsByLocation(uri: string, line: number): Map<string, SymbolData> {
+		const symbols = new Map<string, SymbolData>();
+		const uriSanitised = URI.parse(uri).fsPath;
+		for (const [name, symbolData] of this._map.entries()) {
+			if (!name.includes('@')) {
+				// global symbols always included
+				symbols.set(name, symbolData);
+			}
+			else
+			{
+				if (symbolData.GetLocation().uri === uriSanitised) {
+					// local symbols only included if they are in the same file
+					// and the line number is within the scope of the symbol
+					let suffix = '';
+					for ( let scopeLevel = 0; scopeLevel < this._labelScopes; scopeLevel++ ) {
+						if ( scopeLevel < this._scopeDetails.length
+							&& line >= this._scopeDetails[scopeLevel].startLine
+							&& line <= this._scopeDetails[scopeLevel].endLine
+							&& this._scopeDetails[scopeLevel].uri === uriSanitised ) {
+							suffix = suffix + `@${scopeLevel}_0`;
+							if (name.endsWith(suffix)) {
+								// Strip off the suffix
+								const justName = name.split('@')[0];
+								symbols.set(justName, symbolData);
+							}
+						}
+					}
+				}
+			}
+		}
+		return symbols;
 	}
 
 	GetSymbolByLine(symbolname: string, uri: string, line: number): [SymbolData | undefined, string] {
