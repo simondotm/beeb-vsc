@@ -1,6 +1,6 @@
-vscode-dropdown {
+/* vscode-dropdown {
   margin-bottom: 20px;
-}
+} */
 
 label {
   margin-bottom: 4px;
@@ -29,4 +29,12 @@ label {
 }
 #model-selector option{
    width:200px; 
+}
+
+.fixed-width-selector {
+	width: 200px;
+}
+
+.no-margin {
+	margin: 0;
 }

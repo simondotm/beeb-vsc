@@ -135,6 +135,91 @@ export class EmulatorPanel {
 </head>
 <body>
 
+		${this.getToolbarHtml()}
+		${this.getEmulatorHtml()}
+		${this.getTestHtml()}
+
+</body>
+</html>`;		
+	}		
+
+
+	getEmulatorHtml() {
+		const webview = this.panel.webview;
+		const context = this.context;
+		return `
+
+		<div class="emulator" id="emulator">
+			<canvas class="screen" display="block" height="512px" width="640px" id="screen" tabindex="1"></canvas>
+			<img hidden style="height:512px; width:640px; min-width:640px;" id="testcard" src="${ scriptUrl(context, webview, ['images', 'test-card.webp']) }">
+    </div>
+
+
+		<div id="statusbar">
+			<vscode-button appearance="secondary">Ln 20, Col 18</vscode-button>
+			<vscode-button appearance="secondary">X 1279, Y 1023</vscode-button>
+			<vscode-button appearance="secondary">Runtime: 5s</vscode-button>
+		</div>
+
+
+    <div id="emu_footer">
+			<div id="emu_status"></div>
+			<div id="coords"></div>
+    </div>		
+		`;
+	}
+
+	getToolbarHtml() {
+		
+		return `
+
+
+	<div id="toolbar">
+
+		<vscode-button id="button_control" appearance="secondary">
+			<span class="codicon codicon-debug-start"></span>
+		</vscode-button>
+
+		<vscode-button id="button_restart" appearance="secondary">
+			<span class="codicon codicon-debug-restart"></span>
+		</vscode-button>
+
+
+		<vscode-dropdown id="model-selector">
+			<span slot="indicator" class="codicon codicon-vm"></span>
+		</vscode-dropdown>
+
+		<vscode-dropdown id="disc-selector" class="fixed-width-selector">
+			<span slot="indicator" class="codicon codicon-save"></span>
+			<vscode-option>Empty</vscode-option>
+			<vscode-option>image.dsd</vscode-option>			
+		</vscode-dropdown>
+
+		<vscode-button id="button_sound" appearance="secondary">
+			<span class="codicon codicon-mute"></span>
+		</vscode-button>
+
+		<vscode-button id="button_expand" appearance="secondary">
+			<span class="codicon codicon-screen-normal"></span>
+		</vscode-button>
+
+		<vscode-divider></vscode-divider>
+
+	</div>		
+		`;
+	}
+
+	getTestHtml() {
+		return `
+
+Hello world<br>
+You selected disc file '${this.discFileUrl}'<br>
+
+<vscode-divider></vscode-divider>
+
+<vscode-button id="howdy">Howdy!</vscode-button>
+
+<vscode-divider></vscode-divider>
 
   <span class="codicon codicon-check"></span>
 	<div class="dropdown-container">
@@ -147,33 +232,13 @@ export class EmulatorPanel {
 		</vscode-dropdown>
 	</div>
 
-	<vscode-dropdown id="model-selector">
-		<span slot="indicator" class="codicon codicon-vm"></span>
-	</vscode-dropdown>
+<vscode-divider></vscode-divider>
 
 	<vscode-dropdown>
 		<vscode-option>Option Label #1</vscode-option>
 		<vscode-option>Option Label #2</vscode-option>
 		<vscode-option>Option Label #3</vscode-option>
 	</vscode-dropdown>
-
-
-    <div id="emu_footer">
-			<div id="emu_status"></div>
-			<div id="coords"></div>
-    </div>
-
-		<div class="emulator" id="emulator">
-			<canvas class="screen" display="block" height="512px" width="640px" id="screen" tabindex="1"></canvas>
-			<img hidden style="height:512px; width:640px; min-width:640px;" id="testcard" src="${ scriptUrl(context, webview, ['images', 'test-card.webp']) }">
-    </div>
-
-Hello world<br>
-You selected disc file '${this.discFileUrl}'<br>
-
-<vscode-divider></vscode-divider>
-
-<vscode-button id="howdy">Howdy!</vscode-button>
 
 <vscode-divider></vscode-divider>
 
@@ -182,6 +247,18 @@ You selected disc file '${this.discFileUrl}'<br>
 <vscode-button appearance="icon">
   <span class="codicon codicon-check"></span>
 </vscode-button>
+
+<vscode-divider></vscode-divider>
+
+<div>div1</div>
+<div>div2</div>
+<div>div3</div>
+
+<vscode-divider></vscode-divider>
+
+<div class="no-margin">div1</div>
+<div class="no-margin">div2</div>
+<div class="no-margin">div3</div>
 
 <vscode-divider></vscode-divider>
 
@@ -221,11 +298,7 @@ You selected disc file '${this.discFileUrl}'<br>
 <button>⏵</button>
 <button>⏸</button>
 <button>⏹</button>
+		`;
+	}
 
-
-
-
-</body>
-</html>`;		
-	}		
 }
