@@ -112,7 +112,7 @@
 			},
 			{
 				"command": "extension.emulator.start",
-				"title": "BeebVSC: Launch the emulator"
+				"title": "BeebVSC: Open in Emulator"
 			},
 			{
 				"command": "extension.emulator.option1",
@@ -126,7 +126,7 @@
 		"menus": {
 			"explorer/context": [
 				{
-					"when": "resourceExtname == .ssd || resourceExtname == .dsd",
+					"when": "(resourceExtname == .ssd || resourceExtname == .dsd) && extension.emulatorEnabled",
 					"command": "extension.emulator.start",
 					"group": "YourGroup@1"
 				}

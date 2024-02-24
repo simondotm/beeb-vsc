@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { getJsBeebResources, scriptUri, scriptUrl } from '../emulator/assets';
 import { ClientCommand, ClientMessage, HostCommand } from '../../types/shared/messages';
+import { isDev, isFeatureEnabled } from '../../types/shared/config';
 
 export class EmulatorPanel {
 	static instance: EmulatorPanel | undefined;
@@ -135,9 +136,9 @@ export class EmulatorPanel {
 </head>
 <body>
 
-		${this.getToolbarHtml()}
+		${ isFeatureEnabled('emulatorToolBar') ? this.getToolbarHtml() : ''}
 		${this.getEmulatorHtml()}
-		${this.getTestHtml()}
+		${ isDev() ? this.getTestHtml() : ''}
 
 </body>
 </html>`;		
