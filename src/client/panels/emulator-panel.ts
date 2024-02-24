@@ -112,12 +112,10 @@ export class EmulatorPanel {
 
     // always update the webview content when creating or revealing
     // todo: load disc using messages rather than html changes. this way the script can reset the emulator, or optionally auto-boot
-    // EmulatorPanel.instance.setDiscFileUrl(contextSelection);
     if (contextSelection) {
-      console.log('setting html')
+      // console.log('setting html')
       // TODO: pass message to webview to update disc file
       EmulatorPanel.instance.setDiscFileUrl(contextSelection)
-      // EmulatorPanel.instance.panel.webview.html = EmulatorPanel.instance.getWebviewContent();
     }
   }
 
@@ -233,6 +231,7 @@ export class EmulatorPanel {
   }
 
   getTestHtml() {
+    return ''
     return `
 
 Hello world<br>

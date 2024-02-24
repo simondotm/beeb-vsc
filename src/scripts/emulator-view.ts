@@ -14,8 +14,7 @@ export class EmulatorView {
   model: Model | undefined
 
   constructor() {
-    console.log('Emulator constructor')
-    const root = $('#emulator') // document.getElementById('emulator');
+    const root = $('#emulator')
     this.root = root
     const screen = this.root.find('.screen')
     if (!screen) {
@@ -24,8 +23,6 @@ export class EmulatorView {
     this.testcard = $('#testcard')
     this.testcard.hide()
     this.screen = screen
-    //this.screen = document.getElementById('screen');
-    //		const screen = document.getElementById('screen'); // this.root.find('.screen');
     this.canvas = bestCanvas(screen[0])
 
     // forward key events to emulator

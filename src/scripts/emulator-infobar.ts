@@ -106,21 +106,26 @@ export class EmulatorInfoBar {
         // Unknown screen mode!
         return
     }
+
+    function clamp(value: number, min: number, max: number) {
+      return Math.max(min, Math.min(max, value))
+    }
+
     // 8 and 16 here are fudges to allow for a margin around the screen
     // canvas - not sure exactly where that comes from...
     let x = event.offsetX - 8
     let y = event.offsetY - 8
     const sw = (screen.width() ?? 16) - 16
     const sh = (screen.height() ?? 16) - 16
-    const X = Math.floor((x * W) / sw)
-    const Y = Math.floor((y * H) / sh)
+    const X = clamp(Math.floor((x * W) / sw), 0, Math.floor(W) - 1)
+    const Y = clamp(Math.floor((y * H) / sh), 0, Math.floor(H) - 1)
     this.updateTextCoords({ x: X, y: Y })
 
     if (graphicsMode) {
       // Graphics Y increases up the screen.
       y = sh - y
-      x = Math.floor((x * 1280) / sw)
-      y = Math.floor((y * 1024) / sh)
+      x = clamp(Math.floor((x * 1280) / sw), 0, 1279)
+      y = clamp(Math.floor((y * 1024) / sh), 0, 1023)
       this.updateGraphicsCoords({ x, y })
     } else {
       this.updateGraphicsCoords()
