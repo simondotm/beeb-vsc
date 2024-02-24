@@ -8,7 +8,6 @@
 // declare module 'jsbeeb/teletext'
 // declare module 'jsbeeb/soundchip'
 
-
 // declare module 'jsbeeb/sound'
 // declare module 'jsbeeb/keyboard'
 // declare module 'jsbeeb/serial'

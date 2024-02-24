@@ -1,124 +1,141 @@
-import * as vscode from 'vscode';
-import { getJsBeebResources, scriptUri, scriptUrl } from '../emulator/assets';
-import { ClientCommand, ClientMessage, HostCommand } from '../../types/shared/messages';
-import { isDev, isFeatureEnabled } from '../../types/shared/config';
+import * as vscode from 'vscode'
+import { getJsBeebResources, scriptUri, scriptUrl } from '../emulator/assets'
+import {
+  ClientCommand,
+  ClientMessage,
+  HostCommand,
+} from '../../types/shared/messages'
+import { isDev, isFeatureEnabled } from '../../types/shared/config'
 
 export class EmulatorPanel {
-	static instance: EmulatorPanel | undefined;
+  static instance: EmulatorPanel | undefined
 
-	private readonly panel: vscode.WebviewPanel;
-	private readonly context: vscode.ExtensionContext;
-	private disposables: vscode.Disposable[] = [];
-	private discFileUrl: string = '';
+  private readonly panel: vscode.WebviewPanel
+  private readonly context: vscode.ExtensionContext
+  private disposables: vscode.Disposable[] = []
+  private discFileUrl: string = ''
 
-	private constructor(context: vscode.ExtensionContext) {
-		this.context = context;
+  private constructor(context: vscode.ExtensionContext) {
+    this.context = context
 
-		this.panel = vscode.window.createWebviewPanel(
-			'emulator',
-			'JSBeeb',
-			vscode.ViewColumn.One, {
-				enableScripts: true,			
-				retainContextWhenHidden: true, // Retain state when hidden		
-				// Only allow the webview to access specific resources in our extension's dist folder
-				localResourceRoots: [
-					// localUri(context, []),
-					//contextSelection,
-					vscode.workspace.workspaceFolders ? vscode.workspace.workspaceFolders[0].uri : context.extensionUri,
-					scriptUri(context, []),
-					scriptUri(context, ['images']),
-					scriptUri(context, ['jsbeeb']),
-					scriptUri(context, ['jsbeeb', 'roms']),
-					scriptUri(context, ['jsbeeb', 'sounds']),
-				],
-			}
-		);
-		this.panel.onDidDispose(() => this.dispose(), null, this.disposables);		
-		this.setWebviewMessageListener(this.panel.webview);
-		this.panel.webview.html = this.getWebviewContent();		
-	}
+    this.panel = vscode.window.createWebviewPanel(
+      'emulator',
+      'JSBeeb',
+      vscode.ViewColumn.One,
+      {
+        enableScripts: true,
+        retainContextWhenHidden: true, // Retain state when hidden
+        // Only allow the webview to access specific resources in our extension's dist folder
+        localResourceRoots: [
+          // localUri(context, []),
+          //contextSelection,
+          vscode.workspace.workspaceFolders
+            ? vscode.workspace.workspaceFolders[0].uri
+            : context.extensionUri,
+          scriptUri(context, []),
+          scriptUri(context, ['images']),
+          scriptUri(context, ['jsbeeb']),
+          scriptUri(context, ['jsbeeb', 'roms']),
+          scriptUri(context, ['jsbeeb', 'sounds']),
+        ],
+      },
+    )
+    this.panel.onDidDispose(() => this.dispose(), null, this.disposables)
+    this.setWebviewMessageListener(this.panel.webview)
+    this.panel.webview.html = this.getWebviewContent()
+  }
 
+  dispose() {
+    EmulatorPanel.instance = undefined
 
-	dispose() {
-		EmulatorPanel.instance = undefined;
+    this.panel.dispose()
 
-		this.panel.dispose();
+    while (this.disposables.length) {
+      const disposable = this.disposables.pop()
+      if (disposable) {
+        disposable.dispose()
+      }
+    }
+  }
 
-		while (this.disposables.length) {
-			const disposable = this.disposables.pop();
-			if (disposable) {
-				disposable.dispose();
-			}
-		}
-	}
+  private setWebviewMessageListener(webview: vscode.Webview) {
+    webview.onDidReceiveMessage(
+      (message: ClientMessage) => {
+        const command = message.command
+        // const text = message.text;
 
-	private setWebviewMessageListener(webview: vscode.Webview) {
-		webview.onDidReceiveMessage(
-			(message: ClientMessage) => {
-				const command = message.command;
-				// const text = message.text;
-				
-				switch (command) {
-				case ClientCommand.PageLoaded:
-					vscode.window.showInformationMessage('loaded page');
-					return;
-				case ClientCommand.EmulatorReady:
-					console.log('EmulatorReady');
-					this.loadDisc();
-					return;
-				case ClientCommand.Error:
-					vscode.window.showInformationMessage(`${message.text ?? 'An error occurred'}`);
-					return;					
-				}
-				
-			},
-			undefined,
-			this.disposables
-		);
-	}
+        switch (command) {
+          case ClientCommand.PageLoaded:
+            vscode.window.showInformationMessage('loaded page')
+            return
+          case ClientCommand.EmulatorReady:
+            console.log('EmulatorReady')
+            this.loadDisc()
+            return
+          case ClientCommand.Error:
+            vscode.window.showInformationMessage(
+              `${message.text ?? 'An error occurred'}`,
+            )
+            return
+        }
+      },
+      undefined,
+      this.disposables,
+    )
+  }
 
+  setDiscFileUrl(discFile?: vscode.Uri) {
+    this.discFileUrl = discFile
+      ? this.panel.webview.asWebviewUri(discFile).toString()
+      : ''
+    console.log('setDiscFileUrl=' + this.discFileUrl)
+  }
 
-	setDiscFileUrl(discFile?: vscode.Uri) {	
-		this.discFileUrl = discFile ? this.panel.webview.asWebviewUri(discFile).toString() : '';
-		console.log('setDiscFileUrl=' + this.discFileUrl);
-	}
+  loadDisc() {
+    this.panel.webview
+      .postMessage({ command: HostCommand.LoadDisc, url: this.discFileUrl })
+      .then((result) => {
+        console.log('loadDisc result=' + result)
+      })
+  }
 
-	loadDisc() {
-		this.panel.webview.postMessage({ command: HostCommand.LoadDisc, url: this.discFileUrl }).then((result) => { console.log('loadDisc result=' + result); });
-	}
+  static show(
+    context: vscode.ExtensionContext,
+    contextSelection?: vscode.Uri,
+    _allSelections?: vscode.Uri[],
+  ) {
+    if (EmulatorPanel.instance) {
+      EmulatorPanel.instance.panel.reveal(vscode.ViewColumn.One)
+    } else {
+      EmulatorPanel.instance = new EmulatorPanel(context)
+    }
 
-	
-	static show(context: vscode.ExtensionContext, contextSelection?: vscode.Uri, _allSelections?: vscode.Uri[]) {
-		if (EmulatorPanel.instance) {
-			EmulatorPanel.instance.panel.reveal(vscode.ViewColumn.One);
-		} else {
-			EmulatorPanel.instance = new EmulatorPanel(context);
-		}
+    // always update the webview content when creating or revealing
+    // todo: load disc using messages rather than html changes. this way the script can reset the emulator, or optionally auto-boot
+    // EmulatorPanel.instance.setDiscFileUrl(contextSelection);
+    if (contextSelection) {
+      console.log('setting html')
+      // TODO: pass message to webview to update disc file
+      EmulatorPanel.instance.setDiscFileUrl(contextSelection)
+      // EmulatorPanel.instance.panel.webview.html = EmulatorPanel.instance.getWebviewContent();
+    }
+  }
 
-		// always update the webview content when creating or revealing
-		// todo: load disc using messages rather than html changes. this way the script can reset the emulator, or optionally auto-boot
-		// EmulatorPanel.instance.setDiscFileUrl(contextSelection);
-		if (contextSelection) {
-			console.log('setting html');
-			// TODO: pass message to webview to update disc file
-			EmulatorPanel.instance.setDiscFileUrl(contextSelection);
-			// EmulatorPanel.instance.panel.webview.html = EmulatorPanel.instance.getWebviewContent();
-		}
-	}
-	
+  private getWebviewContent() {
+    const webview = this.panel.webview
+    const context = this.context
+    const JSBEEB_RESOURCES = getJsBeebResources(context, webview)
+    console.log('JSBEEB_RESOURCES=' + JSON.stringify(JSBEEB_RESOURCES))
+    const mainScriptUrl = scriptUrl(context, webview, ['main.js']).toString()
+    console.log('mainScriptUrl=' + mainScriptUrl)
+    const codiconsUrl = scriptUrl(context, webview, [
+      'css',
+      'codicon.css',
+    ]).toString()
+    const cssUrl = scriptUrl(context, webview, ['css', 'styles.css']).toString()
+    // <script nonce="${getNonce()}" defer="defer" src="${mainScriptUrl}"></script>
 
-	private getWebviewContent() {
-		const webview = this.panel.webview;
-		const context = this.context;
-		const JSBEEB_RESOURCES = getJsBeebResources(context, webview);
-		console.log('JSBEEB_RESOURCES=' + JSON.stringify(JSBEEB_RESOURCES));
-		const mainScriptUrl = scriptUrl(context, webview, ['main.js']).toString();
-		console.log('mainScriptUrl=' + mainScriptUrl);
-		const codiconsUrl = scriptUrl(context, webview, ['css', 'codicon.css']).toString();
-		const cssUrl = scriptUrl(context, webview, ['css', 'styles.css']).toString();
-		// <script nonce="${getNonce()}" defer="defer" src="${mainScriptUrl}"></script>		
-
-		return `<!DOCTYPE html>
+    return `<!DOCTYPE html>
 <html lang="en">
 <head>
 		<meta charset="UTF-8">
@@ -136,23 +153,22 @@ export class EmulatorPanel {
 </head>
 <body>
 
-		${ isFeatureEnabled('emulatorToolBar') ? this.getToolbarHtml() : ''}
+		${isFeatureEnabled('emulatorToolBar') ? this.getToolbarHtml() : ''}
 		${this.getEmulatorHtml()}
-		${ isDev() ? this.getTestHtml() : ''}
+		${isDev() ? this.getTestHtml() : ''}
 
 </body>
-</html>`;		
-	}		
+</html>`
+  }
 
-
-	getEmulatorHtml() {
-		const webview = this.panel.webview;
-		const context = this.context;
-		return `
+  getEmulatorHtml() {
+    const webview = this.panel.webview
+    const context = this.context
+    return `
 
 		<div class="emulator" id="emulator">
 			<canvas class="screen" display="block" height="512px" width="640px" id="screen" tabindex="1"></canvas>
-			<img hidden style="height:512px; width:640px; min-width:640px;" id="testcard" src="${ scriptUrl(context, webview, ['images', 'test-card.webp']) }">
+			<img hidden style="height:512px; width:640px; min-width:640px;" id="testcard" src="${scriptUrl(context, webview, ['images', 'test-card.webp'])}">
     </div>
 
 
@@ -167,12 +183,11 @@ export class EmulatorPanel {
 			<div id="emu_status"></div>
 			<div id="coords"></div>
     </div>		
-		`;
-	}
+		`
+  }
 
-	getToolbarHtml() {
-		
-		return `
+  getToolbarHtml() {
+    return `
 
 
 	<div id="toolbar">
@@ -207,11 +222,11 @@ export class EmulatorPanel {
 		<vscode-divider></vscode-divider>
 
 	</div>		
-		`;
-	}
+		`
+  }
 
-	getTestHtml() {
-		return `
+  getTestHtml() {
+    return `
 
 Hello world<br>
 You selected disc file '${this.discFileUrl}'<br>
@@ -299,7 +314,6 @@ You selected disc file '${this.discFileUrl}'<br>
 <button>⏵</button>
 <button>⏸</button>
 <button>⏹</button>
-		`;
-	}
-
+		`
+  }
 }
