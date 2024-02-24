@@ -4,29 +4,19 @@ import { EmulatorView } from './emulator-view'
 const EMPTY_CHAR = '⌀'
 
 export class EmulatorInfoBar {
-  // emuStatus: HTMLElement // = document.getElementById('emu_status');
-
   textCoords: HTMLElement
   graphicsCoords: HTMLElement
   runTime: HTMLElement
   mode: HTMLElement
 
-  // showCoords: boolean
-
   constructor(public emulatorView: EmulatorView) {
-    console.log('EmulatorInfoBar constructor')
-
-    // this.emuStatus = getElementById('emu_status')
-
     this.runTime = getElementById('infobar-runtime')
     this.mode = getElementById('infobar-mode')
     this.textCoords = getElementById('infobar-text-coords')
     this.graphicsCoords = getElementById('infobar-graphics-coords')
 
-    // this.showCoords = false // coordinate display mode
-
-    const screen = this.emulatorView.screen
     // coords handlers
+    const screen = this.emulatorView.screen
     screen.mousemove((event: any) => this.mouseMove(event))
     screen.mouseleave(() => this.mouseLeave())
 
@@ -34,13 +24,9 @@ export class EmulatorInfoBar {
   }
 
   private timer() {
-    // const model = this.emulatorView.model
     const emulator = this.emulatorView.emulator
     let html = EMPTY_CHAR
     if (emulator) {
-      // if (!this.showCoords) {
-      // 	this.emuStatus.innerHTML = `${model?.name} | ${Math.floor(emulator.cpu.currentCycles / 2000000)}`
-      // }
       const totalSeconds = Math.floor(emulator.cpu.currentCycles / 2000000)
       const seconds = totalSeconds % 60
       const minutes = Math.floor(totalSeconds / 60)
@@ -53,9 +39,6 @@ export class EmulatorInfoBar {
   }
 
   private mouseLeave() {
-    // this.showCoords = false
-    //this.timer()
-    // this.textCoords.innerHTML = this.graphicsCoords.innerHTML = EMPTY_CHAR
     this.updateGraphicsCoords()
     this.updateTextCoords()
   }
@@ -83,13 +66,12 @@ export class EmulatorInfoBar {
     const emulator = this.emulatorView.emulator
     const screen = this.emulatorView.screen
     if (!emulator) return
-    // this.showCoords = true
-
-    const screenMode = emulator.getScreenMode()
 
     let W
     let H
     let graphicsMode = true
+
+    const screenMode = emulator.getScreenMode()
     switch (screenMode) {
       case 0:
         W = 80
@@ -132,20 +114,16 @@ export class EmulatorInfoBar {
     const sh = (screen.height() ?? 16) - 16
     const X = Math.floor((x * W) / sw)
     const Y = Math.floor((y * H) / sh)
-    // let html = `Text: (${X},${Y})`
-    this.textCoords.innerHTML = `Ln ${Y}, Col ${X}`
+    this.updateTextCoords({ x: X, y: Y })
 
     if (graphicsMode) {
       // Graphics Y increases up the screen.
       y = sh - y
       x = Math.floor((x * 1280) / sw)
       y = Math.floor((y * 1024) / sh)
-      // html += ` &nbsp; Graphics: (${x},${y})`
-      this.graphicsCoords.innerHTML = `X ${x}, Y ${y}`
+      this.updateGraphicsCoords({ x, y })
     } else {
-      // this.graphicsCoords.hidden = true
-      this.graphicsCoords.innerHTML = EMPTY_CHAR
+      this.updateGraphicsCoords()
     }
-    // this.emuStatus.innerHTML = html
   }
 }
