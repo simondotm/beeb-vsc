@@ -1,0 +1,104 @@
+diff --git a/node_modules/jsbeeb/.DS_Store b/node_modules/jsbeeb/.DS_Store
+new file mode 100644
+index 0000000..1984dcb
+Binary files /dev/null and b/node_modules/jsbeeb/.DS_Store differ
+diff --git a/node_modules/jsbeeb/6502.js b/node_modules/jsbeeb/6502.js
+index 830d3cf..f3e3fcb 100644
+--- a/node_modules/jsbeeb/6502.js
++++ b/node_modules/jsbeeb/6502.js
+@@ -1243,6 +1243,7 @@ export class Cpu6502 extends Base6502 {
+     }
+ 
+     execute(numCyclesToRun) {
++        console.log("execute", numCyclesToRun);
+         this.halted = false;
+         this.targetCycles += numCyclesToRun;
+         // To prevent issues with wrapping around / overflowing the accuracy that poxy Javascript numbers have,
+diff --git a/node_modules/jsbeeb/utils.js b/node_modules/jsbeeb/utils.js
+index 2bdc511..d7c2853 100644
+--- a/node_modules/jsbeeb/utils.js
++++ b/node_modules/jsbeeb/utils.js
+@@ -1,7 +1,8 @@
+ "use strict";
+ import * as jsunzip from "./lib/jsunzip.js";
+ 
+-export const runningInNode = typeof window === "undefined";
++// export const runningInNode = typeof window === "undefined";
++export const runningInNode = false;
+ 
+ export function isFirefox() {
+     // With thanks to http://stackoverflow.com/questions/9847580/how-to-detect-safari-chrome-ie-firefox-and-opera-browser
+@@ -836,31 +837,54 @@ function loadDataHttp(url) {
+     });
+ }
+ 
+-async function loadDataNode(url) {
+-    if (typeof readbuffer !== "undefined") {
+-        // d8 shell
+-        /*global readbuffer*/
+-        return new Uint8Array(readbuffer(url));
+-    } else if (typeof read !== "undefined") {
+-        // SpiderMonkey shell
+-        /*global read*/
+-        return read(url, "binary");
+-    } else {
+-        // Node
+-        const fs = await import("fs");
+-        if (url[0] === "/") url = "." + url;
+-        return fs.readFileSync(url);
+-    }
++// async function loadDataNode(url) {
++//     if (typeof readbuffer !== "undefined") {
++//         // d8 shell
++//         /*global readbuffer*/
++//         return new Uint8Array(readbuffer(url));
++//     } else if (typeof read !== "undefined") {
++//         // SpiderMonkey shell
++//         /*global read*/
++//         return read(url, "binary");
++//     } else {
++//         // Node
++//         const fs = await import("fs");
++//         if (url[0] === "/") url = "." + url;
++//         return fs.readFileSync(url);
++//     }
++// }
++
++// export function loadData(url) {
++//     if (runningInNode) {
++//         return loadDataNode(url);
++//     } else {
++//         return loadDataHttp(url);
++//     }
++// }
++
++export function defaultLoadData(url) {
++    console.log("defaultLoadData", url)
++    return loadDataHttp(url);
+ }
+ 
++
+ export function loadData(url) {
+-    if (runningInNode) {
+-        return loadDataNode(url);
+-    } else {
+-        return loadDataHttp(url);
++    const newUrl = window.JSBEEB_RESOURCES[url];
++    if (!newUrl) {
++        throw new Error('Resource not found in JSBEEB_RESOURCES: ' + url);
+     }
++    return loadDataHttp(window.JSBEEB_RESOURCES[url]);
+ }
+ 
++
++// let loadData = defaultLoadData;
++
++export function setLoader(newLoader) {
++    // loadData = newLoader;
++}
++
++
++
+ export function readInt32(data, offset) {
+     return (data[offset + 3] << 24) | (data[offset + 2] << 16) | (data[offset + 1] << 8) | data[offset + 0];
+ }

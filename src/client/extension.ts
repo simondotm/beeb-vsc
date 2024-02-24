@@ -23,6 +23,7 @@ import {
 	ExtensionContext,
 	window,
 	commands,
+	Uri,
 } from 'vscode';
 import {
 	LanguageClient,
@@ -30,6 +31,8 @@ import {
 	ServerOptions,
 	TransportKind
 } from 'vscode-languageclient/node';
+import { EmulatorPanel } from './panels/emulator-panel';
+import { isFeatureEnabled } from '../types/shared/config';
 
 let client: LanguageClient;
 
@@ -155,7 +158,28 @@ export function activate(context: ExtensionContext) {
 		commands.executeCommand('workbench.action.tasks.build');
 	}));
 
+	const emulatorEnabled = isFeatureEnabled('emulator');
+	// allow `when` clauses in the package.json contributions to check if the emulator is enabled for context menus
+	commands.executeCommand('setContext', 'extension.emulatorEnabled', emulatorEnabled);
+
+	if (emulatorEnabled) {
+		context.subscriptions.push(
+			commands.registerCommand('extension.emulator.option1', (contextSelection: Uri, allSelections: Uri[]) => {
+				window.showInformationMessage('BeebVSC: extension.emulator.option1 selected');
+			}));
+		context.subscriptions.push(
+			commands.registerCommand('extension.emulator.option2', (contextSelection: Uri, allSelections: Uri[]) => {
+				window.showInformationMessage('BeebVSC: extension.emulator.option2 selected');
+			}));
+
+		context.subscriptions.push(
+			commands.registerCommand('extension.emulator.start', (contextSelection: Uri | undefined, allSelections: Uri[]) => {
+				EmulatorPanel.show(context, contextSelection, allSelections);
+			}));	
+	}
 	
+
+
 	const serverModule = context.asAbsolutePath(
 		path.join('dist', 'server.js')
 	);

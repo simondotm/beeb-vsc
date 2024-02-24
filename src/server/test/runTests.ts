@@ -1,4 +1,4 @@
-import * as Mocha from 'mocha';
+import Mocha from 'mocha';
 
 const mocha = new Mocha({
 	ui: 'tdd',
@@ -7,7 +7,7 @@ const mocha = new Mocha({
 mocha.timeout(100000);
 
 mocha.addFile('./server/out/test/tests.js');
-mocha.run(failures => {
+mocha.run((failures: number) => {
 	if (failures > 0) {
 		new Error(`${failures} tests failed.`);
 	} else {
