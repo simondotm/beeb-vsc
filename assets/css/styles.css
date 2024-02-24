@@ -35,6 +35,22 @@ label {
 	width: 200px;
 }
 
+#infobar-runtime {
+  width: 150px;
+}
+
+#infobar-mode {
+  width: 80px;
+}
+
+#infobar-text-coords {
+  width: 150px;
+}
+
+#infobar-graphics-coords {
+  width: 150px;
+}
+
 .no-margin {
 	margin: 0;
 }

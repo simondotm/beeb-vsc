@@ -155,6 +155,7 @@ export class EmulatorPanel {
 
 		${isFeatureEnabled('emulatorToolBar') ? this.getToolbarHtml() : ''}
 		${this.getEmulatorHtml()}
+    ${this.getInfoBarHtml()}
 		${isDev() ? this.getTestHtml() : ''}
 
 </body>
@@ -172,10 +173,16 @@ export class EmulatorPanel {
     </div>
 
 
-		<div id="statusbar">
-			<vscode-button appearance="secondary">Ln 20, Col 18</vscode-button>
-			<vscode-button appearance="secondary">X 1279, Y 1023</vscode-button>
-			<vscode-button appearance="secondary">Runtime: 5s</vscode-button>
+		`
+  }
+
+  getInfoBarHtml() {
+    return `
+		<div id="infobar">
+			<vscode-button id="infobar-runtime" appearance="secondary">⌀</vscode-button>
+			<vscode-button id="infobar-mode" appearance="secondary">⌀</vscode-button>
+			<vscode-button id="infobar-text-coords" appearance="secondary">⌀</vscode-button>
+			<vscode-button id="infobar-graphics-coords" appearance="secondary">⌀</vscode-button>
 		</div>
 
 
@@ -183,7 +190,7 @@ export class EmulatorPanel {
 			<div id="emu_status"></div>
 			<div id="coords"></div>
     </div>		
-		`
+    `
   }
 
   getToolbarHtml() {

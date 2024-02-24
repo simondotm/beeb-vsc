@@ -169,6 +169,10 @@ export class Emulator {
     }
   }
 
+  getScreenMode() {
+    return this.cpu.readmem(0x0355)
+  }
+
   async runProgram(tokenised: any) {
     if (!this.ready) return
     console.log(this.cpu.currentCycles)
