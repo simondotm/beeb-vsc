@@ -9,6 +9,7 @@ import { Canvas, GlCanvas } from 'jsbeeb/canvas';
 import Snapshot from './snapshot';
 import * as utils from 'jsbeeb/utils';
 import { Model } from 'jsbeeb/models';
+import { BaseDisc, emptySsd } from 'jsbeeb/fdc';
 
 const ClocksPerSecond = (2 * 1000 * 1000) | 0;
 const BotStartCycles = 725000; // bbcmicrobot start time
@@ -144,6 +145,24 @@ export class Emulator {
 
 	pause() {
 		this.running = false;
+	}
+
+
+	async loadDisc(discUrl: string | null | undefined) {	
+		if (!this.ready) {
+			console.log('Emulator not ready to load disc yet.');
+			return;
+		}
+		if (discUrl) {
+			console.log('loading disc');
+			const fdc = this.cpu.fdc;
+			const discData = await utils.defaultLoadData(discUrl);
+			const discImage = new BaseDisc(fdc, 'disc', discData, () => {});
+			this.cpu.fdc.loadDisc(0, discImage);
+		}else{
+			console.log('ejecting disc');
+			emptySsd(this.cpu.fdc);
+		}
 	}
 
 
