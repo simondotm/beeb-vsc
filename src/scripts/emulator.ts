@@ -125,11 +125,7 @@ export class Emulator {
   }
 
   async initialise() {
-    await Promise.all([
-      this.cpu.initialise(),
-      this.audioHandler.initialise(),
-      // this.ddNoise.initialise()
-    ])
+    await this.cpu.initialise()
     this.ready = true
   }
 
@@ -276,10 +272,10 @@ export class Emulator {
     )
   }
 
-  keyDown(event: any) {
+  onKeyDown(event: any) {
     if (!this.running) return
 
-    const code = this.keyCode(event)
+    const code = this.onKeyCode(event)
     const processor = this.cpu
     if (code === utils.keyCodes.HOME && event.ctrlKey) {
       this.pause()
@@ -296,9 +292,9 @@ export class Emulator {
     if (processor && processor.sysvia) processor.sysvia.clearKeys()
   }
 
-  keyUp(event: any) {
+  onKeyUp(event: any) {
     // Always let the key ups come through.
-    const code = this.keyCode(event)
+    const code = this.onKeyCode(event)
     const processor = this.cpu
     if (processor && processor.sysvia) processor.sysvia.keyUp(code)
     if (!this.running) return
@@ -308,7 +304,7 @@ export class Emulator {
     event.preventDefault()
   }
 
-  keyCode(event: any) {
+  onKeyCode(event: any) {
     const ret = event.which || event.charCode || event.keyCode
     const keyCodes = utils.keyCodes
     switch (event.location) {

@@ -32,9 +32,11 @@ export class EmulatorView {
     this.canvas = bestCanvas(screen[0])
 
     // forward key events to emulator
-    screen.keyup((event: any) => this.emulator?.keyUp(event))
-    screen.keydown((event: any) => this.emulator?.keyDown(event))
-    screen.blur(() => this.emulator?.clearKeys())
+    screen.on('keyup', (event: JQuery.Event) => this.emulator?.onKeyUp(event))
+    screen.on('keydown', (event: JQuery.Event) =>
+      this.emulator?.onKeyDown(event),
+    )
+    screen.on('blur', () => this.emulator?.clearKeys())
 
     // create webview audio driver
     this.audioHandler = new AudioHandler(
