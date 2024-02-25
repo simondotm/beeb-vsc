@@ -43,7 +43,6 @@ export class EmulatorView {
       }
 
       this.emulator = new Emulator(this.canvas, model)
-      window.theEmulator = this.emulator
       await this.emulator.initialise()
       notifyHost({ command: ClientCommand.EmulatorReady })
 
