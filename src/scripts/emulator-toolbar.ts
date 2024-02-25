@@ -1,5 +1,8 @@
 import $ from 'jquery'
 import { EmulatorView } from './emulator-view'
+import { allModels, findModel } from 'jsbeeb/models'
+import { notifyHost } from './vscode'
+import { ClientCommand } from '../types/shared/messages'
 
 export class EmulatorToolBar {
   buttonControl: JQuery<HTMLElement>
@@ -7,7 +10,7 @@ export class EmulatorToolBar {
   buttonSound: JQuery<HTMLElement>
   buttonExpand: JQuery<HTMLElement>
 
-  test: boolean = true
+  modelSelector: JQuery<HTMLElement>
 
   constructor(public emulatorView: EmulatorView) {
     this.buttonControl = $('#toolbar-control')
@@ -20,10 +23,43 @@ export class EmulatorToolBar {
     this.buttonSound.on('click', () => this.onSoundClick())
     this.buttonExpand.on('click', () => this.onExpandClick())
 
+    // populate the model selector
+    const modelSelector = (this.modelSelector = $('#model-selector'))
+    const model = emulatorView.model
+    $.each(allModels, function () {
+      const name = this.name // 'this' is a Model inside the each() iterator
+      const selected = name === model?.name ? 'selected' : ''
+      modelSelector.append(
+        $(`<vscode-option ${selected} />`).val(name).text(name),
+      )
+    })
+
+    this.modelSelector.on('change', (event: JQuery.ChangeEvent) =>
+      this.onModelChange(event),
+    )
+
     this.updateEmulatorStatus()
   }
 
-  updateEmulatorStatus() {
+  private onModelChange(event: JQuery.ChangeEvent) {
+    const value = $(event.target).val() as string
+    console.log(value)
+    const model = findModel(value)
+    if (model === null) {
+      notifyHost({
+        command: ClientCommand.Error,
+        text: `Failed to select model '${value}'`,
+      })
+      this.emulatorView.showTestCard(true)
+      return
+    }
+    console.log(JSON.stringify(model))
+    this.emulatorView.boot(model).then(() => {
+      this.updateEmulatorStatus()
+    })
+  }
+
+  private updateEmulatorStatus() {
     const isRunning = this.emulatorView.emulator?.running
     if (isRunning) {
       $('span:first', this.buttonControl).removeClass('codicon-debug-start')
@@ -36,7 +72,7 @@ export class EmulatorToolBar {
     this.buttonControl.prop('appearance', isRunning ? 'secondary' : 'primary')
   }
 
-  onControlClick() {
+  private onControlClick() {
     const emulator = this.emulatorView.emulator
     if (emulator?.running) {
       emulator.pause()
@@ -44,29 +80,20 @@ export class EmulatorToolBar {
       emulator?.start()
     }
     this.updateEmulatorStatus()
-
-    // if (this.buttonControl) {
-    //   $('span:first', this.buttonControl).toggleClass(
-    //     'codicon-debug-start codicon-debug-pause',
-    //   )
-    // }
   }
-  onRestartClick() {
+  private onRestartClick() {
     if (this.buttonRestart) {
       this.emulatorView.emulator?.cpu.reset(true)
-      // $('span:first', this.buttonRestart).toggleClass(
-      //   'codicon-debug-start codicon-debug-pause',
-      // )
     }
   }
-  onSoundClick() {
+  private onSoundClick() {
     if (this.buttonSound) {
       $('span:first', this.buttonSound).toggleClass(
         'codicon-mute codicon-unmute',
       )
     }
   }
-  onExpandClick() {
+  private onExpandClick() {
     if (this.buttonExpand) {
       $('span:first', this.buttonExpand).toggleClass(
         'codicon-screen-normal codicon-screen-full',

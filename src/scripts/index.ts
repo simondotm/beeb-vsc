@@ -1,7 +1,6 @@
 // This script is loaded by the WebView
 
-import $ from 'jquery'
-import { Model, allModels, findModel } from 'jsbeeb/models'
+import { Model, findModel } from 'jsbeeb/models'
 import {
   ClientCommand,
   HostCommand,
@@ -13,40 +12,24 @@ import { EmulatorView } from './emulator-view'
 import { EmulatorInfoBar } from './emulator-infobar'
 import { EmulatorToolBar } from './emulator-toolbar'
 
-let model: Model = findModel('MasterADFS')
+const defaultModel: Model = findModel('MasterADFS')
+
+let emulatorView: EmulatorView
+let emulatorInfoBar: EmulatorInfoBar | undefined
+let emulatorToolBar: EmulatorToolBar | undefined
 
 async function initialise() {
   initialiseVSCode()
 
-  // create the emulator view
-  const emulatorView = new EmulatorView()
-  await emulatorView.boot(model)
-  const emulatorInfoBar = new EmulatorInfoBar(emulatorView)
-  const emulatorToolBar = new EmulatorToolBar(emulatorView)
+  // create the emulator view container
+  emulatorView = new EmulatorView()
 
-  // this is all webview ui & message handling
-  const $dropdown = $('#model-selector')
-  $.each(allModels, function () {
-    const name = this.name
-    const selected = name === model.name ? 'selected' : ''
-    $dropdown.append($(`<vscode-option ${selected} />`).val(name).text(name))
-  })
-  $('#model-selector').change(function () {
-    const value = $(this).val() as string
-    console.log(value)
-    const target = findModel(value)
-    if (target === null) {
-      notifyHost({
-        command: ClientCommand.Error,
-        text: `Failed to select model '${value}'`,
-      })
-      emulatorView.showTestCard(true)
-      return
-    }
-    model = target
-    console.log(JSON.stringify(model))
-    emulatorView.boot(model)
-  })
+  // boot the emulator
+  await emulatorView.boot(defaultModel)
+
+  // create the info bar and toolbar UI
+  emulatorInfoBar = new EmulatorInfoBar(emulatorView)
+  emulatorToolBar = new EmulatorToolBar(emulatorView)
 }
 
 // Handle the message inside the webview
@@ -64,7 +47,8 @@ window.addEventListener('message', (event) => {
     case HostCommand.LoadDisc:
       if (message.url) {
         console.log(`loadDisc=${message.url}`)
-        window.theEmulator?.loadDisc(message.url)
+        // window.theEmulator?.loadDisc(message.url)
+        emulatorView?.emulator?.loadDisc(message.url)
       }
       break
   }
