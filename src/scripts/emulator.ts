@@ -1,9 +1,8 @@
 import _ from 'underscore'
+import $ from 'jquery'
 import { Cpu6502 } from 'jsbeeb/6502'
 import { Video } from 'jsbeeb/video'
 import { Debugger } from 'jsbeeb/web/debug'
-import { SoundChip, FakeSoundChip } from 'jsbeeb/soundchip'
-import { DdNoise, FakeDdNoise } from 'jsbeeb/ddnoise'
 import { Cmos, CmosData } from 'jsbeeb/cmos'
 import { Canvas, GlCanvas } from 'jsbeeb/canvas'
 import Snapshot from './snapshot'
@@ -12,11 +11,16 @@ import { Model } from 'jsbeeb/models'
 import { BaseDisc, emptySsd } from 'jsbeeb/fdc'
 import { notifyHost } from './vscode'
 import { ClientCommand } from '../types/shared/messages'
+import { AudioHandler } from 'jsbeeb/web/audio-handler'
 
 const ClocksPerSecond = (2 * 1000 * 1000) | 0
 const BotStartCycles = 725000 // bbcmicrobot start time
 const MaxCyclesPerFrame = ClocksPerSecond / 10
 const urlParams = new URLSearchParams(window.location.search)
+
+const audioFilterFreq = 7000
+const audioFilterQ = 5
+const noSeek = false
 
 export type EmulatorCanvas = Canvas | GlCanvas
 
@@ -43,8 +47,8 @@ export class Emulator {
   snapshot: Snapshot
   loop: boolean
   video: Video
-  soundChip: SoundChip | FakeSoundChip
-  ddNoise: DdNoise | FakeDdNoise
+  // soundChip: SoundChip | FakeSoundChip
+  // ddNoise: DdNoise | FakeDdNoise
   dbgr: Debugger
   cpu: Cpu6502
   ready: boolean
@@ -54,6 +58,7 @@ export class Emulator {
   lastShiftLocation: number
   lastAltLocation: number
   lastCtrlLocation: number
+  audioHandler: AudioHandler
 
   constructor(canvas: EmulatorCanvas, model: Model) {
     this.canvas = canvas
@@ -84,8 +89,19 @@ export class Emulator {
       _.bind(this.paint, this),
     )
 
-    this.soundChip = new FakeSoundChip()
-    this.ddNoise = new FakeDdNoise()
+    this.audioHandler = new AudioHandler(
+      $('#audio-warning'),
+      audioFilterFreq,
+      audioFilterQ,
+      noSeek,
+    )
+    // Firefox will report that audio is suspended even when it will
+    // start playing without user interaction, so we need to delay a
+    // little to get a reliable indication.
+    window.setTimeout(() => this.audioHandler.checkStatus(), 1000)
+
+    // this.soundChip = new SoundChip() // new FakeSoundChip()
+    // this.ddNoise = new FakeDdNoise()
 
     this.dbgr = new Debugger(this.video)
     const cmos = new Cmos({
@@ -104,9 +120,12 @@ export class Emulator {
       model,
       this.dbgr,
       this.video,
-      this.soundChip,
-      this.ddNoise,
-      undefined, // music5000
+      // this.soundChip,
+      // this.ddNoise,
+      // undefined, // music5000
+      this.audioHandler.soundChip,
+      this.audioHandler.ddNoise,
+      model.hasMusic5000 ? this.audioHandler.music5000 : null,
       cmos,
       config,
       undefined, // econet
@@ -128,7 +147,11 @@ export class Emulator {
   }
 
   async initialise() {
-    await Promise.all([this.cpu.initialise(), this.ddNoise.initialise()])
+    await Promise.all([
+      this.cpu.initialise(),
+      this.audioHandler.initialise(),
+      // this.ddNoise.initialise()
+    ])
     this.ready = true
   }
 
@@ -214,47 +237,52 @@ export class Emulator {
   }
 
   frameFunc(now: number) {
-    window.requestAnimationFrame(this.onAnimFrame)
-    // Take snapshot
-    if (
-      this.loop == true &&
-      this.state == null &&
-      this.cpu.currentCycles >= this.loopStart
-    ) {
-      this.pause()
-      this.state = this.snapshot.save(this.cpu).state
-      this.start()
-      console.log('snapshot taken at ' + this.cpu.currentCycles + ' cycles')
-    }
-
-    // Loop back
-    if (
-      this.loop == true &&
-      this.state !== null &&
-      this.cpu.currentCycles >= this.loopStart + this.loopLength
-    ) {
-      this.pause()
-      this.snapshot.load(this.state, this.cpu)
-      this.cpu.currentCycles = this.loopStart
-      this.cpu.targetCycles = this.loopStart
-      this.start()
-    }
-
-    if (this.running && this.lastFrameTime !== 0) {
-      const sinceLast = now - this.lastFrameTime
-      let cycles = ((sinceLast * ClocksPerSecond) / 1000) | 0
-      cycles = Math.min(cycles, MaxCyclesPerFrame)
-      try {
-        if (!this.cpu.execute(cycles)) {
-          this.running = false // TODO: breakpoint
-        }
-      } catch (e) {
-        this.running = false
-        this.dbgr.debug(this.cpu.pc)
-        throw e
+    try {
+      window.requestAnimationFrame(this.onAnimFrame)
+      // Take snapshot
+      if (
+        this.loop == true &&
+        this.state == null &&
+        this.cpu.currentCycles >= this.loopStart
+      ) {
+        this.pause()
+        this.state = this.snapshot.save(this.cpu).state
+        this.start()
+        console.log('snapshot taken at ' + this.cpu.currentCycles + ' cycles')
       }
+
+      // Loop back
+      if (
+        this.loop == true &&
+        this.state !== null &&
+        this.cpu.currentCycles >= this.loopStart + this.loopLength
+      ) {
+        this.pause()
+        this.snapshot.load(this.state, this.cpu)
+        this.cpu.currentCycles = this.loopStart
+        this.cpu.targetCycles = this.loopStart
+        this.start()
+      }
+
+      if (this.running && this.lastFrameTime !== 0) {
+        const sinceLast = now - this.lastFrameTime
+        let cycles = ((sinceLast * ClocksPerSecond) / 1000) | 0
+        cycles = Math.min(cycles, MaxCyclesPerFrame)
+        try {
+          if (!this.cpu.execute(cycles)) {
+            this.running = false // TODO: breakpoint
+          }
+        } catch (e) {
+          this.running = false
+          this.dbgr.debug(this.cpu.pc)
+          throw e
+        }
+      }
+      this.lastFrameTime = now
+    } catch (e) {
+      console.log(e)
+      notifyHost({ command: ClientCommand.Error, text: (e as Error).message })
     }
-    this.lastFrameTime = now
   }
 
   paint(minx: number, miny: number, maxx: number, maxy: number) {

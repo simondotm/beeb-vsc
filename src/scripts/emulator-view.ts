@@ -55,9 +55,9 @@ export class EmulatorView {
       // 	this.emulator.cpu.fdc.loadDisc(0, discImage);
       // }
       this.emulator.start()
-    } catch (e: any) {
+    } catch (e) {
       this.showTestCard(true)
-      notifyHost({ command: ClientCommand.Error, text: e.message })
+      notifyHost({ command: ClientCommand.Error, text: (e as Error).message })
     }
   }
 

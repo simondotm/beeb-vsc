@@ -154,7 +154,14 @@ export class EmulatorPanel {
 		${isFeatureEnabled('emulatorToolBar') ? this.getToolbarHtml() : ''}
 		${this.getEmulatorHtml()}
     ${this.getInfoBarHtml()}
-		${isDev() ? this.getTestHtml() : ''}
+
+  <vscode-button id="audio-warning" appearance="primary" hidden>
+    <span class="codicon codicon-warning"></span>
+    &nbsp;Audio is disabled in this webview. Click to enable.
+  </vscode-button>
+
+
+    ${isDev() ? this.getTestHtml() : ''}
 
 </body>
 </html>`
@@ -194,8 +201,7 @@ export class EmulatorPanel {
   getToolbarHtml() {
     return `
 
-
-	<div id="toolbar">
+  <div id="toolbar">
 
 		<vscode-button id="toolbar-control" appearance="secondary">
 			<span class="codicon codicon-debug-start"></span>
