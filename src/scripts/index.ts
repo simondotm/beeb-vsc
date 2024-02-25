@@ -1,5 +1,4 @@
 // This script is loaded by the WebView
-
 import { Model, findModel } from 'jsbeeb/models'
 import {
   ClientCommand,
@@ -38,6 +37,8 @@ window.addEventListener('load', (event) => {
   console.log(JSON.stringify(event))
   notifyHost({ command: ClientCommand.PageLoaded })
 })
+
+// Handle messages received from the host extension
 window.addEventListener('message', (event) => {
   const message = event.data as HostMessage // The JSON data our extension sent
   console.log('message received')

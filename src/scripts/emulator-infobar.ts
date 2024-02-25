@@ -24,6 +24,16 @@ export class EmulatorInfoBar {
   }
 
   private timer() {
+    this.updateRunTime()
+    this.updateScreenMode()
+  }
+
+  private mouseLeave() {
+    this.updateGraphicsCoords()
+    this.updateTextCoords()
+  }
+
+  private updateRunTime() {
     const emulator = this.emulatorView.emulator
     let html = EMPTY_CHAR
     if (emulator) {
@@ -35,12 +45,6 @@ export class EmulatorInfoBar {
       html = `Runtime: ${et}`
     }
     this.runTime.innerHTML = html
-    this.updateScreenMode()
-  }
-
-  private mouseLeave() {
-    this.updateGraphicsCoords()
-    this.updateTextCoords()
   }
 
   private updateScreenMode() {
