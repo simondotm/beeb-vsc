@@ -1,5 +1,4 @@
 import _ from 'underscore'
-import $ from 'jquery'
 import { Cpu6502 } from 'jsbeeb/6502'
 import { Video } from 'jsbeeb/video'
 import { Debugger } from 'jsbeeb/web/debug'
@@ -18,10 +17,6 @@ const BotStartCycles = 725000 // bbcmicrobot start time
 const MaxCyclesPerFrame = ClocksPerSecond / 10
 const urlParams = new URLSearchParams(window.location.search)
 
-const audioFilterFreq = 7000
-const audioFilterQ = 5
-const noSeek = false
-
 export type EmulatorCanvas = Canvas | GlCanvas
 
 // patch the jsbeeb loader to use the resource urls from the webview
@@ -32,7 +27,7 @@ utils.setLoader((url: string) => {
 })
 
 export class Emulator {
-  canvas: EmulatorCanvas
+  // canvas: EmulatorCanvas
   frames: number
   frameSkip: number
   // resizer: ScreenResizer;
@@ -47,8 +42,6 @@ export class Emulator {
   snapshot: Snapshot
   loop: boolean
   video: Video
-  // soundChip: SoundChip | FakeSoundChip
-  // ddNoise: DdNoise | FakeDdNoise
   dbgr: Debugger
   cpu: Cpu6502
   ready: boolean
@@ -58,10 +51,12 @@ export class Emulator {
   lastShiftLocation: number
   lastAltLocation: number
   lastCtrlLocation: number
-  audioHandler: AudioHandler
 
-  constructor(canvas: EmulatorCanvas, model: Model) {
-    this.canvas = canvas
+  constructor(
+    public model: Model,
+    public canvas: EmulatorCanvas,
+    public audioHandler: AudioHandler,
+  ) {
     this.frames = 0
     this.frameSkip = 0
     // resizer not great in webview
@@ -89,20 +84,6 @@ export class Emulator {
       _.bind(this.paint, this),
     )
 
-    this.audioHandler = new AudioHandler(
-      $('#audio-warning'),
-      audioFilterFreq,
-      audioFilterQ,
-      noSeek,
-    )
-    // Firefox will report that audio is suspended even when it will
-    // start playing without user interaction, so we need to delay a
-    // little to get a reliable indication.
-    window.setTimeout(() => this.audioHandler.checkStatus(), 1000)
-
-    // this.soundChip = new SoundChip() // new FakeSoundChip()
-    // this.ddNoise = new FakeDdNoise()
-
     this.dbgr = new Debugger(this.video)
     const cmos = new Cmos({
       load: function () {
@@ -120,9 +101,6 @@ export class Emulator {
       model,
       this.dbgr,
       this.video,
-      // this.soundChip,
-      // this.ddNoise,
-      // undefined, // music5000
       this.audioHandler.soundChip,
       this.audioHandler.ddNoise,
       model.hasMusic5000 ? this.audioHandler.music5000 : null,
