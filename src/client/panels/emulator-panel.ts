@@ -197,11 +197,11 @@ export class EmulatorPanel {
 
 	<div id="toolbar">
 
-		<vscode-button id="button_control" appearance="secondary">
+		<vscode-button id="toolbar-control" appearance="secondary">
 			<span class="codicon codicon-debug-start"></span>
 		</vscode-button>
 
-		<vscode-button id="button_restart" appearance="secondary">
+		<vscode-button id="toolbar-restart" appearance="secondary">
 			<span class="codicon codicon-debug-restart"></span>
 		</vscode-button>
 
@@ -216,11 +216,11 @@ export class EmulatorPanel {
 			<vscode-option>image.dsd</vscode-option>			
 		</vscode-dropdown>
 
-		<vscode-button id="button_sound" appearance="secondary">
+		<vscode-button id="toolbar-sound" appearance="secondary">
 			<span class="codicon codicon-mute"></span>
 		</vscode-button>
 
-		<vscode-button id="button_expand" appearance="secondary">
+		<vscode-button id="toolbar-expand" appearance="secondary">
 			<span class="codicon codicon-screen-normal"></span>
 		</vscode-button>
 
