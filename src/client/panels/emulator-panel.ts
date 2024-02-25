@@ -112,12 +112,10 @@ export class EmulatorPanel {
 
     // always update the webview content when creating or revealing
     // todo: load disc using messages rather than html changes. this way the script can reset the emulator, or optionally auto-boot
-    // EmulatorPanel.instance.setDiscFileUrl(contextSelection);
     if (contextSelection) {
-      console.log('setting html')
+      // console.log('setting html')
       // TODO: pass message to webview to update disc file
       EmulatorPanel.instance.setDiscFileUrl(contextSelection)
-      // EmulatorPanel.instance.panel.webview.html = EmulatorPanel.instance.getWebviewContent();
     }
   }
 
@@ -155,6 +153,7 @@ export class EmulatorPanel {
 
 		${isFeatureEnabled('emulatorToolBar') ? this.getToolbarHtml() : ''}
 		${this.getEmulatorHtml()}
+    ${this.getInfoBarHtml()}
 		${isDev() ? this.getTestHtml() : ''}
 
 </body>
@@ -172,10 +171,16 @@ export class EmulatorPanel {
     </div>
 
 
-		<div id="statusbar">
-			<vscode-button appearance="secondary">Ln 20, Col 18</vscode-button>
-			<vscode-button appearance="secondary">X 1279, Y 1023</vscode-button>
-			<vscode-button appearance="secondary">Runtime: 5s</vscode-button>
+		`
+  }
+
+  getInfoBarHtml() {
+    return `
+		<div id="infobar">
+			<vscode-button id="infobar-runtime" appearance="secondary">⌀</vscode-button>
+			<vscode-button id="infobar-mode" appearance="secondary">⌀</vscode-button>
+			<vscode-button id="infobar-text-coords" appearance="secondary">⌀</vscode-button>
+			<vscode-button id="infobar-graphics-coords" appearance="secondary">⌀</vscode-button>
 		</div>
 
 
@@ -183,7 +188,7 @@ export class EmulatorPanel {
 			<div id="emu_status"></div>
 			<div id="coords"></div>
     </div>		
-		`
+    `
   }
 
   getToolbarHtml() {
@@ -226,6 +231,7 @@ export class EmulatorPanel {
   }
 
   getTestHtml() {
+    return ''
     return `
 
 Hello world<br>

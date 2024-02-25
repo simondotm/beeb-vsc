@@ -24,6 +24,7 @@ label {
   margin-bottom: 2px;
 }
 
+
 #model-selector {
   width:200px; 
 }
@@ -33,6 +34,29 @@ label {
 
 .fixed-width-selector {
 	width: 200px;
+}
+
+/**
+  * Infobar
+  */
+#infobar-runtime {
+  width: 150px;
+  cursor: default;
+}
+
+#infobar-mode {
+  width: 80px;
+  cursor: default;
+}
+
+#infobar-text-coords {
+  width: 150px;
+  cursor: default;
+}
+
+#infobar-graphics-coords {
+  width: 150px;
+  cursor: default;
 }
 
 .no-margin {
