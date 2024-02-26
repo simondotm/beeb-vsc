@@ -222,6 +222,7 @@
 		"@vscode/webview-ui-toolkit": "^1.4.0",
 		"jsbeeb": "git+https://github.com/mattgodbolt/jsbeeb.git#bea43f5bf060f666a65d50d91afb4f4e6613aa78",
 		"resize-observer-polyfill": "^1.5.1",
+		"rxjs": "^7.8.1",
 		"source-map-support": "^0.5.21",
 		"tslib": "^2.6.2",
 		"underscore": "^1.13.6",
