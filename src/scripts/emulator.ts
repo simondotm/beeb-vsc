@@ -26,15 +26,34 @@ utils.setLoader((url: string) => {
   return utils.defaultLoadData(newUrl)
 })
 
-export class Emulator {
-  // canvas: EmulatorCanvas
-  frames: number
-  frameSkip: number
-  // resizer: ScreenResizer;
+type EmulatorMargin = {
   leftMargin: number
   rightMargin: number
   topMargin: number
   bottomMargin: number
+}
+
+const margins = {
+  full: {
+    leftMargin: 0,
+    rightMargin: 0,
+    topMargin: 0,
+    bottomMargin: 0,
+  },
+  normal: {
+    leftMargin: 115,
+    rightMargin: 130,
+    topMargin: 45,
+    bottomMargin: 30,
+  },
+} satisfies Record<string, EmulatorMargin>
+
+type MarginType = keyof typeof margins
+
+export class Emulator {
+  frames: number
+  frameSkip: number
+  // resizer: ScreenResizer;
   loopEnabled: boolean
   loopStart: number
   loopLength: number
@@ -52,6 +71,8 @@ export class Emulator {
   lastAltLocation: number
   lastCtrlLocation: number
 
+  margin: EmulatorMargin = margins.normal
+
   constructor(
     public model: Model,
     public canvas: EmulatorCanvas,
@@ -59,17 +80,9 @@ export class Emulator {
   ) {
     this.frames = 0
     this.frameSkip = 0
+
     // resizer not great in webview
     // this.resizer = new ScreenResizer(screen);
-    // margin sets how much of the fully emulated screen is visible/cropped
-    this.leftMargin = 115
-    this.rightMargin = 130
-    this.topMargin = 45
-    this.bottomMargin = 30
-    // this.leftMargin = 0;
-    // this.rightMargin = 0;
-    // this.topMargin = 0;
-    // this.bottomMargin = 0;
 
     this.loopEnabled = true
     this.loopStart = 60680000
@@ -265,11 +278,16 @@ export class Emulator {
     this.frames = 0
     const teletextAdjustX = this.video && this.video.teletextMode ? 15 : 0
     this.canvas.paint(
-      minx + this.leftMargin + teletextAdjustX,
-      miny + this.topMargin,
-      maxx - this.rightMargin + teletextAdjustX,
-      maxy - this.bottomMargin,
+      minx + this.margin.leftMargin + teletextAdjustX,
+      miny + this.margin.topMargin,
+      maxx - this.margin.rightMargin + teletextAdjustX,
+      maxy - this.margin.bottomMargin,
     )
+  }
+
+  setFullScreen(fullScreen: boolean) {
+    const margin: MarginType = fullScreen ? 'full' : 'normal'
+    this.margin = margins[margin]
   }
 
   onKeyDown(event: any) {

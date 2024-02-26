@@ -5,6 +5,7 @@ import { ClientCommand } from '../types/shared/messages'
 import { Model } from 'jsbeeb/models'
 import { notifyHost } from './vscode'
 import { CustomAudioHandler } from './custom-audio-handler'
+import { BehaviorSubject } from 'rxjs'
 
 const audioFilterFreq = 7000
 const audioFilterQ = 5
@@ -18,6 +19,7 @@ export class EmulatorView {
   emulator: Emulator | undefined // Dont hold references to the emulator, it may be paused and destroyed
   model: Model | undefined
   audioHandler: CustomAudioHandler
+  fullscreen = new BehaviorSubject(false)
 
   constructor() {
     const root = $('#emulator')
@@ -83,6 +85,12 @@ export class EmulatorView {
       this.showTestCard(true)
       notifyHost({ command: ClientCommand.Error, text: (e as Error).message })
     }
+  }
+
+  toggleFullscreen() {
+    const isFullScreen = !this.fullscreen.value
+    this.fullscreen.next(isFullScreen)
+    this.emulator?.setFullScreen(isFullScreen)
   }
 
   showTestCard(show: boolean = true) {

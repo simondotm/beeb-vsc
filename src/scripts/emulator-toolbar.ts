@@ -35,6 +35,16 @@ export class EmulatorToolBar {
       element.removeClass(muted ? 'codicon-unmute' : 'codicon-mute')
     })
 
+    emulatorView.fullscreen.subscribe((fullscreen) => {
+      const element = $('span:first', this.buttonExpand)
+      element.addClass(
+        fullscreen ? 'codicon-screen-full' : 'codicon-screen-normal',
+      )
+      element.removeClass(
+        fullscreen ? 'codicon-screen-normal' : 'codicon-screen-full',
+      )
+    })
+
     // populate the model selector
     const modelSelector = (this.modelSelector = $('#model-selector'))
     const model = emulatorView.model
@@ -105,9 +115,7 @@ export class EmulatorToolBar {
   }
   private onExpandClick() {
     if (this.buttonExpand) {
-      $('span:first', this.buttonExpand).toggleClass(
-        'codicon-screen-normal codicon-screen-full',
-      )
+      this.emulatorView.toggleFullscreen()
     }
   }
 }
