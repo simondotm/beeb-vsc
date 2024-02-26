@@ -23,6 +23,14 @@ export class EmulatorToolBar {
     this.buttonSound.on('click', () => this.onSoundClick())
     this.buttonExpand.on('click', () => this.onExpandClick())
 
+    // use primary appearance for sound button if audio is disabled in webview
+    this.buttonSound.prop(
+      'appearance',
+      emulatorView.audioHandler.isEnabled() ? 'secondary' : 'primary',
+    )
+    // disable this button for now. We need RxJs to handle this properly
+    this.buttonSound.prop('disabled', true)
+
     // populate the model selector
     const modelSelector = (this.modelSelector = $('#model-selector'))
     const model = emulatorView.model
