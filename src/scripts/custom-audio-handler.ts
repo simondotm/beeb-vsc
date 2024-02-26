@@ -1,10 +1,12 @@
 import { AudioHandler } from 'jsbeeb/web/audio-handler'
+import { BehaviorSubject } from 'rxjs'
 
 /**
  * CustomAudioHandler extends AudioHandler to add a couple of additional interfaces.
  */
 export class CustomAudioHandler extends AudioHandler {
-  muted: boolean = false
+  muted = new BehaviorSubject<boolean>(false)
+  enabled = new BehaviorSubject<boolean>(false)
 
   constructor(
     warningNode: JQuery<HTMLElement>,
@@ -19,13 +21,28 @@ export class CustomAudioHandler extends AudioHandler {
    * Mute or unmute the audio at the sound chip level.
    */
   override mute() {
-    this.muted = true
     super.mute()
+    this.muted.next(true)
   }
 
   override unmute() {
-    this.muted = false
     super.unmute()
+    this.muted.next(false)
+  }
+
+  override async tryResume() {
+    await super.tryResume()
+    this.updateState()
+  }
+
+  override checkStatus() {
+    super.checkStatus()
+    this.updateState()
+  }
+
+  private updateState() {
+    const enabled = this.isEnabled()
+    this.enabled.next(enabled)
   }
 
   /**
@@ -34,5 +51,14 @@ export class CustomAudioHandler extends AudioHandler {
    */
   isEnabled(): boolean {
     return this.audioContext && this.audioContext.state === 'running'
+  }
+
+  toggleMute(): boolean {
+    if (this.muted.value) {
+      this.unmute()
+    } else {
+      this.mute()
+    }
+    return this.muted.value
   }
 }

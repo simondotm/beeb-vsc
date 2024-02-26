@@ -23,13 +23,17 @@ export class EmulatorToolBar {
     this.buttonSound.on('click', () => this.onSoundClick())
     this.buttonExpand.on('click', () => this.onExpandClick())
 
-    // use primary appearance for sound button if audio is disabled in webview
-    this.buttonSound.prop(
-      'appearance',
-      emulatorView.audioHandler.isEnabled() ? 'secondary' : 'primary',
-    )
-    // disable this button for now. We need RxJs to handle this properly
-    this.buttonSound.prop('disabled', true)
+    // listener for audio handler state changes
+    emulatorView.audioHandler.enabled.subscribe((enabled) => {
+      this.buttonSound.prop('appearance', enabled ? 'secondary' : 'primary')
+      this.buttonSound.prop('disabled', !enabled)
+    })
+    // listener for audio handler mute state changes
+    emulatorView.audioHandler.muted.subscribe((muted) => {
+      const element = $('span:first', this.buttonSound)
+      element.addClass(muted ? 'codicon-mute' : 'codicon-unmute')
+      element.removeClass(muted ? 'codicon-unmute' : 'codicon-mute')
+    })
 
     // populate the model selector
     const modelSelector = (this.modelSelector = $('#model-selector'))
@@ -96,9 +100,7 @@ export class EmulatorToolBar {
   }
   private onSoundClick() {
     if (this.buttonSound) {
-      $('span:first', this.buttonSound).toggleClass(
-        'codicon-mute codicon-unmute',
-      )
+      this.emulatorView.audioHandler.toggleMute()
     }
   }
   private onExpandClick() {
