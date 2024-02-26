@@ -10,7 +10,7 @@ import { Model } from 'jsbeeb/models'
 import { BaseDisc, emptySsd } from 'jsbeeb/fdc'
 import { notifyHost } from './vscode'
 import { ClientCommand } from '../types/shared/messages'
-import { AudioHandler } from 'jsbeeb/web/audio-handler'
+import { CustomAudioHandler } from './custom-audio-handler'
 
 const ClocksPerSecond = (2 * 1000 * 1000) | 0
 const BotStartCycles = 725000 // bbcmicrobot start time
@@ -55,7 +55,7 @@ export class Emulator {
   constructor(
     public model: Model,
     public canvas: EmulatorCanvas,
-    public audioHandler: AudioHandler,
+    public audioHandler: CustomAudioHandler,
   ) {
     this.frames = 0
     this.frameSkip = 0

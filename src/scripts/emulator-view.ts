@@ -4,7 +4,7 @@ import { Emulator, EmulatorCanvas } from './emulator'
 import { ClientCommand } from '../types/shared/messages'
 import { Model } from 'jsbeeb/models'
 import { notifyHost } from './vscode'
-import { AudioHandler } from 'jsbeeb/web/audio-handler'
+import { CustomAudioHandler } from './custom-audio-handler'
 
 const audioFilterFreq = 7000
 const audioFilterQ = 5
@@ -17,7 +17,7 @@ export class EmulatorView {
   canvas: EmulatorCanvas
   emulator: Emulator | undefined // Dont hold references to the emulator, it may be paused and destroyed
   model: Model | undefined
-  audioHandler: AudioHandler
+  audioHandler: CustomAudioHandler
 
   constructor() {
     const root = $('#emulator')
@@ -39,7 +39,7 @@ export class EmulatorView {
     screen.on('blur', () => this.emulator?.clearKeys())
 
     // create webview audio driver
-    this.audioHandler = new AudioHandler(
+    this.audioHandler = new CustomAudioHandler(
       $('#audio-warning'),
       audioFilterFreq,
       audioFilterQ,
