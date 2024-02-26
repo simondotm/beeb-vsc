@@ -37,6 +37,8 @@ declare module 'jsbeeb/models' {
     swram: SWRAM
     isTest: boolean
     tube: any
+    hasMusic5000: boolean
+
     constructor(
       name: string,
       synonyms: string[],

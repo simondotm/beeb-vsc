@@ -36,6 +36,12 @@ label {
 	width: 200px;
 }
 
+
+#audio-warning {
+  width: 480px;
+  margin: 8px;
+}
+
 /**
   * Infobar
   */

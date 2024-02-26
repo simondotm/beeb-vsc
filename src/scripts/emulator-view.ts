@@ -4,6 +4,11 @@ import { Emulator, EmulatorCanvas } from './emulator'
 import { ClientCommand } from '../types/shared/messages'
 import { Model } from 'jsbeeb/models'
 import { notifyHost } from './vscode'
+import { CustomAudioHandler } from './custom-audio-handler'
+
+const audioFilterFreq = 7000
+const audioFilterQ = 5
+const noSeek = false
 
 export class EmulatorView {
   root: JQuery<HTMLElement> // root element
@@ -12,6 +17,7 @@ export class EmulatorView {
   canvas: EmulatorCanvas
   emulator: Emulator | undefined // Dont hold references to the emulator, it may be paused and destroyed
   model: Model | undefined
+  audioHandler: CustomAudioHandler
 
   constructor() {
     const root = $('#emulator')
@@ -26,9 +32,27 @@ export class EmulatorView {
     this.canvas = bestCanvas(screen[0])
 
     // forward key events to emulator
-    screen.keyup((event: any) => this.emulator?.keyUp(event))
-    screen.keydown((event: any) => this.emulator?.keyDown(event))
-    screen.blur(() => this.emulator?.clearKeys())
+    screen.on('keyup', (event: JQuery.Event) => this.emulator?.onKeyUp(event))
+    screen.on('keydown', (event: JQuery.Event) =>
+      this.emulator?.onKeyDown(event),
+    )
+    screen.on('blur', () => this.emulator?.clearKeys())
+
+    // create webview audio driver
+    this.audioHandler = new CustomAudioHandler(
+      $('#audio-warning'),
+      audioFilterFreq,
+      audioFilterQ,
+      noSeek,
+    )
+    // Firefox will report that audio is suspended even when it will
+    // start playing without user interaction, so we need to delay a
+    // little to get a reliable indication.
+    window.setTimeout(() => this.audioHandler.checkStatus(), 1000)
+  }
+
+  async initialise() {
+    await this.audioHandler.initialise()
   }
 
   async boot(model: Model) {
@@ -42,7 +66,7 @@ export class EmulatorView {
         this.emulator.pause()
       }
 
-      this.emulator = new Emulator(this.canvas, model)
+      this.emulator = new Emulator(model, this.canvas, this.audioHandler)
       await this.emulator.initialise()
       notifyHost({ command: ClientCommand.EmulatorReady })
 
@@ -55,9 +79,9 @@ export class EmulatorView {
       // 	this.emulator.cpu.fdc.loadDisc(0, discImage);
       // }
       this.emulator.start()
-    } catch (e: any) {
+    } catch (e) {
       this.showTestCard(true)
-      notifyHost({ command: ClientCommand.Error, text: e.message })
+      notifyHost({ command: ClientCommand.Error, text: (e as Error).message })
     }
   }
 

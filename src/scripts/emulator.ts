@@ -2,8 +2,6 @@ import _ from 'underscore'
 import { Cpu6502 } from 'jsbeeb/6502'
 import { Video } from 'jsbeeb/video'
 import { Debugger } from 'jsbeeb/web/debug'
-import { SoundChip, FakeSoundChip } from 'jsbeeb/soundchip'
-import { DdNoise, FakeDdNoise } from 'jsbeeb/ddnoise'
 import { Cmos, CmosData } from 'jsbeeb/cmos'
 import { Canvas, GlCanvas } from 'jsbeeb/canvas'
 import Snapshot from './snapshot'
@@ -12,6 +10,7 @@ import { Model } from 'jsbeeb/models'
 import { BaseDisc, emptySsd } from 'jsbeeb/fdc'
 import { notifyHost } from './vscode'
 import { ClientCommand } from '../types/shared/messages'
+import { CustomAudioHandler } from './custom-audio-handler'
 
 const ClocksPerSecond = (2 * 1000 * 1000) | 0
 const BotStartCycles = 725000 // bbcmicrobot start time
@@ -28,7 +27,7 @@ utils.setLoader((url: string) => {
 })
 
 export class Emulator {
-  canvas: EmulatorCanvas
+  // canvas: EmulatorCanvas
   frames: number
   frameSkip: number
   // resizer: ScreenResizer;
@@ -43,8 +42,6 @@ export class Emulator {
   snapshot: Snapshot
   loop: boolean
   video: Video
-  soundChip: SoundChip | FakeSoundChip
-  ddNoise: DdNoise | FakeDdNoise
   dbgr: Debugger
   cpu: Cpu6502
   ready: boolean
@@ -55,8 +52,11 @@ export class Emulator {
   lastAltLocation: number
   lastCtrlLocation: number
 
-  constructor(canvas: EmulatorCanvas, model: Model) {
-    this.canvas = canvas
+  constructor(
+    public model: Model,
+    public canvas: EmulatorCanvas,
+    public audioHandler: CustomAudioHandler,
+  ) {
     this.frames = 0
     this.frameSkip = 0
     // resizer not great in webview
@@ -84,9 +84,6 @@ export class Emulator {
       _.bind(this.paint, this),
     )
 
-    this.soundChip = new FakeSoundChip()
-    this.ddNoise = new FakeDdNoise()
-
     this.dbgr = new Debugger(this.video)
     const cmos = new Cmos({
       load: function () {
@@ -104,9 +101,9 @@ export class Emulator {
       model,
       this.dbgr,
       this.video,
-      this.soundChip,
-      this.ddNoise,
-      undefined, // music5000
+      this.audioHandler.soundChip,
+      this.audioHandler.ddNoise,
+      model.hasMusic5000 ? this.audioHandler.music5000 : null,
       cmos,
       config,
       undefined, // econet
@@ -128,7 +125,7 @@ export class Emulator {
   }
 
   async initialise() {
-    await Promise.all([this.cpu.initialise(), this.ddNoise.initialise()])
+    await this.cpu.initialise()
     this.ready = true
   }
 
@@ -214,47 +211,52 @@ export class Emulator {
   }
 
   frameFunc(now: number) {
-    window.requestAnimationFrame(this.onAnimFrame)
-    // Take snapshot
-    if (
-      this.loop == true &&
-      this.state == null &&
-      this.cpu.currentCycles >= this.loopStart
-    ) {
-      this.pause()
-      this.state = this.snapshot.save(this.cpu).state
-      this.start()
-      console.log('snapshot taken at ' + this.cpu.currentCycles + ' cycles')
-    }
-
-    // Loop back
-    if (
-      this.loop == true &&
-      this.state !== null &&
-      this.cpu.currentCycles >= this.loopStart + this.loopLength
-    ) {
-      this.pause()
-      this.snapshot.load(this.state, this.cpu)
-      this.cpu.currentCycles = this.loopStart
-      this.cpu.targetCycles = this.loopStart
-      this.start()
-    }
-
-    if (this.running && this.lastFrameTime !== 0) {
-      const sinceLast = now - this.lastFrameTime
-      let cycles = ((sinceLast * ClocksPerSecond) / 1000) | 0
-      cycles = Math.min(cycles, MaxCyclesPerFrame)
-      try {
-        if (!this.cpu.execute(cycles)) {
-          this.running = false // TODO: breakpoint
-        }
-      } catch (e) {
-        this.running = false
-        this.dbgr.debug(this.cpu.pc)
-        throw e
+    try {
+      window.requestAnimationFrame(this.onAnimFrame)
+      // Take snapshot
+      if (
+        this.loop == true &&
+        this.state == null &&
+        this.cpu.currentCycles >= this.loopStart
+      ) {
+        this.pause()
+        this.state = this.snapshot.save(this.cpu).state
+        this.start()
+        console.log('snapshot taken at ' + this.cpu.currentCycles + ' cycles')
       }
+
+      // Loop back
+      if (
+        this.loop == true &&
+        this.state !== null &&
+        this.cpu.currentCycles >= this.loopStart + this.loopLength
+      ) {
+        this.pause()
+        this.snapshot.load(this.state, this.cpu)
+        this.cpu.currentCycles = this.loopStart
+        this.cpu.targetCycles = this.loopStart
+        this.start()
+      }
+
+      if (this.running && this.lastFrameTime !== 0) {
+        const sinceLast = now - this.lastFrameTime
+        let cycles = ((sinceLast * ClocksPerSecond) / 1000) | 0
+        cycles = Math.min(cycles, MaxCyclesPerFrame)
+        try {
+          if (!this.cpu.execute(cycles)) {
+            this.running = false // TODO: breakpoint
+          }
+        } catch (e) {
+          this.running = false
+          this.dbgr.debug(this.cpu.pc)
+          throw e
+        }
+      }
+      this.lastFrameTime = now
+    } catch (e) {
+      console.log(e)
+      notifyHost({ command: ClientCommand.Error, text: (e as Error).message })
     }
-    this.lastFrameTime = now
   }
 
   paint(minx: number, miny: number, maxx: number, maxy: number) {
@@ -270,10 +272,10 @@ export class Emulator {
     )
   }
 
-  keyDown(event: any) {
+  onKeyDown(event: any) {
     if (!this.running) return
 
-    const code = this.keyCode(event)
+    const code = this.onKeyCode(event)
     const processor = this.cpu
     if (code === utils.keyCodes.HOME && event.ctrlKey) {
       this.pause()
@@ -290,9 +292,9 @@ export class Emulator {
     if (processor && processor.sysvia) processor.sysvia.clearKeys()
   }
 
-  keyUp(event: any) {
+  onKeyUp(event: any) {
     // Always let the key ups come through.
-    const code = this.keyCode(event)
+    const code = this.onKeyCode(event)
     const processor = this.cpu
     if (processor && processor.sysvia) processor.sysvia.keyUp(code)
     if (!this.running) return
@@ -302,7 +304,7 @@ export class Emulator {
     event.preventDefault()
   }
 
-  keyCode(event: any) {
+  onKeyCode(event: any) {
     const ret = event.which || event.charCode || event.keyCode
     const keyCodes = utils.keyCodes
     switch (event.location) {

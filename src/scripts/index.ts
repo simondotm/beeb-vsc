@@ -22,6 +22,7 @@ async function initialise() {
 
   // create the emulator view container
   emulatorView = new EmulatorView()
+  await emulatorView.initialise()
 
   // boot the emulator
   await emulatorView.boot(defaultModel)
