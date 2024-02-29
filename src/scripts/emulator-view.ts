@@ -73,7 +73,7 @@ export class EmulatorView {
       notifyHost({ command: ClientCommand.EmulatorReady })
 
       const discUrl = window.JSBEEB_DISC
-      this.emulator.loadDisc(discUrl)
+      await this.emulator.loadDisc(discUrl)
       // if (discUrl) {
       // 	const fdc = this.emulator.cpu.fdc;
       // 	const discData = await utils.defaultLoadData(discUrl);
