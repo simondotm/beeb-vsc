@@ -11,8 +11,7 @@ import { BaseDisc, emptySsd } from 'jsbeeb/fdc'
 import { notifyHost } from './vscode'
 import { ClientCommand } from '../types/shared/messages'
 import { CustomAudioHandler } from './custom-audio-handler'
-import { BehaviorSubject, Observable, distinctUntilChanged, map } from 'rxjs'
-import { DisplayMode, getDisplayModeInfo } from './display-modes'
+import { Subject } from 'rxjs'
 
 const ClocksPerSecond = (2 * 1000 * 1000) | 0
 const BotStartCycles = 725000 // bbcmicrobot start time
@@ -75,8 +74,8 @@ export class Emulator {
 
   margin: EmulatorMargin = margins.normal
 
-  private mode$ = new BehaviorSubject<number>(255)
-  displayMode$: Observable<DisplayMode>
+  private emulatorUpdate = new Subject<Emulator>()
+  emulatorUpdate$ = this.emulatorUpdate.asObservable()
 
   constructor(
     public model: Model,
@@ -88,11 +87,6 @@ export class Emulator {
 
     // resizer not great in webview
     // this.resizer = new ScreenResizer(screen);
-
-    this.displayMode$ = this.mode$.pipe(
-      map((mode) => getDisplayModeInfo(mode)),
-      distinctUntilChanged(),
-    )
 
     this.loopEnabled = true
     this.loopStart = 60680000
@@ -189,16 +183,6 @@ export class Emulator {
     }
   }
 
-  getScreenMode() {
-    return this.cpu.readmem(0x0355)
-  }
-
-  private updateScreenMode() {
-    // const mode = getDisplayModeInfo(this.getScreenMode())
-    const mode = this.getScreenMode()
-    this.mode$.next(mode)
-  }
-
   async runProgram(tokenised: any) {
     if (!this.ready) return
 
@@ -242,7 +226,8 @@ export class Emulator {
 
   frameFunc(now: number) {
     try {
-      this.updateScreenMode()
+      // this.updateScreenMode()
+
       window.requestAnimationFrame(this.onAnimFrame)
       // Take snapshot
       if (
@@ -284,6 +269,7 @@ export class Emulator {
         }
       }
       this.lastFrameTime = now
+      this.emulatorUpdate.next(this)
     } catch (e) {
       console.log(e)
       notifyHost({ command: ClientCommand.Error, text: (e as Error).message })

@@ -49,7 +49,7 @@ window.addEventListener('message', (event) => {
     case HostCommand.LoadDisc:
       if (message.url) {
         console.log(`loadDisc=${message.url}`)
-        emulatorView?.emulator?.loadDisc(message.url)
+        emulatorView?.emulatorService.emulator?.loadDisc(message.url)
       }
       break
   }

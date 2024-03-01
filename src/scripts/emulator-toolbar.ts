@@ -82,7 +82,7 @@ export class EmulatorToolBar {
   }
 
   private updateEmulatorStatus() {
-    const isRunning = this.emulatorView.emulator?.running
+    const isRunning = this.emulatorView.emulatorService.emulator?.running
     if (isRunning) {
       $('span:first', this.buttonControl).removeClass('codicon-debug-start')
       $('span:first', this.buttonControl).addClass('codicon-debug-pause')
@@ -95,7 +95,7 @@ export class EmulatorToolBar {
   }
 
   private onControlClick() {
-    const emulator = this.emulatorView.emulator
+    const emulator = this.emulatorView.emulatorService.emulator
     if (emulator?.running) {
       emulator.pause()
     } else {
@@ -105,7 +105,7 @@ export class EmulatorToolBar {
   }
   private onRestartClick() {
     if (this.buttonRestart) {
-      this.emulatorView.emulator?.cpu.reset(true)
+      this.emulatorView.emulatorService.emulator?.cpu.reset(true)
     }
   }
   private onSoundClick() {

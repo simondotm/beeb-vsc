@@ -1,5 +1,6 @@
 import $ from 'jquery'
 import { EmulatorView } from './emulator-view'
+import { DisplayModeInfo } from './display-modes'
 
 const EMPTY_CHAR = '⌀'
 
@@ -21,11 +22,15 @@ export class EmulatorInfoBar {
     screen.on('mouseleave', () => this.mouseLeave())
 
     setInterval(this.timer.bind(this), 1000)
+
+    this.emulatorView.emulatorService.displayMode$.subscribe((displayInfo) =>
+      this.updateScreenMode(displayInfo),
+    )
   }
 
   private timer() {
     this.updateRunTime()
-    this.updateScreenMode()
+    // this.updateScreenMode()
   }
 
   private mouseLeave() {
@@ -34,7 +39,7 @@ export class EmulatorInfoBar {
   }
 
   private updateRunTime() {
-    const emulator = this.emulatorView.emulator
+    const emulator = this.emulatorView.emulatorService.emulator
     let html = EMPTY_CHAR
     if (emulator) {
       const totalSeconds = Math.floor(emulator.cpu.currentCycles / 2000000)
@@ -47,9 +52,16 @@ export class EmulatorInfoBar {
     this.runTime.html(html)
   }
 
-  private updateScreenMode() {
-    const emulator = this.emulatorView.emulator
-    this.mode.html(emulator ? `Mode ${emulator.getScreenMode()}` : EMPTY_CHAR)
+  private updateScreenMode(displayInfo: DisplayModeInfo | null) {
+    console.log('updateScreenMode', displayInfo)
+    this.mode.html(displayInfo ? `Mode ${displayInfo.mode}` : EMPTY_CHAR)
+
+    // const emulatorService = this.emulatorView.emulatorService
+    // this.mode.html(
+    //   emulatorService.emulator
+    //     ? `Mode ${emulatorService.getScreenMode()}`
+    //     : EMPTY_CHAR,
+    // )
   }
 
   private updateTextCoords(coords?: { x: number; y: number }) {
@@ -66,15 +78,15 @@ export class EmulatorInfoBar {
 
   private mouseMove(event: JQuery.Event) {
     if (!event) return
-    const emulator = this.emulatorView.emulator
+    const emulatorService = this.emulatorView.emulatorService
     const screen = this.emulatorView.screen
-    if (!emulator) return
+    // if (!emulator) return
 
     let W
     let H
     let graphicsMode = true
 
-    const screenMode = emulator.getScreenMode()
+    const screenMode = emulatorService.getScreenMode()
     switch (screenMode) {
       case 0:
         W = 80
