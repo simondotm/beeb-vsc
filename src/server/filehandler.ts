@@ -11,6 +11,7 @@ export class FileHandler {
   private static _instance: FileHandler
   private _textDocuments: Map<string, { contents: string; modified: Date }> =
     new Map<string, { contents: string; modified: Date }>()
+  private includedToParentMap = new Map<string, string>()
   public documents: TextDocuments<TextDocument> = new TextDocuments(
     TextDocument,
   )
@@ -22,6 +23,27 @@ export class FileHandler {
   public static get Instance() {
     // Do you need arguments? Make it a regular static method instead.
     return this._instance || (this._instance = new this())
+  }
+
+  public GetTargetFileName(fileName: string): string | undefined {
+    // Recursively get the parent file name until
+    // the parent file name is the same as the file name
+    let targetFileName = this.includedToParentMap.get(fileName)
+    if (targetFileName === undefined) {
+      return undefined
+    }
+    while (targetFileName !== fileName) {
+      fileName = targetFileName
+      targetFileName = this.includedToParentMap.get(fileName)
+      if (targetFileName === undefined) {
+        return undefined // shouldn't end up here
+      }
+    }
+    return targetFileName
+  }
+
+  public SetTargetFileName(fileName: string, targetFileName: string): void {
+    this.includedToParentMap.set(fileName, targetFileName)
   }
 
   public Clear(): void {

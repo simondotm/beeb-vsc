@@ -32,7 +32,7 @@ let client: LanguageClient
 
 interface BeebVSCSettings {
   beebvsc: {
-    sourceFile: string
+    sourceFile: string | string[]
     targetName: string
   }
 }
@@ -285,7 +285,7 @@ function CreateNewLocalSettingsJson(sourceFile: string, targetName: string) {
 
   const settingsObject: BeebVSCSettings = {
     beebvsc: {
-      sourceFile: sourcePath,
+      sourceFile: [sourcePath],
       targetName: targetName,
     },
   }
@@ -315,7 +315,7 @@ function setCurrentTarget(
             // no target file specified, so use the default target file
             targetFile = getTargetName(
               workspace.getConfiguration('beebvsc').get<string>('sourceFile') ??
-                'main.asm',
+              'main.asm',
             )
           }
         }
@@ -540,8 +540,20 @@ function SaveJSONFiles(
     }
     // now add the new settings
     console.log('Setting beebvsc object to settings.json')
+    const currentSourceFile = settingsObject.beebvsc?.sourceFile
+    let newSourceFile: string[] = []
+    if (typeof currentSourceFile === 'string') {
+      newSourceFile.push(currentSourceFile)
+    } else if (Array.isArray(currentSourceFile)) {
+      newSourceFile = currentSourceFile ?? []
+    } else {
+      newSourceFile = []
+    }
+    if (!newSourceFile.includes(path.join(rootPath, selection))) {
+      newSourceFile.push(path.join(rootPath, selection))
+    }
     settingsObject.beebvsc = {
-      sourceFile: path.join(rootPath, selection),
+      sourceFile: newSourceFile,
       targetName: targetDiskImage,
     }
 
