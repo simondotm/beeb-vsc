@@ -23,7 +23,7 @@ export class EmulatorInfoBar {
 
     setInterval(this.timer.bind(this), 1000)
 
-    this.emulatorView.emulatorService.displayMode$.subscribe((displayInfo) =>
+    this.emulatorView.displayMode$.subscribe((displayInfo) =>
       this.updateScreenMode(displayInfo),
     )
   }
@@ -39,7 +39,7 @@ export class EmulatorInfoBar {
   }
 
   private updateRunTime() {
-    const emulator = this.emulatorView.emulatorService.emulator
+    const emulator = this.emulatorView.emulator
     let html = EMPTY_CHAR
     if (emulator) {
       const totalSeconds = Math.floor(emulator.cpu.currentCycles / 2000000)
@@ -78,7 +78,7 @@ export class EmulatorInfoBar {
 
   private mouseMove(event: JQuery.Event) {
     if (!event) return
-    const emulatorService = this.emulatorView.emulatorService
+    // const emulatorView = this.emulatorView.emulatorService
     const screen = this.emulatorView.screen
     // if (!emulator) return
 
@@ -86,7 +86,7 @@ export class EmulatorInfoBar {
     // let H
     // let graphicsMode = true
 
-    const displayInfo = emulatorService.displayMode
+    const displayInfo = this.emulatorView.displayMode
     if (!displayInfo) return
 
     const W = displayInfo.text.w
