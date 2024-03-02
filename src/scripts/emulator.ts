@@ -217,7 +217,7 @@ export class Emulator {
     this.start()
   }
 
-  writeToKeyboardBuffer(text: any) {
+  writeToKeyboardBuffer(text: string) {
     const processor = this.cpu
     const keyboardBuffer = 0x0300 // BBC Micro OS 1.20
     const IBPaddress = 0x02e1 // input buffer pointer
