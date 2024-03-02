@@ -1,5 +1,6 @@
 import $ from 'jquery'
 import { EmulatorView } from './emulator-view'
+import { DisplayModeInfo } from './display-modes'
 
 const EMPTY_CHAR = '⌀'
 
@@ -21,11 +22,14 @@ export class EmulatorInfoBar {
     screen.on('mouseleave', () => this.mouseLeave())
 
     setInterval(this.timer.bind(this), 1000)
+
+    this.emulatorView.displayMode$.subscribe((displayInfo) =>
+      this.updateScreenMode(displayInfo),
+    )
   }
 
   private timer() {
     this.updateRunTime()
-    this.updateScreenMode()
   }
 
   private mouseLeave() {
@@ -47,9 +51,9 @@ export class EmulatorInfoBar {
     this.runTime.html(html)
   }
 
-  private updateScreenMode() {
-    const emulator = this.emulatorView.emulator
-    this.mode.html(emulator ? `Mode ${emulator.getScreenMode()}` : EMPTY_CHAR)
+  private updateScreenMode(displayInfo: DisplayModeInfo | null) {
+    console.log('updateScreenMode', displayInfo)
+    this.mode.html(displayInfo ? `Mode ${displayInfo.mode}` : EMPTY_CHAR)
   }
 
   private updateTextCoords(coords?: { x: number; y: number }) {
@@ -66,49 +70,13 @@ export class EmulatorInfoBar {
 
   private mouseMove(event: JQuery.Event) {
     if (!event) return
-    const emulator = this.emulatorView.emulator
     const screen = this.emulatorView.screen
-    if (!emulator) return
+    const displayInfo = this.emulatorView.displayMode
+    if (!displayInfo) return
 
-    let W
-    let H
-    let graphicsMode = true
-
-    const screenMode = emulator.getScreenMode()
-    switch (screenMode) {
-      case 0:
-        W = 80
-        H = 32
-        break
-      case 1:
-      case 4:
-        W = 40
-        H = 32
-        break
-      case 2:
-      case 5:
-        W = 20
-        H = 32
-        break
-      case 3:
-        W = 80
-        H = 25.6
-        graphicsMode = false
-        break
-      case 6:
-        W = 40
-        H = 25.6
-        graphicsMode = false
-        break
-      case 7:
-        W = 40
-        H = 25.6
-        graphicsMode = false
-        break
-      default:
-        // Unknown screen mode!
-        return
-    }
+    const W = displayInfo.text.w
+    const H = displayInfo.text.h
+    const graphicsMode = displayInfo.type === 'Graphics'
 
     function clamp(value: number, min: number, max: number) {
       return Math.max(min, Math.min(max, value))

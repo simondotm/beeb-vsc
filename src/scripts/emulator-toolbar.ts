@@ -24,18 +24,18 @@ export class EmulatorToolBar {
     this.buttonExpand.on('click', () => this.onExpandClick())
 
     // listener for audio handler state changes
-    emulatorView.audioHandler.enabled.subscribe((enabled) => {
+    emulatorView.audioHandler.enabled$.subscribe((enabled) => {
       this.buttonSound.prop('appearance', enabled ? 'secondary' : 'primary')
       this.buttonSound.prop('disabled', !enabled)
     })
     // listener for audio handler mute state changes
-    emulatorView.audioHandler.muted.subscribe((muted) => {
+    emulatorView.audioHandler.muted$.subscribe((muted) => {
       const element = $('span:first', this.buttonSound)
       element.addClass(muted ? 'codicon-mute' : 'codicon-unmute')
       element.removeClass(muted ? 'codicon-unmute' : 'codicon-mute')
     })
 
-    emulatorView.fullscreen.subscribe((fullscreen) => {
+    emulatorView.fullscreen$.subscribe((fullscreen) => {
       const element = $('span:first', this.buttonExpand)
       element.addClass(
         fullscreen ? 'codicon-screen-full' : 'codicon-screen-normal',

@@ -1,25 +1,34 @@
 import $ from 'jquery'
 import { bestCanvas } from 'jsbeeb/canvas'
 import { Emulator, EmulatorCanvas } from './emulator'
-import { ClientCommand } from '../types/shared/messages'
 import { Model } from 'jsbeeb/models'
-import { notifyHost } from './vscode'
 import { CustomAudioHandler } from './custom-audio-handler'
-import { BehaviorSubject } from 'rxjs'
+import { BehaviorSubject, Observable, distinctUntilChanged } from 'rxjs'
+import { DisplayMode, getDisplayModeInfo } from './display-modes'
+import { notifyHost } from './vscode'
+import { ClientCommand } from '../types/shared/messages'
 
 const audioFilterFreq = 7000
 const audioFilterQ = 5
 const noSeek = false
 
 export class EmulatorView {
-  root: JQuery<HTMLElement> // root element
-  screen: JQuery<HTMLElement> // screen element
-  testcard: JQuery<HTMLElement> // testcard element
-  canvas: EmulatorCanvas
-  emulator: Emulator | undefined // Dont hold references to the emulator, it may be paused and destroyed
+  readonly root: JQuery<HTMLElement> // root element
+  readonly screen: JQuery<HTMLElement> // screen element
+  readonly testcard: JQuery<HTMLElement> // testcard element
+  readonly canvas: EmulatorCanvas
+  readonly audioHandler: CustomAudioHandler
   model: Model | undefined
-  audioHandler: CustomAudioHandler
-  fullscreen = new BehaviorSubject(false)
+  emulator: Emulator | undefined // Dont hold references to the emulator, it may be paused and destroyed
+
+  // observables
+  private _displayMode$ = new BehaviorSubject<DisplayMode>(null)
+  readonly displayMode$: Observable<DisplayMode>
+
+  private _fullscreen$ = new BehaviorSubject(false)
+  get fullscreen$(): Observable<boolean> {
+    return this._fullscreen$
+  }
 
   constructor() {
     const root = $('#emulator')
@@ -51,21 +60,25 @@ export class EmulatorView {
     // start playing without user interaction, so we need to delay a
     // little to get a reliable indication.
     window.setTimeout(() => this.audioHandler.checkStatus(), 1000)
+
+    // setup observables
+    this.displayMode$ = this._displayMode$.pipe(distinctUntilChanged())
   }
 
   async initialise() {
     await this.audioHandler.initialise()
   }
 
+  get displayMode(): DisplayMode | null {
+    return this._displayMode$.value
+  }
+
   async boot(model: Model) {
     this.model = model
     try {
-      this.showTestCard(false)
-
-      // any previously running emulator must be paused
-      // before tear down, otherwise it will continue to paint itself
       if (this.emulator) {
-        this.emulator.pause()
+        this.emulator.shutdown()
+        this._displayMode$.next(null)
       }
 
       this.emulator = new Emulator(model, this.canvas, this.audioHandler)
@@ -73,7 +86,7 @@ export class EmulatorView {
       notifyHost({ command: ClientCommand.EmulatorReady })
 
       const discUrl = window.JSBEEB_DISC
-      this.emulator.loadDisc(discUrl)
+      await this.emulator.loadDisc(discUrl)
       // if (discUrl) {
       // 	const fdc = this.emulator.cpu.fdc;
       // 	const discData = await utils.defaultLoadData(discUrl);
@@ -81,15 +94,26 @@ export class EmulatorView {
       // 	this.emulator.cpu.fdc.loadDisc(0, discImage);
       // }
       this.emulator.start()
+      // will automatically unsubscribe when emulator is shutdown
+      this.emulator.emulatorUpdate$.subscribe((emulator) =>
+        this.onEmulatorUpdate(emulator),
+      )
     } catch (e) {
-      this.showTestCard(true)
       notifyHost({ command: ClientCommand.Error, text: (e as Error).message })
+      this.emulator = undefined
     }
+    this.showTestCard(this.emulator === undefined)
+  }
+
+  private onEmulatorUpdate(_emulator: Emulator) {
+    // update display mode
+    const mode = this.emulator?.cpu.readmem(0x0355) ?? 255
+    this._displayMode$.next(getDisplayModeInfo(mode))
   }
 
   toggleFullscreen() {
-    const isFullScreen = !this.fullscreen.value
-    this.fullscreen.next(isFullScreen)
+    const isFullScreen = !this._fullscreen$.value
+    this._fullscreen$.next(isFullScreen)
     this.emulator?.setFullScreen(isFullScreen)
   }
 

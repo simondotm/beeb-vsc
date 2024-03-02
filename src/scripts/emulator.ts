@@ -11,6 +11,7 @@ import { BaseDisc, emptySsd } from 'jsbeeb/fdc'
 import { notifyHost } from './vscode'
 import { ClientCommand } from '../types/shared/messages'
 import { CustomAudioHandler } from './custom-audio-handler'
+import { Observable, Subject } from 'rxjs'
 
 const ClocksPerSecond = (2 * 1000 * 1000) | 0
 const BotStartCycles = 725000 // bbcmicrobot start time
@@ -72,6 +73,11 @@ export class Emulator {
   lastCtrlLocation: number
 
   margin: EmulatorMargin = margins.normal
+
+  private _emulatorUpdate$ = new Subject<Emulator>()
+  get emulatorUpdate$(): Observable<Emulator> {
+    return this._emulatorUpdate$
+  }
 
   constructor(
     public model: Model,
@@ -142,6 +148,14 @@ export class Emulator {
     this.ready = true
   }
 
+  shutdown() {
+    // any previously running emulator must be paused
+    // before tear down, otherwise it will continue to paint itself
+    this.pause()
+    // all subscribers will be unsubscribed
+    this._emulatorUpdate$.complete()
+  }
+
   // gxr(){
   // 	model.os.push('gxr.rom');
   // 	modelName += ' | GXR';
@@ -179,12 +193,9 @@ export class Emulator {
     }
   }
 
-  getScreenMode() {
-    return this.cpu.readmem(0x0355)
-  }
-
   async runProgram(tokenised: any) {
     if (!this.ready) return
+
     console.log(this.cpu.currentCycles)
     this.cpu.reset(true)
     const processor = this.cpu
@@ -205,7 +216,7 @@ export class Emulator {
     this.start()
   }
 
-  writeToKeyboardBuffer(text: any) {
+  writeToKeyboardBuffer(text: string) {
     const processor = this.cpu
     const keyboardBuffer = 0x0300 // BBC Micro OS 1.20
     const IBPaddress = 0x02e1 // input buffer pointer
@@ -266,6 +277,7 @@ export class Emulator {
         }
       }
       this.lastFrameTime = now
+      this._emulatorUpdate$.next(this)
     } catch (e) {
       console.log(e)
       notifyHost({ command: ClientCommand.Error, text: (e as Error).message })
