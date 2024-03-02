@@ -13,19 +13,22 @@ const audioFilterQ = 5
 const noSeek = false
 
 export class EmulatorView {
-  root: JQuery<HTMLElement> // root element
-  screen: JQuery<HTMLElement> // screen element
-  testcard: JQuery<HTMLElement> // testcard element
-  canvas: EmulatorCanvas
+  readonly root: JQuery<HTMLElement> // root element
+  readonly screen: JQuery<HTMLElement> // screen element
+  readonly testcard: JQuery<HTMLElement> // testcard element
+  readonly canvas: EmulatorCanvas
+  readonly audioHandler: CustomAudioHandler
   model: Model | undefined
-  audioHandler: CustomAudioHandler
   emulator: Emulator | undefined // Dont hold references to the emulator, it may be paused and destroyed
 
   // observables
   private _displayMode$ = new BehaviorSubject<DisplayMode>(null)
   readonly displayMode$: Observable<DisplayMode>
 
-  fullscreen = new BehaviorSubject(false)
+  private _fullscreen$ = new BehaviorSubject(false)
+  get fullscreen$(): Observable<boolean> {
+    return this._fullscreen$
+  }
 
   constructor() {
     const root = $('#emulator')
@@ -96,7 +99,6 @@ export class EmulatorView {
         this.onEmulatorUpdate(emulator),
       )
     } catch (e) {
-      // this.showTestCard(true)
       notifyHost({ command: ClientCommand.Error, text: (e as Error).message })
       this.emulator = undefined
     }
@@ -109,44 +111,9 @@ export class EmulatorView {
     this._displayMode$.next(getDisplayModeInfo(mode))
   }
 
-  // async boot(model: Model) {
-  //   await this.emulatorService.boot(model)
-  //   this.showTestCard(this.emulatorService.emulator === undefined)
-  // }
-
-  // async boot(model: Model) {
-  //   this.model = model
-  //   try {
-  //     this.showTestCard(false)
-
-  //     // any previously running emulator must be paused
-  //     // before tear down, otherwise it will continue to paint itself
-  //     if (this.emulator) {
-  //       this.emulator.pause()
-  //     }
-
-  //     this.emulator = new Emulator(model, this.canvas, this.audioHandler)
-  //     await this.emulator.initialise()
-  //     notifyHost({ command: ClientCommand.EmulatorReady })
-
-  //     const discUrl = window.JSBEEB_DISC
-  //     await this.emulator.loadDisc(discUrl)
-  //     // if (discUrl) {
-  //     // 	const fdc = this.emulator.cpu.fdc;
-  //     // 	const discData = await utils.defaultLoadData(discUrl);
-  //     // 	const discImage = new BaseDisc(fdc, 'disc', discData, () => {});
-  //     // 	this.emulator.cpu.fdc.loadDisc(0, discImage);
-  //     // }
-  //     this.emulator.start()
-  //   } catch (e) {
-  //     this.showTestCard(true)
-  //     notifyHost({ command: ClientCommand.Error, text: (e as Error).message })
-  //   }
-  // }
-
   toggleFullscreen() {
-    const isFullScreen = !this.fullscreen.value
-    this.fullscreen.next(isFullScreen)
+    const isFullScreen = !this._fullscreen$.value
+    this._fullscreen$.next(isFullScreen)
     this.emulator?.setFullScreen(isFullScreen)
   }
 

@@ -30,7 +30,6 @@ export class EmulatorInfoBar {
 
   private timer() {
     this.updateRunTime()
-    // this.updateScreenMode()
   }
 
   private mouseLeave() {
@@ -55,13 +54,6 @@ export class EmulatorInfoBar {
   private updateScreenMode(displayInfo: DisplayModeInfo | null) {
     console.log('updateScreenMode', displayInfo)
     this.mode.html(displayInfo ? `Mode ${displayInfo.mode}` : EMPTY_CHAR)
-
-    // const emulatorService = this.emulatorView.emulatorService
-    // this.mode.html(
-    //   emulatorService.emulator
-    //     ? `Mode ${emulatorService.getScreenMode()}`
-    //     : EMPTY_CHAR,
-    // )
   }
 
   private updateTextCoords(coords?: { x: number; y: number }) {
@@ -78,56 +70,13 @@ export class EmulatorInfoBar {
 
   private mouseMove(event: JQuery.Event) {
     if (!event) return
-    // const emulatorView = this.emulatorView.emulatorService
     const screen = this.emulatorView.screen
-    // if (!emulator) return
-
-    // let W
-    // let H
-    // let graphicsMode = true
-
     const displayInfo = this.emulatorView.displayMode
     if (!displayInfo) return
 
     const W = displayInfo.text.w
     const H = displayInfo.text.h
     const graphicsMode = displayInfo.type === 'Graphics'
-
-    // const screenMode = emulatorService.getScreenMode()
-    // switch (screenMode) {
-    //   case 0:
-    //     W = 80
-    //     H = 32
-    //     break
-    //   case 1:
-    //   case 4:
-    //     W = 40
-    //     H = 32
-    //     break
-    //   case 2:
-    //   case 5:
-    //     W = 20
-    //     H = 32
-    //     break
-    //   case 3:
-    //     W = 80
-    //     H = 25.6
-    //     graphicsMode = false
-    //     break
-    //   case 6:
-    //     W = 40
-    //     H = 25.6
-    //     graphicsMode = false
-    //     break
-    //   case 7:
-    //     W = 40
-    //     H = 25.6
-    //     graphicsMode = false
-    //     break
-    //   default:
-    //     // Unknown screen mode!
-    //     return
-    // }
 
     function clamp(value: number, min: number, max: number) {
       return Math.max(min, Math.min(max, value))

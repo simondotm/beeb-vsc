@@ -5,8 +5,8 @@ import { BehaviorSubject } from 'rxjs'
  * CustomAudioHandler extends AudioHandler to add a couple of additional interfaces.
  */
 export class CustomAudioHandler extends AudioHandler {
-  muted = new BehaviorSubject<boolean>(false)
-  enabled = new BehaviorSubject<boolean>(false)
+  muted$ = new BehaviorSubject<boolean>(false)
+  enabled$ = new BehaviorSubject<boolean>(false)
 
   constructor(
     warningNode: JQuery<HTMLElement>,
@@ -22,12 +22,12 @@ export class CustomAudioHandler extends AudioHandler {
    */
   override mute() {
     super.mute()
-    this.muted.next(true)
+    this.muted$.next(true)
   }
 
   override unmute() {
     super.unmute()
-    this.muted.next(false)
+    this.muted$.next(false)
   }
 
   override async tryResume() {
@@ -42,7 +42,7 @@ export class CustomAudioHandler extends AudioHandler {
 
   private updateState() {
     const enabled = this.isEnabled()
-    this.enabled.next(enabled)
+    this.enabled$.next(enabled)
   }
 
   /**
@@ -54,11 +54,11 @@ export class CustomAudioHandler extends AudioHandler {
   }
 
   toggleMute(): boolean {
-    if (this.muted.value) {
+    if (this.muted$.value) {
       this.unmute()
     } else {
       this.mute()
     }
-    return this.muted.value
+    return this.muted$.value
   }
 }

@@ -75,7 +75,6 @@ export class Emulator {
   margin: EmulatorMargin = margins.normal
 
   private _emulatorUpdate$ = new Subject<Emulator>()
-  // emulatorUpdate$ = this.emulatorUpdate.asObservable()
   get emulatorUpdate$(): Observable<Emulator> {
     return this._emulatorUpdate$
   }
