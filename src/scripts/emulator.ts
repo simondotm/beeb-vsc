@@ -11,7 +11,7 @@ import { BaseDisc, emptySsd } from 'jsbeeb/fdc'
 import { notifyHost } from './vscode'
 import { ClientCommand } from '../types/shared/messages'
 import { CustomAudioHandler } from './custom-audio-handler'
-import { Subject } from 'rxjs'
+import { Observable, Subject } from 'rxjs'
 
 const ClocksPerSecond = (2 * 1000 * 1000) | 0
 const BotStartCycles = 725000 // bbcmicrobot start time
@@ -74,8 +74,11 @@ export class Emulator {
 
   margin: EmulatorMargin = margins.normal
 
-  private emulatorUpdate = new Subject<Emulator>()
-  emulatorUpdate$ = this.emulatorUpdate.asObservable()
+  private _emulatorUpdate$ = new Subject<Emulator>()
+  // emulatorUpdate$ = this.emulatorUpdate.asObservable()
+  get emulatorUpdate$(): Observable<Emulator> {
+    return this._emulatorUpdate$
+  }
 
   constructor(
     public model: Model,
@@ -144,6 +147,14 @@ export class Emulator {
   async initialise() {
     await this.cpu.initialise()
     this.ready = true
+  }
+
+  shutdown() {
+    // any previously running emulator must be paused
+    // before tear down, otherwise it will continue to paint itself
+    this.pause()
+    // all subscribers will be unsubscribed
+    this._emulatorUpdate$.complete()
   }
 
   // gxr(){
@@ -226,8 +237,6 @@ export class Emulator {
 
   frameFunc(now: number) {
     try {
-      // this.updateScreenMode()
-
       window.requestAnimationFrame(this.onAnimFrame)
       // Take snapshot
       if (
@@ -269,7 +278,7 @@ export class Emulator {
         }
       }
       this.lastFrameTime = now
-      this.emulatorUpdate.next(this)
+      this._emulatorUpdate$.next(this)
     } catch (e) {
       console.log(e)
       notifyHost({ command: ClientCommand.Error, text: (e as Error).message })

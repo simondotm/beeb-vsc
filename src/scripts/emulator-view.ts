@@ -63,6 +63,7 @@ export class EmulatorView {
 
   async boot(model: Model) {
     await this.emulatorService.boot(model)
+    this.showTestCard(this.emulatorService.emulator === undefined)
   }
 
   // async boot(model: Model) {
