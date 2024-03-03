@@ -171,26 +171,27 @@ export class Emulator {
     this.running = false
   }
 
-  async loadDisc(discUrl: string | null | undefined) {
+  async loadDisc(discUrl: string) {
     if (!this.ready) {
       console.log('Emulator not ready to load disc yet.')
       return
     }
     try {
-      if (discUrl) {
-        console.log('loading disc')
-        const fdc = this.cpu.fdc
-        const discData = await utils.defaultLoadData(discUrl)
-        const discImage = new BaseDisc(fdc, 'disc', discData, () => {})
-        this.cpu.fdc.loadDisc(0, discImage)
-      } else {
-        console.log('ejecting disc')
-        emptySsd(this.cpu.fdc)
-      }
+      console.log('loading disc')
+      const fdc = this.cpu.fdc
+      const discData = await utils.defaultLoadData(discUrl)
+      const discImage = new BaseDisc(fdc, 'disc', discData, () => {})
+      this.cpu.fdc.loadDisc(0, discImage)
     } catch (e: any) {
       console.error('Failed to load disc', e)
       notifyHost({ command: ClientCommand.Error, text: e.message })
+      this.ejectDisc()
     }
+  }
+
+  ejectDisc() {
+    console.log('ejecting disc')
+    emptySsd(this.cpu.fdc)
   }
 
   async runProgram(tokenised: any) {
@@ -234,7 +235,7 @@ export class Emulator {
     processor.writemem(IBPaddress, inputBufferPointer)
   }
 
-  frameFunc(now: number) {
+  private frameFunc(now: number) {
     try {
       window.requestAnimationFrame(this.onAnimFrame)
       // Take snapshot
@@ -284,7 +285,7 @@ export class Emulator {
     }
   }
 
-  paint(minx: number, miny: number, maxx: number, maxy: number) {
+  private paint(minx: number, miny: number, maxx: number, maxy: number) {
     this.frames++
     if (this.frames < this.frameSkip) return
     this.frames = 0

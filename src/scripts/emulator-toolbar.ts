@@ -107,7 +107,7 @@ export class EmulatorToolBar {
   }
   private onRestartClick() {
     if (this.buttonRestart) {
-      this.emulatorView.emulator?.cpu.reset(true)
+      this.emulatorView.reset(true)
       this.emulatorView.focus()
     }
   }

@@ -18,8 +18,11 @@ export class EmulatorView {
   readonly testcard: JQuery<HTMLElement> // testcard element
   readonly canvas: EmulatorCanvas
   readonly audioHandler: CustomAudioHandler
+
   model: Model | undefined
   emulator: Emulator | undefined // Dont hold references to the emulator, it may be paused and destroyed
+
+  mountedDisc: string | undefined
 
   // observables
   private _displayMode$ = new BehaviorSubject<DisplayMode>(null)
@@ -85,16 +88,11 @@ export class EmulatorView {
 
       this.emulator = new Emulator(model, this.canvas, this.audioHandler)
       await this.emulator.initialise()
-      notifyHost({ command: ClientCommand.EmulatorReady })
 
-      const discUrl = window.JSBEEB_DISC
-      await this.emulator.loadDisc(discUrl)
-      // if (discUrl) {
-      // 	const fdc = this.emulator.cpu.fdc;
-      // 	const discData = await utils.defaultLoadData(discUrl);
-      // 	const discImage = new BaseDisc(fdc, 'disc', discData, () => {});
-      // 	this.emulator.cpu.fdc.loadDisc(0, discImage);
-      // }
+      // re-mount any existing disc if we change model
+      if (this.mountedDisc) {
+        await this.mountDisc(this.mountedDisc, false)
+      }
 
       this.emulator.start()
       // will automatically unsubscribe when emulator is shutdown
@@ -132,5 +130,31 @@ export class EmulatorView {
 
   focus() {
     this.screen.focus()
+  }
+
+  async mountDisc(discImageFile: string, autoBoot: boolean = false) {
+    console.log(`mountDisc=${discImageFile}`)
+    this.mountedDisc = discImageFile
+    if (this.emulator) {
+      await this.emulator.loadDisc(discImageFile)
+      if (autoBoot) {
+        this.emulator.holdShift()
+      }
+    }
+  }
+
+  unmountDisc() {
+    if (this.emulator) {
+      this.emulator.ejectDisc()
+    }
+  }
+
+  async reset(hard: boolean = true) {
+    if (this.emulator) {
+      this.emulator.cpu.reset(hard)
+      if (this.mountedDisc) {
+        await this.emulator.loadDisc(this.mountedDisc)
+      }
+    }
   }
 }
