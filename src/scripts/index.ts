@@ -30,6 +30,11 @@ async function initialise() {
   // create the info bar and toolbar UI
   emulatorInfoBar = new EmulatorInfoBar(emulatorView)
   emulatorToolBar = new EmulatorToolBar(emulatorView)
+
+  // signal to host that emulator webview is ready
+  // it might send us a disc image to mount if we started the
+  // webview with a file context
+  notifyHost({ command: ClientCommand.EmulatorReady })
 }
 
 // Handle the message inside the webview
@@ -48,9 +53,7 @@ window.addEventListener('message', (event) => {
   switch (message.command) {
     case HostCommand.LoadDisc:
       if (message.url) {
-        console.log(`loadDisc=${message.url}`)
-        emulatorView?.emulator?.loadDisc(message.url)
-        emulatorView?.emulator?.holdShift()
+        emulatorView.mountDisc(message.url, true)
       }
       break
   }
