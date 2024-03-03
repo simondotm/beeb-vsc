@@ -234,7 +234,7 @@ export class Emulator {
     processor.writemem(IBPaddress, inputBufferPointer)
   }
 
-  frameFunc(now: number) {
+  private frameFunc(now: number) {
     try {
       window.requestAnimationFrame(this.onAnimFrame)
       // Take snapshot
@@ -284,7 +284,7 @@ export class Emulator {
     }
   }
 
-  paint(minx: number, miny: number, maxx: number, maxy: number) {
+  private paint(minx: number, miny: number, maxx: number, maxy: number) {
     this.frames++
     if (this.frames < this.frameSkip) return
     this.frames = 0
