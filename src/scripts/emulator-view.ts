@@ -43,8 +43,10 @@ export class EmulatorView {
     this.canvas = bestCanvas(screen[0])
 
     // forward key events to emulator
-    screen.on('keyup', (event: JQuery.Event) => this.emulator?.onKeyUp(event))
-    screen.on('keydown', (event: JQuery.Event) =>
+    screen.on('keyup', (event: JQuery.KeyUpEvent) =>
+      this.emulator?.onKeyUp(event),
+    )
+    screen.on('keydown', (event: JQuery.KeyDownEvent) =>
       this.emulator?.onKeyDown(event),
     )
     screen.on('blur', () => this.emulator?.clearKeys())
@@ -93,6 +95,7 @@ export class EmulatorView {
       // 	const discImage = new BaseDisc(fdc, 'disc', discData, () => {});
       // 	this.emulator.cpu.fdc.loadDisc(0, discImage);
       // }
+
       this.emulator.start()
       // will automatically unsubscribe when emulator is shutdown
       this.emulator.emulatorUpdate$.subscribe((emulator) =>
