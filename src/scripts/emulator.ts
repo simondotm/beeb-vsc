@@ -302,10 +302,10 @@ export class Emulator {
     this.margin = margins[margin]
   }
 
-  onKeyDown(event: any) {
+  onKeyDown(event: JQuery.KeyDownEvent) {
     if (!this.running) return
 
-    const code = this.onKeyCode(event)
+    const code = this.getKeyCode(event)
     const processor = this.cpu
     if (code === utils.keyCodes.HOME && event.ctrlKey) {
       this.pause()
@@ -322,9 +322,9 @@ export class Emulator {
     if (processor && processor.sysvia) processor.sysvia.clearKeys()
   }
 
-  onKeyUp(event: any) {
+  onKeyUp(event: JQuery.KeyUpEvent) {
     // Always let the key ups come through.
-    const code = this.onKeyCode(event)
+    const code = this.getKeyCode(event)
     const processor = this.cpu
     if (processor && processor.sysvia) processor.sysvia.keyUp(code)
     if (!this.running) return
@@ -334,10 +334,10 @@ export class Emulator {
     event.preventDefault()
   }
 
-  onKeyCode(event: any) {
+  private getKeyCode(event: JQuery.KeyDownEvent | JQuery.KeyUpEvent): number {
     const ret = event.which || event.charCode || event.keyCode
     const keyCodes = utils.keyCodes
-    switch (event.location) {
+    switch ((event as any).location) {
       default:
         // keyUp events seem to pass location = 0 (Chrome)
         switch (ret) {
@@ -397,5 +397,13 @@ export class Emulator {
     }
 
     return ret
+  }
+
+  holdShift(duration: number = 1000) {
+    // Shift-break simulation, hold SHIFT for 1000ms.
+    this.cpu.sysvia.keyDownRaw(utils.BBC.SHIFT)
+    setTimeout(() => {
+      this.cpu.sysvia.clearKeys()
+    }, duration)
   }
 }

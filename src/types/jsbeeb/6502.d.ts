@@ -20,6 +20,21 @@ declare module 'jsbeeb/6502' {
     debugString(): string
     asByte(): number
   }
+
+  export interface DebugHookHandler {
+    (): void
+  }
+
+  export interface DebugHookHandlerOutput extends DebugHookHandler {
+    remove: () => void
+  }
+
+  export class DebugHook {
+    constructor(cpu: Cpu6502, functionName: string)
+    add(handler: DebugHookHandler): DebugHookHandlerOutput
+    remove(handler: DebugHookHandler): DebugHookHandlerOutput
+  }
+
   export class Cpu6502 {
     halted: boolean
     nmi: boolean
@@ -34,6 +49,10 @@ declare module 'jsbeeb/6502' {
     targetCycles: number
     currentCycles: number
     cycleSeconds: number
+
+    debugInstruction: DebugHook
+    debugRead: DebugHook
+    debugWrite: DebugHook
 
     constructor(
       model: Model,

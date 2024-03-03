@@ -34,6 +34,9 @@ declare module 'jsbeeb/via' {
     constructor(cpu: Cpu6502, isMaster: boolean, userPortPeripheral: any)
   }
   export class SysVia {
+    capsLockLight: boolean
+    shiftLockLight: boolean
+
     constructor(
       cpu: Cpu6502,
       video: Video,
@@ -46,5 +49,13 @@ declare module 'jsbeeb/via' {
     keyUp(key: number): void
     keyDown(key: number, shiftDown: boolean): void
     clearKeys(): void
+
+    keyDownRaw(colrow: [number, number]): void
+    keyUpRaw(colrow: [number, number]): void
+    keyToggleRaw(colrow: [number, number]): void
+
+    hasAnyKeyDown(): boolean
+    enableKeyboard(): void
+    disableKeyboard(): void
   }
 }

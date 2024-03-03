@@ -50,6 +50,7 @@ window.addEventListener('message', (event) => {
       if (message.url) {
         console.log(`loadDisc=${message.url}`)
         emulatorView?.emulator?.loadDisc(message.url)
+        emulatorView?.emulator?.holdShift()
       }
       break
   }
