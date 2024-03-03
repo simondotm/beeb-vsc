@@ -223,7 +223,7 @@ export class EmulatorPanel {
 		</vscode-dropdown>
 
 		<vscode-button id="toolbar-sound" appearance="secondary">
-			<span class="codicon codicon-mute"></span>
+			<span class="codicon codicon-unmute"></span>
 		</vscode-button>
 
 		<vscode-button id="toolbar-expand" appearance="secondary">

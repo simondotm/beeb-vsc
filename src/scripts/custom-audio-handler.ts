@@ -5,7 +5,7 @@ import { BehaviorSubject } from 'rxjs'
  * CustomAudioHandler extends AudioHandler to add a couple of additional interfaces.
  */
 export class CustomAudioHandler extends AudioHandler {
-  muted$ = new BehaviorSubject<boolean>(false)
+  muted$ = new BehaviorSubject<boolean>(true)
   enabled$ = new BehaviorSubject<boolean>(false)
 
   constructor(
@@ -43,6 +43,7 @@ export class CustomAudioHandler extends AudioHandler {
   private updateState() {
     const enabled = this.isEnabled()
     this.enabled$.next(enabled)
+    this.muted$.next(!enabled)
   }
 
   /**
