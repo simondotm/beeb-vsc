@@ -158,6 +158,7 @@ export class EmulatorPanel {
     &nbsp;Audio is disabled in this webview. Click to enable.
   </vscode-button>
 
+    ${this.getFooterHtml()}
 
     ${isDev() ? this.getTestHtml() : ''}
 
@@ -171,8 +172,8 @@ export class EmulatorPanel {
     return `
 
 		<div class="emulator" id="emulator">
-			<canvas class="screen" display="block" height="512px" width="640px" id="screen" tabindex="1"></canvas>
-			<img hidden style="height:512px; width:640px; min-width:640px;" id="testcard" src="${scriptUrl(context, webview, ['images', 'test-card.webp'])}">
+			<canvas class="screen" display="block" id="screen" tabindex="1"></canvas>
+			<img hidden  id="testcard" src="${scriptUrl(context, webview, ['images', 'test-card.webp'])}">
     </div>
 
 
@@ -187,13 +188,15 @@ export class EmulatorPanel {
 			<vscode-button id="infobar-text-coords" appearance="secondary">⌀</vscode-button>
 			<vscode-button id="infobar-graphics-coords" appearance="secondary">⌀</vscode-button>
 		</div>
+<div id="footer"><h5>Powered by <vscode-link href="https://github.com/mattgodbolt/jsbeeb">JSBeeb</vscode-link></h5></div>      
 
 
-    <div id="emu_footer">
-			<div id="emu_status"></div>
-			<div id="coords"></div>
-    </div>		
     `
+  }
+
+  getFooterHtml() {
+    return ``
+    return `<div id="footer">Powered by <vscode-link href="https://github.com/mattgodbolt/jsbeeb">JSBeeb</vscode-link></div>`
   }
 
   getToolbarHtml() {

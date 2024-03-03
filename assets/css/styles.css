@@ -24,6 +24,12 @@ label {
   margin-bottom: 2px;
 }
 
+/* canvas size is fixed pixel resolution 720x576, but container size will scale it */
+#emulator {
+  width: 320px;
+  height: 256px;
+  margin: 4px;
+}
 
 #model-selector {
   width:200px; 
@@ -63,6 +69,19 @@ label {
 #infobar-graphics-coords {
   width: 150px;
   cursor: default;
+}
+
+#footer {
+  color: gray;
+  font-style: italic;
+}
+
+#footer2 {
+  font-size: 8px;
+  text-align: right;
+  padding: 8px;
+  color: gray;
+  font-style: italic;
 }
 
 .no-margin {

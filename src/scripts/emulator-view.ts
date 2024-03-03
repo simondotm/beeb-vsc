@@ -43,6 +43,7 @@ export class EmulatorView {
     this.testcard = $('#testcard')
     this.testcard.hide()
     this.screen = screen
+    this.fitCanvasToContainer()
     this.canvas = bestCanvas(screen[0])
 
     // forward key events to emulator
@@ -156,5 +157,16 @@ export class EmulatorView {
         await this.emulator.loadDisc(this.mountedDisc)
       }
     }
+  }
+
+  private fitCanvasToContainer() {
+    // ensure canvas element fills parent container
+    this.screen.css('width', '100%')
+    this.screen.css('height', '100%')
+
+    // always paint the canvas at 720x576 PAL resolution
+    //  and scale it to fit the container
+    this.screen.prop('width', 720)
+    this.screen.prop('height', 576)
   }
 }
