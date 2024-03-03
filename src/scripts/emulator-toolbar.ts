@@ -79,6 +79,7 @@ export class EmulatorToolBar {
     this.emulatorView.boot(model).then(() => {
       this.updateEmulatorStatus()
     })
+    this.emulatorView.focus()
   }
 
   private updateEmulatorStatus() {
@@ -100,12 +101,14 @@ export class EmulatorToolBar {
       emulator.pause()
     } else {
       emulator?.start()
+      this.emulatorView.focus()
     }
     this.updateEmulatorStatus()
   }
   private onRestartClick() {
     if (this.buttonRestart) {
       this.emulatorView.emulator?.cpu.reset(true)
+      this.emulatorView.focus()
     }
   }
   private onSoundClick() {
@@ -116,6 +119,7 @@ export class EmulatorToolBar {
   private onExpandClick() {
     if (this.buttonExpand) {
       this.emulatorView.toggleFullscreen()
+      this.emulatorView.focus()
     }
   }
 }

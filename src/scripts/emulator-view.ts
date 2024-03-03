@@ -129,4 +129,8 @@ export class EmulatorView {
       this.testcard.hide()
     }
   }
+
+  focus() {
+    this.screen.focus()
+  }
 }
