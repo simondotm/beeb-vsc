@@ -140,9 +140,7 @@ export class EmulatorPanel {
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
 		<title>JSBeeb</title>
 		<script type='text/javascript'>
-			console.log("running script");
 			window.JSBEEB_RESOURCES=${JSON.stringify(JSBEEB_RESOURCES)};
-			window.JSBEEB_DISC="${this.discFileUrl}";
 		 	console.log("Window JSBEEB_RESOURCES Config=" + window.JSBEEB_RESOURCES);
 		</script>
 		<script defer="defer" src="${mainScriptUrl}"></script>		

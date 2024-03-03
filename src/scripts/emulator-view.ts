@@ -87,15 +87,6 @@ export class EmulatorView {
       await this.emulator.initialise()
       notifyHost({ command: ClientCommand.EmulatorReady })
 
-      const discUrl = window.JSBEEB_DISC
-      await this.emulator.loadDisc(discUrl)
-      // if (discUrl) {
-      // 	const fdc = this.emulator.cpu.fdc;
-      // 	const discData = await utils.defaultLoadData(discUrl);
-      // 	const discImage = new BaseDisc(fdc, 'disc', discData, () => {});
-      // 	this.emulator.cpu.fdc.loadDisc(0, discImage);
-      // }
-
       this.emulator.start()
       // will automatically unsubscribe when emulator is shutdown
       this.emulator.emulatorUpdate$.subscribe((emulator) =>
