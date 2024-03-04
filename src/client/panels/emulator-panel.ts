@@ -152,13 +152,13 @@ export class EmulatorPanel {
 		${isFeatureEnabled('emulatorToolBar') ? this.getToolbarHtml() : ''}
 		${this.getEmulatorHtml()}
     ${this.getInfoBarHtml()}
+    ${this.getFooterHtml()}
 
   <vscode-button id="audio-warning" appearance="primary" hidden>
     <span class="codicon codicon-warning"></span>
     &nbsp;Audio is disabled in this webview. Click to enable.
   </vscode-button>
 
-    ${this.getFooterHtml()}
 
     ${isDev() ? this.getTestHtml() : ''}
 
@@ -188,15 +188,13 @@ export class EmulatorPanel {
 			<vscode-button id="infobar-text-coords" appearance="secondary">⌀</vscode-button>
 			<vscode-button id="infobar-graphics-coords" appearance="secondary">⌀</vscode-button>
 		</div>
-<div id="footer"><h5>Powered by <vscode-link href="https://github.com/mattgodbolt/jsbeeb">JSBeeb</vscode-link></h5></div>      
-
-
     `
   }
 
   getFooterHtml() {
-    return ``
-    return `<div id="footer">Powered by <vscode-link href="https://github.com/mattgodbolt/jsbeeb">JSBeeb</vscode-link></div>`
+    return `
+      <div class="footer"><h5>Powered by <vscode-link href="https://github.com/mattgodbolt/jsbeeb">JSBeeb</vscode-link></h5></div>      
+    `
   }
 
   getToolbarHtml() {
