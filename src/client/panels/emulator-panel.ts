@@ -171,9 +171,9 @@ export class EmulatorPanel {
     const context = this.context
     return `
 
-		<div class="emulator" id="emulator">
-			<canvas class="screen" display="block" width="720px" height="576px" id="screen" tabindex="1"></canvas>
-			<img hidden  id="testcard" src="${scriptUrl(context, webview, ['images', 'test-card.webp'])}">
+		<div id="emulator" class="emulator-container">
+			<canvas id="screen" width="720px" height="576px" tabindex="1"></canvas>
+			<img id="testcard" src="${scriptUrl(context, webview, ['images', 'test-card.webp'])}" hidden>
     </div>
 
 

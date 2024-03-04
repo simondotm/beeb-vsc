@@ -27,16 +27,17 @@ label {
 /* canvas size is fixed pixel resolution 720x576, but container size will scale it
  * PAL signal is 4:3.2 aspect, so to get 4:3 we squash the vertical pixels slightly
  */
-.emulator {
+.emulator-container {
   width: 640px;
   height: 480px;
   margin: 4px;
 }
 
 /* canvas size is fixed pixel resolution 720x576, but we will scale to fit its container */
-.screen {
+.emulator-container canvas {
   width: 100%;
   height: 100%;
+  display: block;
 }
 
 #model-selector {
