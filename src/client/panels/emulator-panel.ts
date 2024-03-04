@@ -172,7 +172,7 @@ export class EmulatorPanel {
     return `
 
 		<div class="emulator" id="emulator">
-			<canvas class="screen" display="block" id="screen" tabindex="1"></canvas>
+			<canvas class="screen" display="block" width="720px" height="576px" id="screen" tabindex="1"></canvas>
 			<img hidden  id="testcard" src="${scriptUrl(context, webview, ['images', 'test-card.webp'])}">
     </div>
 
