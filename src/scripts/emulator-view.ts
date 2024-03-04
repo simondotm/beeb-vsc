@@ -34,25 +34,30 @@ export class EmulatorView {
   }
 
   constructor() {
-    const root = $('#emulator')
-    this.root = root
-    const screen = this.root.find('.screen')
-    if (!screen) {
+    this.root = $('#emulator')
+    if (!this.root) {
+      throw new Error('No emulator element found')
+    }
+    this.screen = $('#screen')
+    if (!this.screen) {
       throw new Error('No screen element found')
     }
     this.testcard = $('#testcard')
+    if (!this.testcard) {
+      throw new Error('No testcard element found')
+    }
+
     this.testcard.hide()
-    this.screen = screen
-    this.canvas = bestCanvas(screen[0])
+    this.canvas = bestCanvas(this.screen[0])
 
     // forward key events to emulator
-    screen.on('keyup', (event: JQuery.KeyUpEvent) =>
+    this.screen.on('keyup', (event: JQuery.KeyUpEvent) =>
       this.emulator?.onKeyUp(event),
     )
-    screen.on('keydown', (event: JQuery.KeyDownEvent) =>
+    this.screen.on('keydown', (event: JQuery.KeyDownEvent) =>
       this.emulator?.onKeyDown(event),
     )
-    screen.on('blur', () => this.emulator?.clearKeys())
+    this.screen.on('blur', () => this.emulator?.clearKeys())
 
     // create webview audio driver
     this.audioHandler = new CustomAudioHandler(

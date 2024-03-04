@@ -24,11 +24,32 @@ label {
   margin-bottom: 2px;
 }
 
+/* 
+ * canvas size is fixed pixel resolution 720x576, but container size will scale it
+ * PAL signal is 4:3.2 aspect, so to get 4:3 we squash the vertical pixels slightly
+ */
 
+.emulator-container {
+  width: 640px;
+  height: 480px;
+  margin: 4px;
+}
+
+/* canvas size is fixed pixel resolution 720x576, but we will scale to fit its container */
+.emulator-container canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/**
+  * Emulator toolbar
+  */
 #model-selector {
   width:200px; 
 }
-#model-selector option{
+
+#model-selector option {
    width:200px; 
 }
 
@@ -36,7 +57,9 @@ label {
 	width: 200px;
 }
 
-
+/**
+  * Audio Handler warning
+  */
 #audio-warning {
   width: 480px;
   margin: 8px;
@@ -46,7 +69,7 @@ label {
   * Infobar
   */
 #infobar-runtime {
-  width: 150px;
+  width: 180px;
   cursor: default;
 }
 
@@ -64,6 +87,12 @@ label {
   width: 150px;
   cursor: default;
 }
+
+.footer {
+  color: gray;
+  font-style: italic;
+}
+
 
 .no-margin {
 	margin: 0;

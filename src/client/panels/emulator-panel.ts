@@ -113,7 +113,6 @@ export class EmulatorPanel {
     // always update the webview content when creating or revealing
     // todo: load disc using messages rather than html changes. this way the script can reset the emulator, or optionally auto-boot
     if (contextSelection) {
-      // console.log('setting html')
       // TODO: pass message to webview to update disc file
       EmulatorPanel.instance.setDiscFileUrl(contextSelection)
     }
@@ -123,9 +122,11 @@ export class EmulatorPanel {
     const webview = this.panel.webview
     const context = this.context
     const JSBEEB_RESOURCES = getJsBeebResources(context, webview)
-    console.log('JSBEEB_RESOURCES=' + JSON.stringify(JSBEEB_RESOURCES))
     const mainScriptUrl = scriptUrl(context, webview, ['main.js']).toString()
-    console.log('mainScriptUrl=' + mainScriptUrl)
+    if (isDev()) {
+      console.log('JSBEEB_RESOURCES=' + JSON.stringify(JSBEEB_RESOURCES))
+      console.log('mainScriptUrl=' + mainScriptUrl)
+    }
     const codiconsUrl = scriptUrl(context, webview, [
       'css',
       'codicon.css',
@@ -133,105 +134,106 @@ export class EmulatorPanel {
     const cssUrl = scriptUrl(context, webview, ['css', 'styles.css']).toString()
     // <script nonce="${getNonce()}" defer="defer" src="${mainScriptUrl}"></script>
 
-    return `<!DOCTYPE html>
-<html lang="en">
-<head>
-		<meta charset="UTF-8">
-		<meta name="viewport" content="width=device-width, initial-scale=1.0">
-		<title>JSBeeb</title>
-		<script type='text/javascript'>
-			window.JSBEEB_RESOURCES=${JSON.stringify(JSBEEB_RESOURCES)};
-		 	console.log("Window JSBEEB_RESOURCES Config=" + window.JSBEEB_RESOURCES);
-		</script>
-		<script defer="defer" src="${mainScriptUrl}"></script>		
-		<link href="${codiconsUrl}" rel="stylesheet" />		
-		<link href="${cssUrl}" rel="stylesheet" />		
-</head>
-<body>
-
-		${isFeatureEnabled('emulatorToolBar') ? this.getToolbarHtml() : ''}
-		${this.getEmulatorHtml()}
-    ${this.getInfoBarHtml()}
-
-  <vscode-button id="audio-warning" appearance="primary" hidden>
-    <span class="codicon codicon-warning"></span>
-    &nbsp;Audio is disabled in this webview. Click to enable.
-  </vscode-button>
-
-
-    ${isDev() ? this.getTestHtml() : ''}
-
-</body>
-</html>`
-  }
-
-  getEmulatorHtml() {
-    const webview = this.panel.webview
-    const context = this.context
     return `
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>JSBeeb</title>
+          <script type='text/javascript'>
+            window.JSBEEB_RESOURCES=${JSON.stringify(JSBEEB_RESOURCES)};
+            ${isDev() ? 'console.log("Window JSBEEB_RESOURCES Config=" + window.JSBEEB_RESOURCES);' : ''}
+          </script>
+          <script defer="defer" src="${mainScriptUrl}"></script>		
+          <link href="${codiconsUrl}" rel="stylesheet" />		
+          <link href="${cssUrl}" rel="stylesheet" />		
+      </head>
+      <body>
 
-		<div class="emulator" id="emulator">
-			<canvas class="screen" display="block" height="512px" width="640px" id="screen" tabindex="1"></canvas>
-			<img hidden style="height:512px; width:640px; min-width:640px;" id="testcard" src="${scriptUrl(context, webview, ['images', 'test-card.webp'])}">
-    </div>
+          ${isFeatureEnabled('emulatorToolBar') ? this.getToolbarHtml() : ''}
+          ${this.getEmulatorHtml()}
+          ${this.getInfoBarHtml()}
+          ${this.getFooterHtml()}
+          ${this.getAudioWarningHtml()}
 
+          ${isDev() ? this.getTestHtml() : ''}
 
-		`
-  }
-
-  getInfoBarHtml() {
-    return `
-		<div id="infobar">
-			<vscode-button id="infobar-runtime" appearance="secondary">⌀</vscode-button>
-			<vscode-button id="infobar-mode" appearance="secondary">⌀</vscode-button>
-			<vscode-button id="infobar-text-coords" appearance="secondary">⌀</vscode-button>
-			<vscode-button id="infobar-graphics-coords" appearance="secondary">⌀</vscode-button>
-		</div>
-
-
-    <div id="emu_footer">
-			<div id="emu_status"></div>
-			<div id="coords"></div>
-    </div>		
+      </body>
+      </html>
     `
   }
 
   getToolbarHtml() {
     return `
+      <div id="toolbar">
 
-  <div id="toolbar">
+        <vscode-button id="toolbar-control" appearance="secondary">
+          <span class="codicon codicon-debug-start"></span>
+        </vscode-button>
 
-		<vscode-button id="toolbar-control" appearance="secondary">
-			<span class="codicon codicon-debug-start"></span>
-		</vscode-button>
-
-		<vscode-button id="toolbar-restart" appearance="secondary">
-			<span class="codicon codicon-debug-restart"></span>
-		</vscode-button>
+        <vscode-button id="toolbar-restart" appearance="secondary">
+          <span class="codicon codicon-debug-restart"></span>
+        </vscode-button>
 
 
-		<vscode-dropdown id="model-selector">
-			<span slot="indicator" class="codicon codicon-vm"></span>
-		</vscode-dropdown>
+        <vscode-dropdown id="model-selector">
+          <span slot="indicator" class="codicon codicon-vm"></span>
+        </vscode-dropdown>
 
-		<vscode-dropdown id="disc-selector" class="fixed-width-selector">
-			<span slot="indicator" class="codicon codicon-save"></span>
-			<vscode-option>Empty</vscode-option>
-			<vscode-option>image.dsd</vscode-option>			
-		</vscode-dropdown>
+        <vscode-dropdown id="disc-selector" class="fixed-width-selector">
+          <span slot="indicator" class="codicon codicon-save"></span>
+          <vscode-option>Empty</vscode-option>
+          <vscode-option>image.dsd</vscode-option>			
+        </vscode-dropdown>
 
-		<vscode-button id="toolbar-sound" appearance="secondary">
-			<span class="codicon codicon-unmute"></span>
-		</vscode-button>
+        <vscode-button id="toolbar-sound" appearance="secondary">
+          <span class="codicon codicon-unmute"></span>
+        </vscode-button>
 
-		<vscode-button id="toolbar-expand" appearance="secondary">
-			<span class="codicon codicon-screen-normal"></span>
-		</vscode-button>
+        <vscode-button id="toolbar-expand" appearance="secondary">
+          <span class="codicon codicon-screen-normal"></span>
+        </vscode-button>
 
-		<vscode-divider></vscode-divider>
+        <vscode-divider></vscode-divider>
 
-	</div>		
+      </div>		
 		`
+  }
+
+  getEmulatorHtml() {
+    return `
+      <div id="emulator" class="emulator-container">
+        <canvas id="screen" width="720px" height="576px" tabindex="1"></canvas>
+        <img id="testcard" src="${scriptUrl(this.context, this.panel.webview, ['images', 'test-card.webp'])}" hidden>
+      </div>
+		`
+  }
+
+  getInfoBarHtml() {
+    return `
+      <div id="infobar">
+        <vscode-button id="infobar-runtime" appearance="secondary">⌀</vscode-button>
+        <vscode-button id="infobar-mode" appearance="secondary">⌀</vscode-button>
+        <vscode-button id="infobar-text-coords" appearance="secondary">⌀</vscode-button>
+        <vscode-button id="infobar-graphics-coords" appearance="secondary">⌀</vscode-button>
+      </div>
+    `
+  }
+
+  getFooterHtml() {
+    return `
+      <div class="footer"><h5>Powered by <vscode-link href="https://github.com/mattgodbolt/jsbeeb">JSBeeb</vscode-link></h5></div>      
+    `
+  }
+
+  getAudioWarningHtml() {
+    return `
+      <vscode-button id="audio-warning" appearance="primary" hidden>
+        <span class="codicon codicon-warning"></span>
+        &nbsp;Audio is disabled in this webview. Click to enable.
+      </vscode-button>    
+    `
   }
 
   getTestHtml() {

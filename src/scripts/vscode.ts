@@ -4,6 +4,7 @@ import {
   vsCodeCheckbox,
   vsCodeDivider,
   vsCodeDropdown,
+  vsCodeLink,
   vsCodeOption,
   vsCodeTextField,
 } from '@vscode/webview-ui-toolkit'
@@ -17,6 +18,7 @@ export function initialiseVSCode() {
     vsCodeDivider(),
     vsCodeDropdown(),
     vsCodeOption(),
+    vsCodeLink(),
   )
 }
 
