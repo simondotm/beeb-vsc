@@ -3,6 +3,7 @@ import { getJsBeebResources, scriptUri, scriptUrl } from '../emulator/assets'
 import {
   ClientCommand,
   ClientMessage,
+  DiscImageUri,
   HostCommand,
   HostMessage,
 } from '../../types/shared/messages'
@@ -15,6 +16,8 @@ export class EmulatorPanel {
   private readonly context: vscode.ExtensionContext
   private disposables: vscode.Disposable[] = []
   private discFileUrl: string = ''
+
+  private watcher: vscode.FileSystemWatcher | undefined
 
   private constructor(context: vscode.ExtensionContext) {
     this.context = context
@@ -57,8 +60,56 @@ export class EmulatorPanel {
     })
   }
 
+  /**
+   * Start watching for disc images in the workspace
+   * and notify the client of any changes
+   * This process begins once the client reports the page has loaded
+   */
+  private startWatcher() {
+    // Watch workspace for disc images
+    const workspaceRoot = vscode.workspace.workspaceFolders?.[0]
+    if (workspaceRoot) {
+      const glob = '**/*.{ssd,dsd}'
+
+      vscode.workspace.findFiles(glob).then((uris) => {
+        console.log(`found uris:`, uris)
+        const allFiles: DiscImageUri[] = uris.map((uri) => {
+          const name = uri.fsPath.replace(workspaceRoot.uri.fsPath, '')
+          console.log(name)
+          return {
+            uri: this.panel.webview.asWebviewUri(uri).toString(),
+            name,
+          }
+        })
+        console.log(`found files:`, allFiles)
+        this.notifyClient({
+          command: HostCommand.DiscImages,
+          discImages: allFiles,
+        })
+      })
+
+      this.watcher = vscode.workspace.createFileSystemWatcher(
+        new vscode.RelativePattern(workspaceRoot, glob),
+      )
+
+      this.watcher.onDidChange((uri) => {
+        console.log(`changed`, uri)
+      }) // listen to files being changed
+      this.watcher.onDidCreate((uri) => {
+        console.log(`created`, uri)
+      }) // listen to files/folders being created
+      this.watcher.onDidDelete((uri) => {
+        console.log(`deleted`, uri)
+      }) // listen to files/folders getting deleted
+    }
+  }
+
   dispose() {
     EmulatorPanel.instance = undefined
+
+    if (this.watcher) {
+      this.watcher.dispose()
+    }
 
     this.panel.dispose()
 
@@ -79,6 +130,8 @@ export class EmulatorPanel {
         switch (command) {
           case ClientCommand.PageLoaded:
             vscode.window.showInformationMessage('loaded page')
+            // start watching for disc images
+            this.startWatcher()
             return
           case ClientCommand.EmulatorReady:
             console.log('EmulatorReady')

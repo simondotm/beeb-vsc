@@ -2,7 +2,9 @@ export interface MessageBase {
   command: string
 }
 
-// Message from client to host
+/**
+ * Messages from client to host
+ */
 export const enum ClientCommand {
   EmulatorReady = 'emulatorReady',
   PageLoaded = 'pageLoaded',
@@ -14,10 +16,20 @@ export interface ClientMessage extends MessageBase {
   text?: string
 }
 
-// Message from host to client
+/**
+ * Messages from host to client
+ */
+
+export type DiscImageUri = {
+  uri: string
+  name: string
+}
+
 export const enum HostCommand {
   LoadDisc = 'loadDisc',
   ViewFocus = 'viewFocus',
+  DiscImages = 'discImages',
+  DiscImageChanges = 'discImageChanges',
 }
 
 export interface HostMessage extends MessageBase {
@@ -26,5 +38,11 @@ export interface HostMessage extends MessageBase {
   focus?: {
     active: boolean
     visible: boolean
+  }
+  discImages?: DiscImageUri[]
+  discImageChanges?: {
+    changed?: DiscImageUri[]
+    created?: DiscImageUri[]
+    deleted?: DiscImageUri[]
   }
 }
