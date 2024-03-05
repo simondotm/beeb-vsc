@@ -133,7 +133,10 @@ export class EmulatorView {
     }
   }
 
-  focus() {
+  /**
+   * Capture input to the emulator
+   */
+  focusInput() {
     this.screen.focus()
   }
 
@@ -154,7 +157,11 @@ export class EmulatorView {
     }
   }
 
-  async reset(hard: boolean = true) {
+  /**
+   * Soft or hard reset the CPU and remount the current disc image (if any)
+   * @param hard - true for a hard reset, false for a soft reset
+   */
+  async resetCpu(hard: boolean = true) {
     if (this.emulator) {
       this.emulator.cpu.reset(hard)
       if (this.mountedDisc) {

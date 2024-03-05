@@ -52,7 +52,6 @@ export class EmulatorInfoBar {
   }
 
   private updateScreenMode(displayInfo: DisplayModeInfo | null) {
-    console.log('updateScreenMode', displayInfo)
     this.mode.html(displayInfo ? `Mode ${displayInfo.mode}` : EMPTY_CHAR)
   }
 

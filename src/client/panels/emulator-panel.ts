@@ -4,6 +4,7 @@ import {
   ClientCommand,
   ClientMessage,
   HostCommand,
+  HostMessage,
 } from '../../types/shared/messages'
 import { isDev, isFeatureEnabled } from '../../types/shared/config'
 
@@ -43,6 +44,17 @@ export class EmulatorPanel {
     this.panel.onDidDispose(() => this.dispose(), null, this.disposables)
     this.setWebviewMessageListener(this.panel.webview)
     this.panel.webview.html = this.getWebviewContent()
+
+    // Update client with view state changes
+    this.panel.onDidChangeViewState((e) => {
+      this.notifyClient({
+        command: HostCommand.ViewFocus,
+        focus: {
+          active: e.webviewPanel.active,
+          visible: e.webviewPanel.visible,
+        },
+      })
+    })
   }
 
   dispose() {
@@ -92,11 +104,17 @@ export class EmulatorPanel {
   }
 
   loadDisc() {
-    this.panel.webview
-      .postMessage({ command: HostCommand.LoadDisc, url: this.discFileUrl })
-      .then((result) => {
-        console.log('loadDisc result=' + result)
-      })
+    this.notifyClient({ command: HostCommand.LoadDisc, url: this.discFileUrl })
+  }
+
+  notifyClient(message: HostMessage) {
+    this.panel.webview.postMessage(message).then((result) => {
+      if (!result) {
+        vscode.window.showInformationMessage(
+          `Failed to send message to webview: ${JSON.stringify(message)}`,
+        )
+      }
+    })
   }
 
   static show(
