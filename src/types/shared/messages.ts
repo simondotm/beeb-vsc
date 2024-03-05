@@ -9,17 +9,22 @@ export const enum ClientCommand {
   Error = 'error',
 }
 
-// Message from host to client
-export const enum HostCommand {
-  LoadDisc = 'loadDisc',
-}
-
 export interface ClientMessage extends MessageBase {
   command: ClientCommand
   text?: string
 }
 
+// Message from host to client
+export const enum HostCommand {
+  LoadDisc = 'loadDisc',
+  ViewFocus = 'viewFocus',
+}
+
 export interface HostMessage extends MessageBase {
   command: HostCommand
   url?: string
+  focus?: {
+    active: boolean
+    visible: boolean
+  }
 }

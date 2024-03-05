@@ -44,7 +44,17 @@ window.addEventListener('load', (event) => {
   notifyHost({ command: ClientCommand.PageLoaded })
 })
 
-// Handle messages received from the host extension
+// Set up event handler to produce text for the window focus event
+window.addEventListener(
+  'focus',
+  (_event) => {
+    console.log('window focused')
+    emulatorView.focusInput()
+  },
+  false,
+)
+
+// Handle messages received from the host extensiond
 window.addEventListener('message', (event) => {
   const message = event.data as HostMessage // The JSON data our extension sent
   console.log('message received')
@@ -55,6 +65,11 @@ window.addEventListener('message', (event) => {
       if (message.url) {
         emulatorView.mountDisc(message.url, true)
       }
+      break
+    case HostCommand.ViewFocus:
+      // if (message.isViewFocused) {
+      //   emulatorView.focus()
+      // }
       break
   }
 })

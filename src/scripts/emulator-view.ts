@@ -133,7 +133,10 @@ export class EmulatorView {
     }
   }
 
-  focus() {
+  /**
+   * Capture input to the emulator
+   */
+  focusInput() {
     this.screen.focus()
   }
 
@@ -154,7 +157,7 @@ export class EmulatorView {
     }
   }
 
-  async reset(hard: boolean = true) {
+  async resetCpu(hard: boolean = true) {
     if (this.emulator) {
       this.emulator.cpu.reset(hard)
       if (this.mountedDisc) {
