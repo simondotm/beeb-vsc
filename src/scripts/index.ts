@@ -71,6 +71,11 @@ window.addEventListener('message', (event) => {
       //   emulatorView.focus()
       // }
       break
+    case HostCommand.DiscImages:
+      if (message.discImages) {
+        emulatorView.setDiscImages(message.discImages)
+      }
+      break
   }
 })
 

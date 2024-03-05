@@ -8,6 +8,9 @@ import {
   HostMessage,
 } from '../../types/shared/messages'
 import { isDev, isFeatureEnabled } from '../../types/shared/config'
+import { relative } from 'path'
+
+const glob = '**/*.{ssd,dsd}'
 
 export class EmulatorPanel {
   static instance: EmulatorPanel | undefined
@@ -69,39 +72,43 @@ export class EmulatorPanel {
     // Watch workspace for disc images
     const workspaceRoot = vscode.workspace.workspaceFolders?.[0]
     if (workspaceRoot) {
-      const glob = '**/*.{ssd,dsd}'
-
-      vscode.workspace.findFiles(glob).then((uris) => {
-        console.log(`found uris:`, uris)
-        const allFiles: DiscImageUri[] = uris.map((uri) => {
-          const name = uri.fsPath.replace(workspaceRoot.uri.fsPath, '')
-          console.log(name)
-          return {
-            uri: this.panel.webview.asWebviewUri(uri).toString(),
-            name,
-          }
-        })
-        console.log(`found files:`, allFiles)
-        this.notifyClient({
-          command: HostCommand.DiscImages,
-          discImages: allFiles,
-        })
-      })
+      this.updateDiscImages(workspaceRoot)
 
       this.watcher = vscode.workspace.createFileSystemWatcher(
         new vscode.RelativePattern(workspaceRoot, glob),
       )
 
       this.watcher.onDidChange((uri) => {
-        console.log(`changed`, uri)
+        // console.log(`changed`, uri)
       }) // listen to files being changed
       this.watcher.onDidCreate((uri) => {
-        console.log(`created`, uri)
+        // console.log(`created`, uri)
+        this.updateDiscImages(workspaceRoot)
       }) // listen to files/folders being created
       this.watcher.onDidDelete((uri) => {
-        console.log(`deleted`, uri)
+        // console.log(`deleted`, uri)
+        this.updateDiscImages(workspaceRoot)
       }) // listen to files/folders getting deleted
     }
+  }
+
+  private updateDiscImages(workspaceRoot: vscode.WorkspaceFolder) {
+    vscode.workspace.findFiles(glob).then((uris) => {
+      console.log(`found uris:`, uris)
+      const allFiles: DiscImageUri[] = uris.map((uri) => {
+        const name = relative(workspaceRoot.uri.fsPath, uri.fsPath)
+        console.log(name)
+        return {
+          uri: this.panel.webview.asWebviewUri(uri).toString(),
+          name,
+        }
+      })
+      console.log(`found files:`, allFiles)
+      this.notifyClient({
+        command: HostCommand.DiscImages,
+        discImages: allFiles,
+      })
+    })
   }
 
   dispose() {

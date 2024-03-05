@@ -11,6 +11,7 @@ export class EmulatorToolBar {
   buttonExpand: JQuery<HTMLElement>
 
   modelSelector: JQuery<HTMLElement>
+  discSelector: JQuery<HTMLElement>
 
   constructor(public emulatorView: EmulatorView) {
     this.buttonControl = $('#toolbar-control')
@@ -59,6 +60,18 @@ export class EmulatorToolBar {
     this.modelSelector.on('change', (event: JQuery.ChangeEvent) =>
       this.onModelChange(event),
     )
+
+    // populate the disc image selector
+    this.discSelector = $('#disc-selector')
+    this.emulatorView.discImages$.subscribe((discImages) => {
+      this.discSelector.empty()
+      discImages.push({ uri: '', name: '-- no disk --' })
+      for (const discImage of discImages) {
+        this.discSelector.append(
+          $(`<vscode-option />`).val(discImage.uri).text(discImage.name),
+        )
+      }
+    })
 
     this.updateEmulatorStatus()
   }

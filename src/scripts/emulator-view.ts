@@ -6,7 +6,7 @@ import { CustomAudioHandler } from './custom-audio-handler'
 import { BehaviorSubject, Observable, distinctUntilChanged } from 'rxjs'
 import { DisplayMode, getDisplayModeInfo } from './display-modes'
 import { notifyHost } from './vscode'
-import { ClientCommand } from '../types/shared/messages'
+import { ClientCommand, DiscImageUri } from '../types/shared/messages'
 
 const audioFilterFreq = 7000
 const audioFilterQ = 5
@@ -23,6 +23,15 @@ export class EmulatorView {
   emulator: Emulator | undefined // Dont hold references to the emulator, it may be paused and destroyed
 
   mountedDisc: string | undefined
+
+  private _discImages$ = new BehaviorSubject<DiscImageUri[]>([])
+  get discImages$(): Observable<DiscImageUri[]> {
+    return this._discImages$
+  }
+
+  setDiscImages(discImages: DiscImageUri[]) {
+    this._discImages$.next(discImages)
+  }
 
   // observables
   private _displayMode$ = new BehaviorSubject<DisplayMode>(null)
