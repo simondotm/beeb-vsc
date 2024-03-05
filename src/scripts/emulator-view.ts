@@ -157,6 +157,10 @@ export class EmulatorView {
     }
   }
 
+  /**
+   * Soft or hard reset the CPU and remount the current disc image (if any)
+   * @param hard - true for a hard reset, false for a soft reset
+   */
   async resetCpu(hard: boolean = true) {
     if (this.emulator) {
       this.emulator.cpu.reset(hard)
