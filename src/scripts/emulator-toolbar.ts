@@ -74,7 +74,7 @@ export class EmulatorToolBar {
         console.log(`selected: ${selected}`)
         this.discSelector.append(
           $(`<vscode-option ${selected} />`)
-            .val(discImage.uri)
+            .val(discImage.url)
             .text(discImage.name),
         )
       }

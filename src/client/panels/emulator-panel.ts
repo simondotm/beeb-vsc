@@ -3,7 +3,7 @@ import { getJsBeebResources, scriptUri, scriptUrl } from '../emulator/assets'
 import {
   ClientCommand,
   ClientMessage,
-  DiscImageUri,
+  DiscImageFile,
   HostCommand,
   HostMessage,
   NO_DISC,
@@ -20,7 +20,7 @@ export class EmulatorPanel {
   private readonly context: vscode.ExtensionContext
   private disposables: vscode.Disposable[] = []
 
-  private discFileUrl: DiscImageUri = NO_DISC
+  private discImageFile: DiscImageFile = NO_DISC
 
   private watcher: vscode.FileSystemWatcher | undefined
 
@@ -74,37 +74,47 @@ export class EmulatorPanel {
     // Watch workspace for disc images
     const workspaceRoot = vscode.workspace.workspaceFolders?.[0]
     if (workspaceRoot) {
-      this.updateDiscImages(workspaceRoot)
+      this.sendDiscImages(workspaceRoot)
 
       this.watcher = vscode.workspace.createFileSystemWatcher(
         new vscode.RelativePattern(workspaceRoot, glob),
       )
 
+      // notify client when a disk image file has changed
       this.watcher.onDidChange((uri) => {
-        // console.log(`changed`, uri)
-      }) // listen to files being changed
+        this.notifyClient({
+          command: HostCommand.DiscImageChanges,
+          discImageChanges: { changed: [this.discImageFileFromUri(uri)] },
+        })
+      })
+      // update client with all disc image files in the workspace when added
       this.watcher.onDidCreate((uri) => {
-        // console.log(`created`, uri)
-        this.updateDiscImages(workspaceRoot)
-      }) // listen to files/folders being created
+        this.sendDiscImages(workspaceRoot)
+        this.notifyClient({
+          command: HostCommand.DiscImageChanges,
+          discImageChanges: { created: [this.discImageFileFromUri(uri)] },
+        })
+      })
+      // update client with all disc image files in the workspace when deleted
       this.watcher.onDidDelete((uri) => {
-        // console.log(`deleted`, uri)
-        this.updateDiscImages(workspaceRoot)
-      }) // listen to files/folders getting deleted
+        this.sendDiscImages(workspaceRoot)
+        this.notifyClient({
+          command: HostCommand.DiscImageChanges,
+          discImageChanges: { deleted: [this.discImageFileFromUri(uri)] },
+        })
+      })
     }
   }
 
-  private updateDiscImages(_workspaceRoot: vscode.WorkspaceFolder) {
+  /**
+   * Notify client of all disc image files in the workspace
+   * @param _workspaceRoot
+   */
+  private sendDiscImages(_workspaceRoot: vscode.WorkspaceFolder) {
     vscode.workspace.findFiles(glob).then((uris) => {
       console.log(`found uris:`, uris)
-      const allFiles: DiscImageUri[] = uris.map((uri) => {
-        return this.getDiscImageUri(uri)
-        // const name = relative(workspaceRoot.uri.fsPath, uri.fsPath)
-        // console.log(name)
-        // return {
-        //   uri: this.panel.webview.asWebviewUri(uri).toString(),
-        //   name,
-        // }
+      const allFiles: DiscImageFile[] = uris.map((uri) => {
+        return this.discImageFileFromUri(uri)
       })
       console.log(`found files:`, allFiles)
       this.notifyClient({
@@ -114,7 +124,7 @@ export class EmulatorPanel {
     })
   }
 
-  dispose() {
+  private dispose() {
     EmulatorPanel.instance = undefined
 
     if (this.watcher) {
@@ -160,29 +170,38 @@ export class EmulatorPanel {
   }
 
   setDiscFileUrl(discFile?: vscode.Uri) {
-    this.discFileUrl = discFile ? this.getDiscImageUri(discFile) : NO_DISC
-    console.log('setDiscFileUrl=' + this.discFileUrl)
+    this.discImageFile = discFile
+      ? this.discImageFileFromUri(discFile)
+      : NO_DISC
+    console.log('setDiscFileUrl=' + this.discImageFile)
   }
 
   loadDisc() {
-    this.notifyClient({ command: HostCommand.LoadDisc, url: this.discFileUrl })
+    this.notifyClient({
+      command: HostCommand.LoadDisc,
+      url: this.discImageFile,
+    })
   }
 
   /**
-   * Return DiscImageUri (web url and image name) for the given uri
+   * Return DiscImageFile (web url and image name) for the given uri
    * @param uri
-   * @returns DiscImageUri
+   * @returns DiscImageFile
    */
-  getDiscImageUri(uri: vscode.Uri): DiscImageUri {
+  discImageFileFromUri(uri: vscode.Uri): DiscImageFile {
     const workspaceRoot = vscode.workspace.workspaceFolders?.[0]
     return {
-      uri: this.panel.webview.asWebviewUri(uri).toString(),
+      url: this.panel.webview.asWebviewUri(uri).toString(),
       name: workspaceRoot
         ? relative(workspaceRoot.uri.fsPath, uri.fsPath)
         : uri.fsPath,
     }
   }
 
+  /**
+   * Send the given message to the client
+   * @param message
+   */
   notifyClient(message: HostMessage) {
     this.panel.webview.postMessage(message).then((result) => {
       if (!result) {
@@ -335,7 +354,7 @@ export class EmulatorPanel {
     return `
 
 Hello world<br>
-You selected disc file '${this.discFileUrl}'<br>
+You selected disc file '${this.discImageFile}'<br>
 
 <vscode-divider></vscode-divider>
 

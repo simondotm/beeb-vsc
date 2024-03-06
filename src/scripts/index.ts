@@ -62,19 +62,23 @@ window.addEventListener('message', (event) => {
 
   switch (message.command) {
     case HostCommand.LoadDisc:
+      // user has invoked a dsd/ssd file context menu for the emulator
       if (message.url) {
         emulatorView.mountDisc(message.url, true)
       }
       break
     case HostCommand.ViewFocus:
-      // if (message.isViewFocused) {
-      //   emulatorView.focus()
-      // }
+      // Emulator panel has changed active or visible state
+      // We handle focus via window events at the moment
+      // since these can arrive before the webview is ready
       break
     case HostCommand.DiscImages:
       if (message.discImages) {
         emulatorView.setDiscImages(message.discImages)
       }
+      break
+    case HostCommand.DiscImageChanges:
+      //TODO: Listener logic here
       break
   }
 })

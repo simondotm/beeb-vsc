@@ -37,12 +37,12 @@ export type ClientMessage =
  * Messages from host to client
  */
 
-export type DiscImageUri = {
-  uri: string
+export type DiscImageFile = {
+  url: string
   name: string
 }
 
-export const NO_DISC: DiscImageUri = { uri: '', name: '-- no disc --' }
+export const NO_DISC: DiscImageFile = { url: '', name: '-- no disc --' }
 
 export const enum HostCommand {
   LoadDisc = 'loadDisc',
@@ -57,21 +57,21 @@ export interface HostMessageBase extends MessageBase {
 
 export interface HostMessageDiscImages extends HostMessageBase {
   command: HostCommand.DiscImages
-  discImages: DiscImageUri[]
+  discImages: DiscImageFile[]
 }
 
 export interface HostMessageDiscImageChanges extends HostMessageBase {
   command: HostCommand.DiscImageChanges
   discImageChanges: {
-    changed?: DiscImageUri[]
-    created?: DiscImageUri[]
-    deleted?: DiscImageUri[]
+    changed?: DiscImageFile[]
+    created?: DiscImageFile[]
+    deleted?: DiscImageFile[]
   }
 }
 
 export interface HostMessageLoadDisc extends HostMessageBase {
   command: HostCommand.LoadDisc
-  url: DiscImageUri
+  url: DiscImageFile
 }
 
 export interface HostMessageViewFocus extends HostMessageBase {
