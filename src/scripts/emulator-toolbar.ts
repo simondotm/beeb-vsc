@@ -2,7 +2,7 @@ import $ from 'jquery'
 import { EmulatorView } from './emulator-view'
 import { allModels, findModel } from 'jsbeeb/models'
 import { notifyHost } from './vscode'
-import { ClientCommand } from '../types/shared/messages'
+import { ClientCommand, NO_DISC } from '../types/shared/messages'
 
 export class EmulatorToolBar {
   buttonControl: JQuery<HTMLElement>
@@ -65,10 +65,17 @@ export class EmulatorToolBar {
     this.discSelector = $('#disc-selector')
     this.emulatorView.discImages$.subscribe((discImages) => {
       this.discSelector.empty()
-      discImages.push({ uri: '', name: '-- no disk --' })
+      discImages.push(NO_DISC)
+      const selectedDisc = this.emulatorView.mountedDisc ?? NO_DISC
+      console.log(`selectedDisc: ${selectedDisc}`)
       for (const discImage of discImages) {
+        console.log(`discImage: ${discImage.name}`)
+        const selected = discImage.name === selectedDisc.name ? 'selected' : ''
+        console.log(`selected: ${selected}`)
         this.discSelector.append(
-          $(`<vscode-option />`).val(discImage.uri).text(discImage.name),
+          $(`<vscode-option ${selected} />`)
+            .val(discImage.uri)
+            .text(discImage.name),
         )
       }
     })

@@ -42,6 +42,8 @@ export type DiscImageUri = {
   name: string
 }
 
+export const NO_DISC: DiscImageUri = { uri: '', name: '-- no disc --' }
+
 export const enum HostCommand {
   LoadDisc = 'loadDisc',
   ViewFocus = 'viewFocus',
@@ -69,7 +71,7 @@ export interface HostMessageDiscImageChanges extends HostMessageBase {
 
 export interface HostMessageLoadDisc extends HostMessageBase {
   command: HostCommand.LoadDisc
-  url: string
+  url: DiscImageUri
 }
 
 export interface HostMessageViewFocus extends HostMessageBase {

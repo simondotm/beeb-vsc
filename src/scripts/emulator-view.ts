@@ -6,7 +6,7 @@ import { CustomAudioHandler } from './custom-audio-handler'
 import { BehaviorSubject, Observable, distinctUntilChanged } from 'rxjs'
 import { DisplayMode, getDisplayModeInfo } from './display-modes'
 import { notifyHost } from './vscode'
-import { ClientCommand, DiscImageUri } from '../types/shared/messages'
+import { ClientCommand, DiscImageUri, NO_DISC } from '../types/shared/messages'
 
 const audioFilterFreq = 7000
 const audioFilterQ = 5
@@ -22,7 +22,7 @@ export class EmulatorView {
   model: Model | undefined
   emulator: Emulator | undefined // Dont hold references to the emulator, it may be paused and destroyed
 
-  mountedDisc: string | undefined
+  mountedDisc: DiscImageUri | undefined
 
   private _discImages$ = new BehaviorSubject<DiscImageUri[]>([])
   get discImages$(): Observable<DiscImageUri[]> {
@@ -149,11 +149,11 @@ export class EmulatorView {
     this.screen.focus()
   }
 
-  async mountDisc(discImageFile: string, autoBoot: boolean = false) {
+  async mountDisc(discImageFile: DiscImageUri, autoBoot: boolean = false) {
     console.log(`mountDisc=${discImageFile}`)
     this.mountedDisc = discImageFile
     if (this.emulator) {
-      await this.emulator.loadDisc(discImageFile)
+      await this.emulator.loadDisc(discImageFile.uri)
       if (autoBoot) {
         this.emulator.holdShift()
       }
@@ -163,6 +163,7 @@ export class EmulatorView {
   unmountDisc() {
     if (this.emulator) {
       this.emulator.ejectDisc()
+      this.mountedDisc = NO_DISC
     }
   }
 
@@ -174,7 +175,7 @@ export class EmulatorView {
     if (this.emulator) {
       this.emulator.cpu.reset(hard)
       if (this.mountedDisc) {
-        await this.emulator.loadDisc(this.mountedDisc)
+        await this.emulator.loadDisc(this.mountedDisc.uri)
       }
     }
   }

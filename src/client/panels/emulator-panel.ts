@@ -6,6 +6,7 @@ import {
   DiscImageUri,
   HostCommand,
   HostMessage,
+  NO_DISC,
 } from '../../types/shared/messages'
 import { isDev, isFeatureEnabled } from '../../types/shared/config'
 import { relative } from 'path'
@@ -18,7 +19,8 @@ export class EmulatorPanel {
   private readonly panel: vscode.WebviewPanel
   private readonly context: vscode.ExtensionContext
   private disposables: vscode.Disposable[] = []
-  private discFileUrl: string = ''
+
+  private discFileUrl: DiscImageUri = NO_DISC
 
   private watcher: vscode.FileSystemWatcher | undefined
 
@@ -92,16 +94,17 @@ export class EmulatorPanel {
     }
   }
 
-  private updateDiscImages(workspaceRoot: vscode.WorkspaceFolder) {
+  private updateDiscImages(_workspaceRoot: vscode.WorkspaceFolder) {
     vscode.workspace.findFiles(glob).then((uris) => {
       console.log(`found uris:`, uris)
       const allFiles: DiscImageUri[] = uris.map((uri) => {
-        const name = relative(workspaceRoot.uri.fsPath, uri.fsPath)
-        console.log(name)
-        return {
-          uri: this.panel.webview.asWebviewUri(uri).toString(),
-          name,
-        }
+        return this.getDiscImageUri(uri)
+        // const name = relative(workspaceRoot.uri.fsPath, uri.fsPath)
+        // console.log(name)
+        // return {
+        //   uri: this.panel.webview.asWebviewUri(uri).toString(),
+        //   name,
+        // }
       })
       console.log(`found files:`, allFiles)
       this.notifyClient({
@@ -157,14 +160,27 @@ export class EmulatorPanel {
   }
 
   setDiscFileUrl(discFile?: vscode.Uri) {
-    this.discFileUrl = discFile
-      ? this.panel.webview.asWebviewUri(discFile).toString()
-      : ''
+    this.discFileUrl = discFile ? this.getDiscImageUri(discFile) : NO_DISC
     console.log('setDiscFileUrl=' + this.discFileUrl)
   }
 
   loadDisc() {
     this.notifyClient({ command: HostCommand.LoadDisc, url: this.discFileUrl })
+  }
+
+  /**
+   * Return DiscImageUri (web url and image name) for the given uri
+   * @param uri
+   * @returns DiscImageUri
+   */
+  getDiscImageUri(uri: vscode.Uri): DiscImageUri {
+    const workspaceRoot = vscode.workspace.workspaceFolders?.[0]
+    return {
+      uri: this.panel.webview.asWebviewUri(uri).toString(),
+      name: workspaceRoot
+        ? relative(workspaceRoot.uri.fsPath, uri.fsPath)
+        : uri.fsPath,
+    }
   }
 
   notifyClient(message: HostMessage) {
