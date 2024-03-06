@@ -11,10 +11,27 @@ export const enum ClientCommand {
   Error = 'error',
 }
 
-export interface ClientMessage extends MessageBase {
+export interface ClientMessageBase extends MessageBase {
   command: ClientCommand
-  text?: string
 }
+
+export interface ClientMessageEmulatorReady extends ClientMessageBase {
+  command: ClientCommand.EmulatorReady
+}
+
+export interface ClientMessagePageLoaded extends ClientMessageBase {
+  command: ClientCommand.PageLoaded
+}
+
+export interface ClientMessageError extends ClientMessageBase {
+  command: ClientCommand.Error
+  text: string
+}
+
+export type ClientMessage =
+  | ClientMessageEmulatorReady
+  | ClientMessagePageLoaded
+  | ClientMessageError
 
 /**
  * Messages from host to client
@@ -32,17 +49,39 @@ export const enum HostCommand {
   DiscImageChanges = 'discImageChanges',
 }
 
-export interface HostMessage extends MessageBase {
+export interface HostMessageBase extends MessageBase {
   command: HostCommand
-  url?: string
-  focus?: {
-    active: boolean
-    visible: boolean
-  }
-  discImages?: DiscImageUri[]
-  discImageChanges?: {
+}
+
+export interface HostMessageDiscImages extends HostMessageBase {
+  command: HostCommand.DiscImages
+  discImages: DiscImageUri[]
+}
+
+export interface HostMessageDiscImageChanges extends HostMessageBase {
+  command: HostCommand.DiscImageChanges
+  discImageChanges: {
     changed?: DiscImageUri[]
     created?: DiscImageUri[]
     deleted?: DiscImageUri[]
   }
 }
+
+export interface HostMessageLoadDisc extends HostMessageBase {
+  command: HostCommand.LoadDisc
+  url: string
+}
+
+export interface HostMessageViewFocus extends HostMessageBase {
+  command: HostCommand.ViewFocus
+  focus: {
+    active: boolean
+    visible: boolean
+  }
+}
+
+export type HostMessage =
+  | HostMessageDiscImages
+  | HostMessageDiscImageChanges
+  | HostMessageLoadDisc
+  | HostMessageViewFocus
