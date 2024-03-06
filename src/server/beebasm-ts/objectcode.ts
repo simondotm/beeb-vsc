@@ -43,6 +43,9 @@ export class ObjectCode {
   private _aMemory: number[] = new Array(0x10000)
   private _aFlags: number[] = new Array(0x10000)
   private _aMapChar: integer[] = new Array(96)
+  // After one consistency error, all subsequent code will probably be wrong, so just raise once
+  // or we'll get a lot of errors and potentially cause severe slowdown
+  private _hadConsistencyError = false
 
   private constructor() {
     //SymbolTable.Instance.AddSymbol( "CPU", this._CPU );
@@ -58,6 +61,7 @@ export class ObjectCode {
     this._aMemory.fill(0)
     this._aFlags.fill(0)
     this._aMapChar.fill(0)
+    this._hadConsistencyError = false
   }
 
   public GetCPU(): number {
@@ -196,7 +200,10 @@ export class ObjectCode {
       !(this._aFlags[this._PC] & FLAGS.DONT_CHECK) &&
       this._aMemory[this._PC] !== opcode
     ) {
-      throw new AsmException.AssembleError_InconsistentCode()
+      if (!this._hadConsistencyError) {
+        this._hadConsistencyError = true
+        throw new AsmException.AssembleError_InconsistentCode()
+      }
     }
     if (this._aFlags[this._PC] & FLAGS.GUARD) {
       throw new AsmException.AssembleError_GuardHit()
@@ -219,7 +226,10 @@ export class ObjectCode {
       !(this._aFlags[this._PC] & FLAGS.DONT_CHECK) &&
       this._aMemory[this._PC] !== opcode
     ) {
-      throw new AsmException.AssembleError_InconsistentCode()
+      if (!this._hadConsistencyError) {
+        this._hadConsistencyError = true
+        throw new AsmException.AssembleError_InconsistentCode()
+      }
     }
     if (this._aFlags[this._PC] & FLAGS.GUARD) {
       throw new AsmException.AssembleError_GuardHit()
@@ -244,7 +254,10 @@ export class ObjectCode {
       !(this._aFlags[this._PC] & FLAGS.DONT_CHECK) &&
       this._aMemory[this._PC] !== opcode
     ) {
-      throw new AsmException.AssembleError_InconsistentCode()
+      if (!this._hadConsistencyError) {
+        this._hadConsistencyError = true
+        throw new AsmException.AssembleError_InconsistentCode()
+      }
     }
     if (
       this._aFlags[this._PC] & FLAGS.GUARD ||
