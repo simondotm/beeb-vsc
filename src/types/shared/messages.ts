@@ -62,11 +62,9 @@ export interface HostMessageDiscImages extends HostMessageBase {
 
 export interface HostMessageDiscImageChanges extends HostMessageBase {
   command: HostCommand.DiscImageChanges
-  discImageChanges: {
-    changed?: DiscImageFile[]
-    created?: DiscImageFile[]
-    deleted?: DiscImageFile[]
-  }
+  changed?: DiscImageFile[]
+  created?: DiscImageFile[]
+  deleted?: DiscImageFile[]
 }
 
 export interface HostMessageLoadDisc extends HostMessageBase {

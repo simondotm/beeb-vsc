@@ -84,7 +84,7 @@ export class EmulatorPanel {
       this.watcher.onDidChange((uri) => {
         this.notifyClient({
           command: HostCommand.DiscImageChanges,
-          discImageChanges: { changed: [this.discImageFileFromUri(uri)] },
+          changed: [this.discImageFileFromUri(uri)],
         })
       })
       // update client with all disc image files in the workspace when added
@@ -92,7 +92,7 @@ export class EmulatorPanel {
         this.sendDiscImages(workspaceRoot)
         this.notifyClient({
           command: HostCommand.DiscImageChanges,
-          discImageChanges: { created: [this.discImageFileFromUri(uri)] },
+          created: [this.discImageFileFromUri(uri)],
         })
       })
       // update client with all disc image files in the workspace when deleted
@@ -100,7 +100,7 @@ export class EmulatorPanel {
         this.sendDiscImages(workspaceRoot)
         this.notifyClient({
           command: HostCommand.DiscImageChanges,
-          discImageChanges: { deleted: [this.discImageFileFromUri(uri)] },
+          deleted: [this.discImageFileFromUri(uri)],
         })
       })
     }
@@ -150,12 +150,14 @@ export class EmulatorPanel {
         switch (command) {
           case ClientCommand.PageLoaded:
             vscode.window.showInformationMessage('loaded page')
-            // start watching for disc images
-            this.startWatcher()
             return
           case ClientCommand.EmulatorReady:
+            // when the client side emulator signals it is ready
+            // we can send it the default disc image file to load (if any)
             console.log('EmulatorReady')
             this.loadDisc()
+            // start watching for disc image files in the workspace
+            this.startWatcher()
             return
           case ClientCommand.Error:
             vscode.window.showInformationMessage(
@@ -223,10 +225,9 @@ export class EmulatorPanel {
       EmulatorPanel.instance = new EmulatorPanel(context)
     }
 
-    // always update the webview content when creating or revealing
-    // todo: load disc using messages rather than html changes. this way the script can reset the emulator, or optionally auto-boot
+    // notify the client of a disc selection if emulator was
+    // launched via a file context menu
     if (contextSelection) {
-      // TODO: pass message to webview to update disc file
       EmulatorPanel.instance.setDiscFileUrl(contextSelection)
     }
   }
@@ -296,8 +297,10 @@ export class EmulatorPanel {
 
         <vscode-dropdown id="disc-selector" class="fixed-width-selector">
           <span slot="indicator" class="codicon codicon-save"></span>
-          <vscode-option>Empty</vscode-option>
-          <vscode-option>image.dsd</vscode-option>			
+          <vscode-option >1</vscode-option>
+          <vscode-option >2</vscode-option>
+          <vscode-option >3</vscode-option>
+          <vscode-option selected>4</vscode-option>
         </vscode-dropdown>
 
         <vscode-button id="toolbar-sound" appearance="secondary">
