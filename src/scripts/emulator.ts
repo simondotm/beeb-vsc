@@ -190,8 +190,10 @@ export class Emulator {
   }
 
   ejectDisc() {
-    console.log('ejecting disc')
-    emptySsd(this.cpu.fdc)
+    console.log('Disc ejected')
+    const blank = emptySsd(this.cpu.fdc)
+    this.cpu.fdc.loadDisc(0, blank)
+    this.cpu.fdc.loadDisc(2, blank)
   }
 
   async runProgram(tokenised: any) {
