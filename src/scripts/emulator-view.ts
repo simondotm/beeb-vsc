@@ -6,7 +6,7 @@ import { CustomAudioHandler } from './custom-audio-handler'
 import { BehaviorSubject, Observable, distinctUntilChanged } from 'rxjs'
 import { DisplayMode, getDisplayModeInfo } from './display-modes'
 import { notifyHost } from './vscode'
-import { ClientCommand, DiscImageFile, NO_DISC } from '../types/shared/messages'
+import { ClientCommand, DiscImageFile } from '../types/shared/messages'
 
 const audioFilterFreq = 7000
 const audioFilterQ = 5
@@ -21,8 +21,6 @@ export class EmulatorView {
 
   model: Model | undefined
   emulator: Emulator | undefined // Dont hold references to the emulator, it may be paused and destroyed
-
-  mountedDisc: DiscImageFile | undefined
 
   private _discImages$ = new BehaviorSubject<DiscImageFile[]>([])
   get discImages$(): Observable<DiscImageFile[]> {
@@ -104,9 +102,7 @@ export class EmulatorView {
       await this.emulator.initialise()
 
       // re-mount any existing disc if we change model
-      if (this.mountedDisc) {
-        await this.mountDisc(this.mountedDisc, false)
-      }
+      this.emulator.reloadDisc()
 
       this.emulator.start()
       // will automatically unsubscribe when emulator is shutdown
@@ -147,44 +143,5 @@ export class EmulatorView {
    */
   focusInput() {
     this.screen.focus()
-  }
-
-  async mountDisc(discImageFile: DiscImageFile, autoBoot: boolean = false) {
-    console.log(`mountDisc=${discImageFile}`)
-    this.mountedDisc = discImageFile
-    if (this.emulator && discImageFile.url) {
-      await this.emulator.loadDisc(discImageFile.url)
-      notifyHost({
-        command: ClientCommand.Error,
-        text: `Mounted disc '${discImageFile.name}'`,
-      })
-      if (autoBoot) {
-        this.emulator.holdShift()
-      }
-    }
-  }
-
-  unmountDisc() {
-    if (this.emulator) {
-      this.emulator.ejectDisc()
-      this.mountedDisc = NO_DISC
-      notifyHost({
-        command: ClientCommand.Error,
-        text: `Disc ejected`,
-      })
-    }
-  }
-
-  /**
-   * Soft or hard reset the CPU and remount the current disc image (if any)
-   * @param hard - true for a hard reset, false for a soft reset
-   */
-  async resetCpu(hard: boolean = true) {
-    if (this.emulator) {
-      this.emulator.cpu.reset(hard)
-      if (this.mountedDisc) {
-        await this.emulator.loadDisc(this.mountedDisc.url)
-      }
-    }
   }
 }

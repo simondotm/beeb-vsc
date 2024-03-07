@@ -9,7 +9,7 @@ import * as utils from 'jsbeeb/utils'
 import { Model } from 'jsbeeb/models'
 import { BaseDisc, emptySsd } from 'jsbeeb/fdc'
 import { notifyHost } from './vscode'
-import { ClientCommand } from '../types/shared/messages'
+import { ClientCommand, DiscImageFile, NO_DISC } from '../types/shared/messages'
 import { CustomAudioHandler } from './custom-audio-handler'
 import { Observable, Subject } from 'rxjs'
 
@@ -73,6 +73,7 @@ export class Emulator {
   lastCtrlLocation: number
 
   margin: EmulatorMargin = margins.normal
+  discImageFile: DiscImageFile = NO_DISC
 
   private _emulatorUpdate$ = new Subject<Emulator>()
   get emulatorUpdate$(): Observable<Emulator> {
@@ -171,22 +172,33 @@ export class Emulator {
     this.running = false
   }
 
-  async loadDisc(discUrl: string) {
+  async loadDisc(discImageFile: DiscImageFile, autoBoot: boolean = false) {
     if (!this.ready) {
       console.log('Emulator not ready to load disc yet.')
       return
     }
-    try {
-      console.log('loading disc')
-      const fdc = this.cpu.fdc
-      const discData = await utils.defaultLoadData(discUrl)
-      const discImage = new BaseDisc(fdc, 'disc', discData, () => {})
-      this.cpu.fdc.loadDisc(0, discImage)
-    } catch (e: any) {
-      console.error('Failed to load disc', e)
-      notifyHost({ command: ClientCommand.Error, text: e.message })
-      this.ejectDisc()
+    if (discImageFile.url) {
+      try {
+        console.log('loading disc')
+        const fdc = this.cpu.fdc
+        const discData = await utils.defaultLoadData(discImageFile.url)
+        const discImage = new BaseDisc(fdc, 'disc', discData, () => {})
+        this.cpu.fdc.loadDisc(0, discImage)
+        notifyHost({
+          command: ClientCommand.Error,
+          text: `Mounted disc '${discImageFile.name}'`,
+        })
+        if (autoBoot) {
+          this.holdShift()
+        }
+        this.discImageFile = discImageFile
+        return
+      } catch (e: any) {
+        console.error('Failed to load disc', e)
+        notifyHost({ command: ClientCommand.Error, text: e.message })
+      }
     }
+    this.ejectDisc()
   }
 
   ejectDisc() {
@@ -194,6 +206,24 @@ export class Emulator {
     const blank = emptySsd(this.cpu.fdc)
     this.cpu.fdc.loadDisc(0, blank)
     this.cpu.fdc.loadDisc(2, blank)
+    this.discImageFile = NO_DISC
+    notifyHost({
+      command: ClientCommand.Error,
+      text: `Disc ejected`,
+    })
+  }
+
+  async reloadDisc() {
+    await this.loadDisc(this.discImageFile)
+  }
+
+  /**
+   * Soft or hard reset the CPU and remount the current disc image (if any)
+   * @param hard - true for a hard reset, false for a soft reset
+   */
+  async resetCpu(hard: boolean = true) {
+    this.cpu.reset(hard)
+    await this.reloadDisc()
   }
 
   async runProgram(tokenised: any) {
