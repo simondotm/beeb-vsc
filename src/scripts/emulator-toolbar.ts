@@ -63,22 +63,53 @@ export class EmulatorToolBar {
 
     // populate the disc image selector
     this.discSelector = $('#disc-selector')
+
     this.emulatorView.discImages$.subscribe((discImages) => {
       this.discSelector.empty()
-      discImages.push(NO_DISC)
-      const selectedDisc = this.emulatorView.mountedDisc ?? NO_DISC
-      console.log(`selectedDisc: ${selectedDisc}`)
-      for (const discImage of discImages) {
-        console.log(`discImage: ${discImage.name}`)
-        const selected = discImage.name === selectedDisc.name ? 'selected' : ''
-        console.log(`selected: ${selected}`)
-        this.discSelector.append(
-          $(`<vscode-option ${selected} />`)
-            .val(discImage.url)
-            .text(discImage.name),
-        )
+      const options = [...discImages, NO_DISC]
+      const currentDiscName =
+        this.emulatorView.mountedDisc?.name ?? NO_DISC.name
+      for (const discImage of options) {
+        const selected = discImage.name === currentDiscName ? 'selected' : ''
+        const option = $(`<vscode-option ${selected} />`)
+          .val(`${discImage.url}|${discImage.name}`)
+          .text(`${discImage.name} ${selected}`)
+        this.discSelector.append(option)
       }
+
+      this.discSelector.append(
+        $('<span slot="indicator" class="codicon codicon-save"></span>;='),
+      )
+      this.discSelector.append($('<vscode-option />').val('A').text('A'))
+      this.discSelector.append($('<vscode-option />').val('B').text('B'))
+      this.discSelector.append(
+        $('<vscode-option />').val(NO_DISC.url).text(NO_DISC.name),
+      )
+      this.discSelector.append($('<vscode-option />').val('D').text('D'))
     })
+
+    // this.emulatorView.discImages$.subscribe((discImages) => {
+    //   this.discSelector.find('vscode-option').remove().end() // empty()
+    //   discImages.push(NO_DISC)
+    //   const selectedDisc = this.emulatorView.mountedDisc ?? NO_DISC
+    //   console.log(`selectedDisc: ${selectedDisc}`)
+    //   for (const discImage of discImages) {
+    //     console.log(`discImage: ${discImage.name}`)
+    //     const selected = discImage.name === selectedDisc.name ? 'selected' : ''
+    //     console.log(`selected: ${selected}`)
+    //     const option = $(`<vscode-option />`)
+    //       .val(discImage.url)
+    //       .text(discImage.name)
+    //     if (selected) {
+    //       option.attr('selected', 'selected')
+    //     }
+    //     this.discSelector.append(option)
+    //   }
+    // })
+
+    this.discSelector.on('change', async (event: JQuery.ChangeEvent) =>
+      this.onDiscChange(event),
+    )
 
     this.updateEmulatorStatus()
   }
@@ -99,6 +130,27 @@ export class EmulatorToolBar {
     this.emulatorView.boot(model).then(() => {
       this.updateEmulatorStatus()
     })
+    this.emulatorView.focusInput()
+    notifyHost({
+      command: ClientCommand.Error,
+      text: `Selected model '${model.name}'`,
+    })
+  }
+
+  private async onDiscChange(event: JQuery.ChangeEvent) {
+    const value = $(event.target).val() as string
+    const [url, name] = value.split('|')
+    if (url) {
+      await this.emulatorView.mountDisc(
+        {
+          url,
+          name,
+        },
+        true,
+      )
+    } else {
+      this.emulatorView.unmountDisc()
+    }
     this.emulatorView.focusInput()
   }
 

@@ -152,8 +152,12 @@ export class EmulatorView {
   async mountDisc(discImageFile: DiscImageFile, autoBoot: boolean = false) {
     console.log(`mountDisc=${discImageFile}`)
     this.mountedDisc = discImageFile
-    if (this.emulator) {
+    if (this.emulator && discImageFile.url) {
       await this.emulator.loadDisc(discImageFile.url)
+      notifyHost({
+        command: ClientCommand.Error,
+        text: `Mounted disc '${discImageFile.name}'`,
+      })
       if (autoBoot) {
         this.emulator.holdShift()
       }
@@ -164,6 +168,10 @@ export class EmulatorView {
     if (this.emulator) {
       this.emulator.ejectDisc()
       this.mountedDisc = NO_DISC
+      notifyHost({
+        command: ClientCommand.Error,
+        text: `Disc ejected`,
+      })
     }
   }
 
