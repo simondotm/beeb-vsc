@@ -63,16 +63,9 @@ export class EmulatorToolBar {
 
     // populate the disc image selector
     this.discSelector = $('#disc-selector')
-
-    // this.discSelector.append($(`<vscode-option />`).val(`a`).text(`a`))
-    // this.discSelector.append($(`<vscode-option />`).val(`b`).text(`b`))
-    // this.discSelector.append($(`<vscode-option selected />`).val(`c`).text(`c`))
-    // this.discSelector.append($(`<vscode-option />`).val(`d`).text(`d`))
-
     this.emulatorView.discImages$.subscribe((discImages) => {
       // dont use empty, because we have a span child node for the icon
       this.discSelector.find('vscode-option').remove().end()
-      // this.discSelector.empty()
       this.discSelector.val('')
       const options = [...discImages, NO_DISC]
       const currentDiscName =
@@ -85,36 +78,6 @@ export class EmulatorToolBar {
         this.discSelector.append(option)
       }
     })
-
-    //   this.discSelector.append(
-    //     $('<span slot="indicator" class="codicon codicon-save"></span>;='),
-    //   )
-    //   this.discSelector.append($('<vscode-option />').val('A').text('A'))
-    //   this.discSelector.append($('<vscode-option />').val('B').text('B'))
-    //   this.discSelector.append(
-    //     $('<vscode-option />').val(NO_DISC.url).text(NO_DISC.name),
-    //   )
-    //   this.discSelector.append($('<vscode-option />').val('D').text('D'))
-    // })
-
-    // this.emulatorView.discImages$.subscribe((discImages) => {
-    //   this.discSelector.find('vscode-option').remove().end() // empty()
-    //   discImages.push(NO_DISC)
-    //   const selectedDisc = this.emulatorView.mountedDisc ?? NO_DISC
-    //   console.log(`selectedDisc: ${selectedDisc}`)
-    //   for (const discImage of discImages) {
-    //     console.log(`discImage: ${discImage.name}`)
-    //     const selected = discImage.name === selectedDisc.name ? 'selected' : ''
-    //     console.log(`selected: ${selected}`)
-    //     const option = $(`<vscode-option />`)
-    //       .val(discImage.url)
-    //       .text(discImage.name)
-    //     if (selected) {
-    //       option.attr('selected', 'selected')
-    //     }
-    //     this.discSelector.append(option)
-    //   }
-    // })
 
     this.discSelector.on('change', async (event: JQuery.ChangeEvent) =>
       this.onDiscChange(event),
