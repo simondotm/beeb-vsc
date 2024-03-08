@@ -2,7 +2,7 @@ import $ from 'jquery'
 import { EmulatorView } from './emulator-view'
 import { allModels, findModel } from 'jsbeeb/models'
 import { notifyHost } from './vscode'
-import { ClientCommand, NO_DISC } from '../types/shared/messages'
+import { ClientCommand, DiscImageFile, NO_DISC } from '../types/shared/messages'
 
 export class EmulatorToolBar {
   buttonControl: JQuery<HTMLElement>
@@ -20,7 +20,7 @@ export class EmulatorToolBar {
     this.buttonExpand = $('#toolbar-expand')
 
     this.buttonControl.on('click', () => this.onControlClick())
-    this.buttonRestart.on('click', () => this.onRestartClick())
+    this.buttonRestart.on('click', async () => this.onRestartClick())
     this.buttonSound.on('click', () => this.onSoundClick())
     this.buttonExpand.on('click', () => this.onExpandClick())
 
@@ -57,27 +57,15 @@ export class EmulatorToolBar {
       )
     })
 
-    this.modelSelector.on('change', (event: JQuery.ChangeEvent) =>
+    this.modelSelector.on('change', async (event: JQuery.ChangeEvent) =>
       this.onModelChange(event),
     )
 
     // populate the disc image selector
     this.discSelector = $('#disc-selector')
-    this.emulatorView.discImages$.subscribe((discImages) => {
-      // dont use empty, because we have a span child node for the icon
-      this.discSelector.find('vscode-option').remove().end()
-      this.discSelector.val('')
-      const options = [...discImages, NO_DISC]
-      const currentDiscName =
-        this.emulatorView.emulator?.discImageFile.name ?? NO_DISC.name
-      for (const discImage of options) {
-        const selected = discImage.name === currentDiscName ? 'selected' : ''
-        const option = $(`<vscode-option ${selected} />`)
-          .val(`${discImage.url}|${discImage.name}`)
-          .text(`${discImage.name}`)
-        this.discSelector.append(option)
-      }
-    })
+    this.emulatorView.discImages$.subscribe((discImages) =>
+      this.onDiscImagesUpdate(discImages),
+    )
 
     this.discSelector.on('change', async (event: JQuery.ChangeEvent) =>
       this.onDiscChange(event),
@@ -86,7 +74,7 @@ export class EmulatorToolBar {
     this.updateEmulatorStatus()
   }
 
-  private onModelChange(event: JQuery.ChangeEvent) {
+  private async onModelChange(event: JQuery.ChangeEvent) {
     const value = $(event.target).val() as string
     console.log(value)
     const model = findModel(value)
@@ -99,9 +87,8 @@ export class EmulatorToolBar {
       return
     }
     console.log(JSON.stringify(model))
-    this.emulatorView.boot(model).then(() => {
-      this.updateEmulatorStatus()
-    })
+    await this.emulatorView.boot(model)
+    this.updateEmulatorStatus()
     this.emulatorView.focusInput()
     notifyHost({
       command: ClientCommand.Error,
@@ -124,6 +111,22 @@ export class EmulatorToolBar {
       this.emulatorView.emulator?.ejectDisc()
     }
     this.emulatorView.focusInput()
+  }
+
+  private onDiscImagesUpdate(discImages: DiscImageFile[]) {
+    // dont use empty, because we have a span child node for the icon
+    this.discSelector.find('vscode-option').remove().end()
+    this.discSelector.val('')
+    const options = [...discImages, NO_DISC]
+    const currentDiscName =
+      this.emulatorView.emulator?.discImageFile.name ?? NO_DISC.name
+    for (const discImage of options) {
+      const selected = discImage.name === currentDiscName ? 'selected' : ''
+      const option = $(`<vscode-option ${selected} />`)
+        .val(`${discImage.url}|${discImage.name}`)
+        .text(`${discImage.name}`)
+      this.discSelector.append(option)
+    }
   }
 
   private updateEmulatorStatus() {
@@ -149,9 +152,9 @@ export class EmulatorToolBar {
     }
     this.updateEmulatorStatus()
   }
-  private onRestartClick() {
+  private async onRestartClick() {
     if (this.buttonRestart) {
-      this.emulatorView.emulator?.resetCpu(true)
+      await this.emulatorView.emulator?.resetCpu(true)
       this.emulatorView.focusInput()
     }
   }
