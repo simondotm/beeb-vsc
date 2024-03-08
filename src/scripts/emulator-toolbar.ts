@@ -100,7 +100,7 @@ export class EmulatorToolBar {
     const value = $(event.target).val() as string
     const [url, name] = value.split('|')
     if (url) {
-      await this.emulatorView.emulator?.loadDisc(
+      await this.emulatorView.loadDisc(
         {
           url,
           name,
@@ -108,7 +108,7 @@ export class EmulatorToolBar {
         true,
       )
     } else {
-      this.emulatorView.emulator?.ejectDisc()
+      this.emulatorView.ejectDisc()
     }
     this.emulatorView.focusInput()
   }
@@ -118,8 +118,7 @@ export class EmulatorToolBar {
     this.discSelector.find('vscode-option').remove().end()
     this.discSelector.val('')
     const options = [...discImages, NO_DISC]
-    const currentDiscName =
-      this.emulatorView.emulator?.discImageFile.name ?? NO_DISC.name
+    const currentDiscName = this.emulatorView.discImageFile.name ?? NO_DISC.name
     for (const discImage of options) {
       const selected = discImage.name === currentDiscName ? 'selected' : ''
       const option = $(`<vscode-option ${selected} />`)
@@ -154,7 +153,7 @@ export class EmulatorToolBar {
   }
   private async onRestartClick() {
     if (this.buttonRestart) {
-      await this.emulatorView.emulator?.resetCpu(true)
+      await this.emulatorView.resetCpu(true)
       this.emulatorView.focusInput()
     }
   }

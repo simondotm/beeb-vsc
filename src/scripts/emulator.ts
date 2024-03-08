@@ -9,7 +9,7 @@ import * as utils from 'jsbeeb/utils'
 import { Model } from 'jsbeeb/models'
 import { BaseDisc, emptySsd } from 'jsbeeb/fdc'
 import { notifyHost } from './vscode'
-import { ClientCommand, DiscImageFile, NO_DISC } from '../types/shared/messages'
+import { ClientCommand, DiscImageFile } from '../types/shared/messages'
 import { CustomAudioHandler } from './custom-audio-handler'
 import { Observable, Subject } from 'rxjs'
 
@@ -73,7 +73,6 @@ export class Emulator {
   lastCtrlLocation: number
 
   margin: EmulatorMargin = margins.normal
-  discImageFile: DiscImageFile = NO_DISC
 
   private _emulatorUpdate$ = new Subject<Emulator>()
   get emulatorUpdate$(): Observable<Emulator> {
@@ -172,10 +171,13 @@ export class Emulator {
     this.running = false
   }
 
-  async loadDisc(discImageFile: DiscImageFile, autoBoot: boolean = false) {
+  async loadDisc(
+    discImageFile: DiscImageFile,
+    autoBoot: boolean = false,
+  ): Promise<boolean> {
     if (!this.ready) {
       console.log('Emulator not ready to load disc yet.')
-      return
+      return false
     }
     if (discImageFile.url) {
       try {
@@ -191,14 +193,14 @@ export class Emulator {
         if (autoBoot) {
           this.holdShift()
         }
-        this.discImageFile = discImageFile
-        return
+        return true
       } catch (e: any) {
         console.error('Failed to load disc', e)
         notifyHost({ command: ClientCommand.Error, text: e.message })
       }
     }
     this.ejectDisc()
+    return false
   }
 
   ejectDisc() {
@@ -206,15 +208,6 @@ export class Emulator {
     const blank = emptySsd(this.cpu.fdc)
     this.cpu.fdc.loadDisc(0, blank)
     this.cpu.fdc.loadDisc(2, blank)
-    this.discImageFile = NO_DISC
-    notifyHost({
-      command: ClientCommand.Error,
-      text: `Disc ejected`,
-    })
-  }
-
-  async reloadDisc() {
-    await this.loadDisc(this.discImageFile)
   }
 
   /**
@@ -223,7 +216,6 @@ export class Emulator {
    */
   async resetCpu(hard: boolean = true) {
     this.cpu.reset(hard)
-    await this.reloadDisc()
   }
 
   async runProgram(tokenised: any) {

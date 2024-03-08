@@ -6,7 +6,7 @@ import { CustomAudioHandler } from './custom-audio-handler'
 import { BehaviorSubject, Observable, distinctUntilChanged } from 'rxjs'
 import { DisplayMode, getDisplayModeInfo } from './display-modes'
 import { notifyHost } from './vscode'
-import { ClientCommand, DiscImageFile } from '../types/shared/messages'
+import { ClientCommand, DiscImageFile, NO_DISC } from '../types/shared/messages'
 
 const audioFilterFreq = 7000
 const audioFilterQ = 5
@@ -21,6 +21,8 @@ export class EmulatorView {
 
   model: Model | undefined
   emulator: Emulator | undefined // Dont hold references to the emulator, it may be paused and destroyed
+
+  discImageFile: DiscImageFile = NO_DISC
 
   private _discImages$ = new BehaviorSubject<DiscImageFile[]>([])
   get discImages$(): Observable<DiscImageFile[]> {
@@ -102,7 +104,7 @@ export class EmulatorView {
       await this.emulator.initialise()
 
       // re-mount any existing disc if we change model
-      this.emulator.reloadDisc()
+      this.reloadDisc()
 
       this.emulator.start()
       // will automatically unsubscribe when emulator is shutdown
@@ -143,5 +145,45 @@ export class EmulatorView {
    */
   focusInput() {
     this.screen.focus()
+  }
+
+  async loadDisc(
+    discImageFile: DiscImageFile,
+    autoBoot: boolean = false,
+  ): Promise<boolean> {
+    if (!this.emulator) {
+      return false
+    }
+    if (discImageFile.url) {
+      const loaded = await this.emulator.loadDisc(discImageFile, autoBoot)
+      if (loaded) {
+        this.discImageFile = discImageFile
+        return true
+      }
+    }
+    this.ejectDisc()
+    return false
+  }
+
+  ejectDisc() {
+    if (this.emulator) {
+      this.emulator.ejectDisc()
+      this.discImageFile = NO_DISC
+      notifyHost({
+        command: ClientCommand.Error,
+        text: `Disc ejected`,
+      })
+    }
+  }
+
+  async reloadDisc() {
+    await this.loadDisc(this.discImageFile)
+  }
+
+  async resetCpu(hard: boolean = true) {
+    if (this.emulator) {
+      this.emulator.resetCpu(hard)
+      await this.reloadDisc()
+    }
   }
 }
