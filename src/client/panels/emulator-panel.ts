@@ -304,10 +304,6 @@ export class EmulatorPanel {
 
         <vscode-dropdown id="disc-selector" class="fixed-width-selector">
           <span slot="indicator" class="codicon codicon-save"></span>
-          <vscode-option >1</vscode-option>
-          <vscode-option >2</vscode-option>
-          <vscode-option >3</vscode-option>
-          <vscode-option selected>4</vscode-option>
         </vscode-dropdown>
 
         <vscode-button id="toolbar-sound" appearance="secondary">
