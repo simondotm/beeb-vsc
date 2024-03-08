@@ -221,14 +221,21 @@ export class EmulatorPanel {
   ) {
     if (EmulatorPanel.instance) {
       EmulatorPanel.instance.panel.reveal(vscode.ViewColumn.One)
+
+      // notify the client of a disc selection if emulator was
+      // launched via a file context menu
+      if (contextSelection) {
+        EmulatorPanel.instance.setDiscFileUrl(contextSelection)
+        EmulatorPanel.instance.loadDisc()
+      }
     } else {
       EmulatorPanel.instance = new EmulatorPanel(context)
-    }
 
-    // notify the client of a disc selection if emulator was
-    // launched via a file context menu
-    if (contextSelection) {
-      EmulatorPanel.instance.setDiscFileUrl(contextSelection)
+      // notify the client of a disc selection if emulator was
+      // launched via a file context menu
+      if (contextSelection) {
+        EmulatorPanel.instance.setDiscFileUrl(contextSelection)
+      }
     }
   }
 

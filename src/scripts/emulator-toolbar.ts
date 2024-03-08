@@ -64,8 +64,16 @@ export class EmulatorToolBar {
     // populate the disc image selector
     this.discSelector = $('#disc-selector')
 
+    // this.discSelector.append($(`<vscode-option />`).val(`a`).text(`a`))
+    // this.discSelector.append($(`<vscode-option />`).val(`b`).text(`b`))
+    // this.discSelector.append($(`<vscode-option selected />`).val(`c`).text(`c`))
+    // this.discSelector.append($(`<vscode-option />`).val(`d`).text(`d`))
+
     this.emulatorView.discImages$.subscribe((discImages) => {
-      this.discSelector.empty()
+      // dont use empty, because we have a span child node for the icon
+      this.discSelector.find('vscode-option').remove().end()
+      // this.discSelector.empty()
+      this.discSelector.val('')
       const options = [...discImages, NO_DISC]
       const currentDiscName =
         this.emulatorView.emulator?.discImageFile.name ?? NO_DISC.name
@@ -73,20 +81,21 @@ export class EmulatorToolBar {
         const selected = discImage.name === currentDiscName ? 'selected' : ''
         const option = $(`<vscode-option ${selected} />`)
           .val(`${discImage.url}|${discImage.name}`)
-          .text(`${discImage.name} ${selected}`)
+          .text(`${discImage.name}`)
         this.discSelector.append(option)
       }
-
-      this.discSelector.append(
-        $('<span slot="indicator" class="codicon codicon-save"></span>;='),
-      )
-      this.discSelector.append($('<vscode-option />').val('A').text('A'))
-      this.discSelector.append($('<vscode-option />').val('B').text('B'))
-      this.discSelector.append(
-        $('<vscode-option />').val(NO_DISC.url).text(NO_DISC.name),
-      )
-      this.discSelector.append($('<vscode-option />').val('D').text('D'))
     })
+
+    //   this.discSelector.append(
+    //     $('<span slot="indicator" class="codicon codicon-save"></span>;='),
+    //   )
+    //   this.discSelector.append($('<vscode-option />').val('A').text('A'))
+    //   this.discSelector.append($('<vscode-option />').val('B').text('B'))
+    //   this.discSelector.append(
+    //     $('<vscode-option />').val(NO_DISC.url).text(NO_DISC.name),
+    //   )
+    //   this.discSelector.append($('<vscode-option />').val('D').text('D'))
+    // })
 
     // this.emulatorView.discImages$.subscribe((discImages) => {
     //   this.discSelector.find('vscode-option').remove().end() // empty()
