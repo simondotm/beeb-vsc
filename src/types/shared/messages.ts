@@ -69,7 +69,7 @@ export interface HostMessageDiscImageChanges extends HostMessageBase {
 
 export interface HostMessageLoadDisc extends HostMessageBase {
   command: HostCommand.LoadDisc
-  url: DiscImageFile
+  discImageFile: DiscImageFile
 }
 
 export interface HostMessageViewFocus extends HostMessageBase {

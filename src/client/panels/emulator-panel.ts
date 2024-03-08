@@ -181,7 +181,7 @@ export class EmulatorPanel {
   loadDisc() {
     this.notifyClient({
       command: HostCommand.LoadDisc,
-      url: this.discImageFile,
+      discImageFile: this.discImageFile,
     })
   }
 

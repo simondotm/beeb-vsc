@@ -63,10 +63,10 @@ window.addEventListener('message', (event) => {
   switch (message.command) {
     case HostCommand.LoadDisc:
       // user has invoked a dsd/ssd file context menu for the emulator
-      if (message.url) {
-        emulatorView.emulator?.loadDisc(message.url, true)
+      if (message.discImageFile) {
+        emulatorView.emulator?.loadDisc(message.discImageFile, true)
         emulatorToolBar?.discSelector.val(
-          `${message.url.url}|${message.url.name}`,
+          `${message.discImageFile.url}|${message.discImageFile.name}`,
         )
         emulatorView.focusInput()
       }
