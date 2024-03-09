@@ -28,7 +28,13 @@ export class EmulatorView {
   emulator: Emulator | undefined // Dont hold references to the emulator, it may be paused and destroyed
 
   // currently selected disc image
-  discImageFile: DiscImageFile = NO_DISC
+  private _discImageFile$ = new BehaviorSubject<DiscImageFile>(NO_DISC)
+  get discImageFile$(): Observable<DiscImageFile> {
+    return this._discImageFile$
+  }
+  get discImageFile(): DiscImageFile {
+    return this._discImageFile$.value
+  }
 
   // disc images in the current workspace
   private _discImages$ = new BehaviorSubject<DiscImageFile[]>([])
@@ -154,7 +160,7 @@ export class EmulatorView {
     this.screen.focus()
   }
 
-  async loadDisc(
+  async mountDisc(
     discImageFile: DiscImageFile,
     discImageOptions?: DiscImageOptions,
   ): Promise<boolean> {
@@ -167,18 +173,18 @@ export class EmulatorView {
         discImageOptions,
       )
       if (loaded) {
-        this.discImageFile = discImageFile
+        this._discImageFile$.next(discImageFile)
         return true
       }
     }
-    this.ejectDisc()
+    this.unmountDisc()
     return false
   }
 
-  ejectDisc() {
+  unmountDisc() {
     if (this.emulator) {
       this.emulator.ejectDisc()
-      this.discImageFile = NO_DISC
+      this._discImageFile$.next(NO_DISC)
       notifyHost({
         command: ClientCommand.Error,
         text: `Disc ejected`,
@@ -187,7 +193,7 @@ export class EmulatorView {
   }
 
   async reloadDisc() {
-    await this.loadDisc(this.discImageFile)
+    await this.mountDisc(this._discImageFile$.value)
   }
 
   async resetCpu(hard: boolean = false) {

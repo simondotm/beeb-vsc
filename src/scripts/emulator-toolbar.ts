@@ -67,6 +67,11 @@ export class EmulatorToolBar {
       this.onDiscImagesUpdate(discImages),
     )
 
+    // update the disc image selector when the current disc image changes
+    this.emulatorView.discImageFile$.subscribe((discImage) =>
+      this.onDiscImageUpdate(discImage),
+    )
+
     this.discSelector.on('change', async (event: JQuery.ChangeEvent) =>
       this.onDiscChange(event),
     )
@@ -100,7 +105,7 @@ export class EmulatorToolBar {
     const value = $(event.target).val() as string
     const [url, name] = value.split('|')
     if (url) {
-      await this.emulatorView.loadDisc(
+      await this.emulatorView.mountDisc(
         {
           url,
           name,
@@ -108,7 +113,7 @@ export class EmulatorToolBar {
         {},
       )
     } else {
-      this.emulatorView.ejectDisc()
+      this.emulatorView.unmountDisc()
     }
     this.emulatorView.focusInput()
   }
@@ -126,6 +131,10 @@ export class EmulatorToolBar {
         .text(`${discImage.name}`)
       this.discSelector.append(option)
     }
+  }
+
+  private onDiscImageUpdate(discImage: DiscImageFile) {
+    this.discSelector.val(`${discImage.url}|${discImage.name}`)
   }
 
   private updateEmulatorStatus() {
