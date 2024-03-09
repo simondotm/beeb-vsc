@@ -42,6 +42,11 @@ export type DiscImageFile = {
   name: string
 }
 
+export type DiscImageOptions = {
+  shouldReset?: boolean
+  shouldAutoBoot?: boolean
+}
+
 export const NO_DISC: DiscImageFile = { url: '', name: '-- no disc --' }
 
 export const enum HostCommand {
@@ -70,6 +75,7 @@ export interface HostMessageDiscImageChanges extends HostMessageBase {
 export interface HostMessageLoadDisc extends HostMessageBase {
   command: HostCommand.LoadDisc
   discImageFile: DiscImageFile
+  discImageOptions?: DiscImageOptions
 }
 
 export interface HostMessageViewFocus extends HostMessageBase {

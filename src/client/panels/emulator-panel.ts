@@ -4,6 +4,7 @@ import {
   ClientCommand,
   ClientMessage,
   DiscImageFile,
+  DiscImageOptions,
   HostCommand,
   HostMessage,
   NO_DISC,
@@ -171,26 +172,35 @@ export class EmulatorPanel {
     )
   }
 
-  setDiscFileUrl(discFile?: vscode.Uri) {
-    this.discImageFile = discFile
-      ? this.discImageFileFromUri(discFile)
-      : NO_DISC
-    console.log('setDiscFileUrl=' + this.discImageFile)
-  }
+  // setDiscFileUrl(discFile?: vscode.Uri) {
+  //   this.discImageFile = discFile
+  //     ? this.discImageFileFromUri(discFile)
+  //     : NO_DISC
+  //   console.log('setDiscFileUrl=' + this.discImageFile)
+  // }
 
-  loadDisc() {
+  /**
+   * Instruct client to load the given disc image file
+   * @param discImageOptions - boot options
+   */
+  loadDisc(discImageOptions?: DiscImageOptions) {
     this.notifyClient({
       command: HostCommand.LoadDisc,
       discImageFile: this.discImageFile,
+      discImageOptions,
     })
   }
 
   /**
    * Return DiscImageFile (web url and image name) for the given uri
-   * @param uri
+   * Returns NO_DISC if uri is undefined
+   * @param uri - optional uri
    * @returns DiscImageFile
    */
-  discImageFileFromUri(uri: vscode.Uri): DiscImageFile {
+  discImageFileFromUri(uri?: vscode.Uri): DiscImageFile {
+    if (!uri) {
+      return NO_DISC
+    }
     const workspaceRoot = vscode.workspace.workspaceFolders?.[0]
     return {
       url: this.panel.webview.asWebviewUri(uri).toString(),
@@ -214,27 +224,28 @@ export class EmulatorPanel {
     })
   }
 
+  setDiscImageFromContextSelection(contextSelection?: vscode.Uri) {
+    this.discImageFile = this.discImageFileFromUri(contextSelection)
+  }
+
   static show(
     context: vscode.ExtensionContext,
     contextSelection?: vscode.Uri,
     _allSelections?: vscode.Uri[],
   ) {
-    if (EmulatorPanel.instance) {
-      EmulatorPanel.instance.panel.reveal(vscode.ViewColumn.One)
-
-      // notify the client of a disc selection if emulator was
-      // launched via a file context menu
-      if (contextSelection) {
-        EmulatorPanel.instance.setDiscFileUrl(contextSelection)
-        EmulatorPanel.instance.loadDisc()
-      }
-    } else {
+    if (!EmulatorPanel.instance) {
+      // create a new emulator panel webview
       EmulatorPanel.instance = new EmulatorPanel(context)
-
-      // notify the client of a disc selection if emulator was
-      // launched via a file context menu
+      EmulatorPanel.instance.setDiscImageFromContextSelection(contextSelection)
+      // we dont loadDisc here because the client side emulator needs to signal when it is ready within the new webview
+    } else {
+      EmulatorPanel.instance.panel.reveal(vscode.ViewColumn.One)
+      // If we are revealing via a context selection, ensure the new disc is loaded to the emulator
       if (contextSelection) {
-        EmulatorPanel.instance.setDiscFileUrl(contextSelection)
+        EmulatorPanel.instance.setDiscImageFromContextSelection(
+          contextSelection,
+        )
+        EmulatorPanel.instance.loadDisc({ shouldReset: true })
       }
     }
   }

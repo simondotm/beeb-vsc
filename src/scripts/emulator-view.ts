@@ -6,7 +6,12 @@ import { CustomAudioHandler } from './custom-audio-handler'
 import { BehaviorSubject, Observable, distinctUntilChanged } from 'rxjs'
 import { DisplayMode, getDisplayModeInfo } from './display-modes'
 import { notifyHost } from './vscode'
-import { ClientCommand, DiscImageFile, NO_DISC } from '../types/shared/messages'
+import {
+  ClientCommand,
+  DiscImageFile,
+  DiscImageOptions,
+  NO_DISC,
+} from '../types/shared/messages'
 
 const audioFilterFreq = 7000
 const audioFilterQ = 5
@@ -22,8 +27,10 @@ export class EmulatorView {
   model: Model | undefined
   emulator: Emulator | undefined // Dont hold references to the emulator, it may be paused and destroyed
 
+  // currently selected disc image
   discImageFile: DiscImageFile = NO_DISC
 
+  // disc images in the current workspace
   private _discImages$ = new BehaviorSubject<DiscImageFile[]>([])
   get discImages$(): Observable<DiscImageFile[]> {
     return this._discImages$
@@ -149,13 +156,16 @@ export class EmulatorView {
 
   async loadDisc(
     discImageFile: DiscImageFile,
-    autoBoot: boolean = false,
+    discImageOptions?: DiscImageOptions,
   ): Promise<boolean> {
     if (!this.emulator) {
       return false
     }
     if (discImageFile.url) {
-      const loaded = await this.emulator.loadDisc(discImageFile, autoBoot)
+      const loaded = await this.emulator.loadDisc(
+        discImageFile,
+        discImageOptions,
+      )
       if (loaded) {
         this.discImageFile = discImageFile
         return true
@@ -180,10 +190,10 @@ export class EmulatorView {
     await this.loadDisc(this.discImageFile)
   }
 
-  async resetCpu(hard: boolean = true) {
+  async resetCpu(hard: boolean = false) {
     if (this.emulator) {
       this.emulator.resetCpu(hard)
-      await this.reloadDisc()
+      // await this.reloadDisc()
     }
   }
 }

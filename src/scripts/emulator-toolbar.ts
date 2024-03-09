@@ -105,7 +105,7 @@ export class EmulatorToolBar {
           url,
           name,
         },
-        true,
+        {},
       )
     } else {
       this.emulatorView.ejectDisc()

@@ -9,7 +9,11 @@ import * as utils from 'jsbeeb/utils'
 import { Model } from 'jsbeeb/models'
 import { BaseDisc, emptySsd } from 'jsbeeb/fdc'
 import { notifyHost } from './vscode'
-import { ClientCommand, DiscImageFile } from '../types/shared/messages'
+import {
+  ClientCommand,
+  DiscImageFile,
+  DiscImageOptions,
+} from '../types/shared/messages'
 import { CustomAudioHandler } from './custom-audio-handler'
 import { Observable, Subject } from 'rxjs'
 
@@ -148,14 +152,6 @@ export class Emulator {
     this.ready = true
   }
 
-  shutdown() {
-    // any previously running emulator must be paused
-    // before tear down, otherwise it will continue to paint itself
-    this.pause()
-    // all subscribers will be unsubscribed
-    this._emulatorUpdate$.complete()
-  }
-
   // gxr(){
   // 	model.os.push('gxr.rom');
   // 	modelName += ' | GXR';
@@ -171,9 +167,17 @@ export class Emulator {
     this.running = false
   }
 
+  shutdown() {
+    // any previously running emulator must be paused
+    // before tear down, otherwise it will continue to paint itself
+    this.pause()
+    // all subscribers will be unsubscribed
+    this._emulatorUpdate$.complete()
+  }
+
   async loadDisc(
     discImageFile: DiscImageFile,
-    autoBoot: boolean = false,
+    discImageOptions?: DiscImageOptions,
   ): Promise<boolean> {
     if (!this.ready) {
       console.log('Emulator not ready to load disc yet.')
@@ -190,7 +194,10 @@ export class Emulator {
           command: ClientCommand.Error,
           text: `Mounted disc '${discImageFile.name}'`,
         })
-        if (autoBoot) {
+        if (discImageOptions?.shouldReset) {
+          this.resetCpu(false)
+        }
+        if (discImageOptions?.shouldAutoBoot) {
           this.holdShift()
         }
         return true
@@ -214,7 +221,7 @@ export class Emulator {
    * Soft or hard reset the CPU and remount the current disc image (if any)
    * @param hard - true for a hard reset, false for a soft reset
    */
-  async resetCpu(hard: boolean = true) {
+  resetCpu(hard: boolean = false) {
     this.cpu.reset(hard)
   }
 
