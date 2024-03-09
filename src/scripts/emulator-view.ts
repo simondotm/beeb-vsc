@@ -117,7 +117,7 @@ export class EmulatorView {
       await this.emulator.initialise()
 
       // re-mount any existing disc if we change model
-      this.reloadDisc()
+      this.mountDisc(this.discImageFile)
 
       this.emulator.start()
       // will automatically unsubscribe when emulator is shutdown
@@ -164,42 +164,13 @@ export class EmulatorView {
     discImageFile: DiscImageFile,
     discImageOptions?: DiscImageOptions,
   ): Promise<boolean> {
-    if (!this.emulator) {
-      return false
-    }
-    if (discImageFile.url) {
-      const loaded = await this.emulator.loadDisc(
-        discImageFile,
-        discImageOptions,
-      )
-      if (loaded) {
-        this._discImageFile$.next(discImageFile)
-        return true
-      }
-    }
-    this.unmountDisc()
-    return false
-  }
-
-  unmountDisc() {
-    if (this.emulator) {
-      this.emulator.ejectDisc()
-      this._discImageFile$.next(NO_DISC)
-      notifyHost({
-        command: ClientCommand.Error,
-        text: `Disc ejected`,
-      })
-    }
-  }
-
-  async reloadDisc() {
-    await this.mountDisc(this._discImageFile$.value)
+    this.emulator?.loadDisc(discImageFile, discImageOptions)
+    this._discImageFile$.next(discImageFile)
+    return true
   }
 
   async resetCpu(hard: boolean = false) {
-    if (this.emulator) {
-      this.emulator.resetCpu(hard)
-      // await this.reloadDisc()
-    }
+    this.emulator?.resetCpu(hard)
+    await this.mountDisc(this.discImageFile)
   }
 }

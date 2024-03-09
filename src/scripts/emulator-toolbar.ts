@@ -104,17 +104,13 @@ export class EmulatorToolBar {
   private async onDiscChange(event: JQuery.ChangeEvent) {
     const value = $(event.target).val() as string
     const [url, name] = value.split('|')
-    if (url) {
-      await this.emulatorView.mountDisc(
-        {
-          url,
-          name,
-        },
-        {},
-      )
-    } else {
-      this.emulatorView.unmountDisc()
-    }
+    await this.emulatorView.mountDisc(
+      {
+        url,
+        name,
+      },
+      {},
+    )
     this.emulatorView.focusInput()
   }
 

@@ -175,6 +175,13 @@ export class Emulator {
     this._emulatorUpdate$.complete()
   }
 
+  /**
+   * Load a disc image into the emulator
+   * If the disc url is empty, the disc drive will be set to empty
+   * @param discImageFile - the disc image file to load, or NO_DISC for an empty drive
+   * @param discImageOptions - options for loading the disc image
+   * @returns true if the disc was loaded successfully
+   */
   async loadDisc(
     discImageFile: DiscImageFile,
     discImageOptions?: DiscImageOptions,
