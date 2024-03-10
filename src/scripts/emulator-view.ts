@@ -6,7 +6,12 @@ import { CustomAudioHandler } from './custom-audio-handler'
 import { BehaviorSubject, Observable, distinctUntilChanged } from 'rxjs'
 import { DisplayMode, getDisplayModeInfo } from './display-modes'
 import { notifyHost } from './vscode'
-import { ClientCommand } from '../types/shared/messages'
+import {
+  ClientCommand,
+  DiscImageFile,
+  DiscImageOptions,
+  NO_DISC,
+} from '../types/shared/messages'
 
 const audioFilterFreq = 7000
 const audioFilterQ = 5
@@ -22,7 +27,24 @@ export class EmulatorView {
   model: Model | undefined
   emulator: Emulator | undefined // Dont hold references to the emulator, it may be paused and destroyed
 
-  mountedDisc: string | undefined
+  // currently selected disc image
+  private _discImageFile$ = new BehaviorSubject<DiscImageFile>(NO_DISC)
+  get discImageFile$(): Observable<DiscImageFile> {
+    return this._discImageFile$
+  }
+  get discImageFile(): DiscImageFile {
+    return this._discImageFile$.value
+  }
+
+  // disc images in the current workspace
+  private _discImages$ = new BehaviorSubject<DiscImageFile[]>([])
+  get discImages$(): Observable<DiscImageFile[]> {
+    return this._discImages$
+  }
+
+  setDiscImages(discImages: DiscImageFile[]) {
+    this._discImages$.next(discImages)
+  }
 
   // observables
   private _displayMode$ = new BehaviorSubject<DisplayMode>(null)
@@ -95,9 +117,7 @@ export class EmulatorView {
       await this.emulator.initialise()
 
       // re-mount any existing disc if we change model
-      if (this.mountedDisc) {
-        await this.mountDisc(this.mountedDisc, false)
-      }
+      this.mountDisc(this.discImageFile)
 
       this.emulator.start()
       // will automatically unsubscribe when emulator is shutdown
@@ -111,9 +131,9 @@ export class EmulatorView {
     this.showTestCard(this.emulator === undefined)
   }
 
-  private onEmulatorUpdate(_emulator: Emulator) {
+  private onEmulatorUpdate(emulator: Emulator) {
     // update display mode
-    const mode = this.emulator?.cpu.readmem(0x0355) ?? 255
+    const mode = emulator.cpu.readmem(0x0355) ?? 255
     this._displayMode$.next(getDisplayModeInfo(mode))
   }
 
@@ -140,33 +160,17 @@ export class EmulatorView {
     this.screen.focus()
   }
 
-  async mountDisc(discImageFile: string, autoBoot: boolean = false) {
-    console.log(`mountDisc=${discImageFile}`)
-    this.mountedDisc = discImageFile
-    if (this.emulator) {
-      await this.emulator.loadDisc(discImageFile)
-      if (autoBoot) {
-        this.emulator.holdShift()
-      }
-    }
+  async mountDisc(
+    discImageFile: DiscImageFile,
+    discImageOptions?: DiscImageOptions,
+  ): Promise<boolean> {
+    this.emulator?.loadDisc(discImageFile, discImageOptions)
+    this._discImageFile$.next(discImageFile)
+    return true
   }
 
-  unmountDisc() {
-    if (this.emulator) {
-      this.emulator.ejectDisc()
-    }
-  }
-
-  /**
-   * Soft or hard reset the CPU and remount the current disc image (if any)
-   * @param hard - true for a hard reset, false for a soft reset
-   */
-  async resetCpu(hard: boolean = true) {
-    if (this.emulator) {
-      this.emulator.cpu.reset(hard)
-      if (this.mountedDisc) {
-        await this.emulator.loadDisc(this.mountedDisc)
-      }
-    }
+  async reboot(hard: boolean = false) {
+    this.emulator?.resetCpu(hard)
+    await this.mountDisc(this.discImageFile)
   }
 }

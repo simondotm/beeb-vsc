@@ -38,9 +38,8 @@ async function initialise() {
 }
 
 // Handle the message inside the webview
-window.addEventListener('load', (event) => {
-  console.log('window loaded')
-  console.log(JSON.stringify(event))
+window.addEventListener('load', (_event) => {
+  console.log('BeebVSC: Emulator window loaded')
   notifyHost({ command: ClientCommand.PageLoaded })
 })
 
@@ -48,7 +47,6 @@ window.addEventListener('load', (event) => {
 window.addEventListener(
   'focus',
   (_event) => {
-    console.log('window focused')
     emulatorView.focusInput()
   },
   false,
@@ -57,19 +55,23 @@ window.addEventListener(
 // Handle messages received from the host extensiond
 window.addEventListener('message', (event) => {
   const message = event.data as HostMessage // The JSON data our extension sent
-  console.log('message received')
-  console.log(JSON.stringify(message))
-
   switch (message.command) {
     case HostCommand.LoadDisc:
-      if (message.url) {
-        emulatorView.mountDisc(message.url, true)
-      }
+      // user has invoked a dsd/ssd file context menu for the emulator
+      emulatorView.mountDisc(message.discImageFile, message.discImageOptions)
+      emulatorView.focusInput()
       break
     case HostCommand.ViewFocus:
-      // if (message.isViewFocused) {
-      //   emulatorView.focus()
-      // }
+      // Emulator panel has changed active or visible state
+      // We handle focus via window events at the moment
+      // since these can arrive before the webview is ready
+      // but we may want to do something with visibility or active state later
+      break
+    case HostCommand.DiscImages:
+      emulatorView.setDiscImages(message.discImages)
+      break
+    case HostCommand.DiscImageChanges:
+      //TODO: Listener logic here, in case we need to do something with modified disc images
       break
   }
 })

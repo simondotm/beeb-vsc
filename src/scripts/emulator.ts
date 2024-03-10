@@ -9,7 +9,11 @@ import * as utils from 'jsbeeb/utils'
 import { Model } from 'jsbeeb/models'
 import { BaseDisc, emptySsd } from 'jsbeeb/fdc'
 import { notifyHost } from './vscode'
-import { ClientCommand } from '../types/shared/messages'
+import {
+  ClientCommand,
+  DiscImageFile,
+  DiscImageOptions,
+} from '../types/shared/messages'
 import { CustomAudioHandler } from './custom-audio-handler'
 import { Observable, Subject } from 'rxjs'
 
@@ -148,14 +152,6 @@ export class Emulator {
     this.ready = true
   }
 
-  shutdown() {
-    // any previously running emulator must be paused
-    // before tear down, otherwise it will continue to paint itself
-    this.pause()
-    // all subscribers will be unsubscribed
-    this._emulatorUpdate$.complete()
-  }
-
   // gxr(){
   // 	model.os.push('gxr.rom');
   // 	modelName += ' | GXR';
@@ -171,27 +167,68 @@ export class Emulator {
     this.running = false
   }
 
-  async loadDisc(discUrl: string) {
+  shutdown() {
+    // any previously running emulator must be paused
+    // before tear down, otherwise it will continue to paint itself
+    this.pause()
+    // all subscribers will be unsubscribed
+    this._emulatorUpdate$.complete()
+  }
+
+  /**
+   * Load a disc image into the emulator
+   * If the disc url is empty, the disc drive will be set to empty
+   * @param discImageFile - the disc image file to load, or NO_DISC for an empty drive
+   * @param discImageOptions - options for loading the disc image
+   * @returns true if the disc was loaded successfully
+   */
+  async loadDisc(
+    discImageFile: DiscImageFile,
+    discImageOptions?: DiscImageOptions,
+  ): Promise<boolean> {
     if (!this.ready) {
       console.log('Emulator not ready to load disc yet.')
-      return
+      return false
     }
-    try {
-      console.log('loading disc')
-      const fdc = this.cpu.fdc
-      const discData = await utils.defaultLoadData(discUrl)
-      const discImage = new BaseDisc(fdc, 'disc', discData, () => {})
-      this.cpu.fdc.loadDisc(0, discImage)
-    } catch (e: any) {
-      console.error('Failed to load disc', e)
-      notifyHost({ command: ClientCommand.Error, text: e.message })
-      this.ejectDisc()
+    if (discImageFile.url) {
+      try {
+        const fdc = this.cpu.fdc
+        const discData = await utils.defaultLoadData(discImageFile.url)
+        const discImage = new BaseDisc(fdc, 'disc', discData, () => {})
+        this.cpu.fdc.loadDisc(0, discImage)
+        // notifyHost({
+        //   command: ClientCommand.Info,
+        //   text: `Mounted disc '${discImageFile.name}'`,
+        // })
+        if (discImageOptions?.shouldReset) {
+          this.resetCpu(false)
+        }
+        if (discImageOptions?.shouldAutoBoot) {
+          this.holdShift()
+        }
+        return true
+      } catch (e: any) {
+        console.error('Failed to load disc', e)
+        notifyHost({ command: ClientCommand.Error, text: e.message })
+      }
     }
+    this.ejectDisc()
+    return false
   }
 
   ejectDisc() {
-    console.log('ejecting disc')
-    emptySsd(this.cpu.fdc)
+    console.log('Disc ejected')
+    const blank = emptySsd(this.cpu.fdc)
+    this.cpu.fdc.loadDisc(0, blank)
+    this.cpu.fdc.loadDisc(2, blank)
+  }
+
+  /**
+   * Soft or hard reset the CPU and remount the current disc image (if any)
+   * @param hard - true for a hard reset, false for a soft reset
+   */
+  resetCpu(hard: boolean = false) {
+    this.cpu.reset(hard)
   }
 
   async runProgram(tokenised: any) {

@@ -3,10 +3,16 @@ import { getJsBeebResources, scriptUri, scriptUrl } from '../emulator/assets'
 import {
   ClientCommand,
   ClientMessage,
+  DiscImageFile,
+  DiscImageOptions,
   HostCommand,
   HostMessage,
+  NO_DISC,
 } from '../../types/shared/messages'
 import { isDev, isFeatureEnabled } from '../../types/shared/config'
+import { relative } from 'path'
+
+const glob = '**/*.{ssd,dsd}'
 
 export class EmulatorPanel {
   static instance: EmulatorPanel | undefined
@@ -14,7 +20,10 @@ export class EmulatorPanel {
   private readonly panel: vscode.WebviewPanel
   private readonly context: vscode.ExtensionContext
   private disposables: vscode.Disposable[] = []
-  private discFileUrl: string = ''
+
+  private discImageFile: DiscImageFile = NO_DISC
+
+  private watcher: vscode.FileSystemWatcher | undefined
 
   private constructor(context: vscode.ExtensionContext) {
     this.context = context
@@ -57,8 +66,69 @@ export class EmulatorPanel {
     })
   }
 
-  dispose() {
+  /**
+   * Start watching for disc images in the workspace
+   * and notify the client of any changes
+   * This process begins once the client reports the page has loaded
+   */
+  private startWatcher() {
+    // Watch workspace for disc images
+    const workspaceRoot = vscode.workspace.workspaceFolders?.[0]
+    if (workspaceRoot) {
+      this.sendDiscImages(workspaceRoot)
+
+      this.watcher = vscode.workspace.createFileSystemWatcher(
+        new vscode.RelativePattern(workspaceRoot, glob),
+      )
+
+      // notify client when a disk image file has changed
+      this.watcher.onDidChange((uri) => {
+        this.notifyClient({
+          command: HostCommand.DiscImageChanges,
+          changed: [this.discImageFileFromUri(uri)],
+        })
+      })
+      // update client with all disc image files in the workspace when added
+      this.watcher.onDidCreate((uri) => {
+        this.sendDiscImages(workspaceRoot)
+        this.notifyClient({
+          command: HostCommand.DiscImageChanges,
+          created: [this.discImageFileFromUri(uri)],
+        })
+      })
+      // update client with all disc image files in the workspace when deleted
+      this.watcher.onDidDelete((uri) => {
+        this.sendDiscImages(workspaceRoot)
+        this.notifyClient({
+          command: HostCommand.DiscImageChanges,
+          deleted: [this.discImageFileFromUri(uri)],
+        })
+      })
+    }
+  }
+
+  /**
+   * Notify client of all disc image files in the workspace
+   * @param _workspaceRoot
+   */
+  private sendDiscImages(_workspaceRoot: vscode.WorkspaceFolder) {
+    vscode.workspace.findFiles(glob).then((uris) => {
+      const allFiles: DiscImageFile[] = uris.map((uri) => {
+        return this.discImageFileFromUri(uri)
+      })
+      this.notifyClient({
+        command: HostCommand.DiscImages,
+        discImages: allFiles,
+      })
+    })
+  }
+
+  private dispose() {
     EmulatorPanel.instance = undefined
+
+    if (this.watcher) {
+      this.watcher.dispose()
+    }
 
     this.panel.dispose()
 
@@ -74,19 +144,26 @@ export class EmulatorPanel {
     webview.onDidReceiveMessage(
       (message: ClientMessage) => {
         const command = message.command
-        // const text = message.text;
-
         switch (command) {
           case ClientCommand.PageLoaded:
-            vscode.window.showInformationMessage('loaded page')
+            vscode.window.showInformationMessage('BeebVSC: Emulator started')
             return
           case ClientCommand.EmulatorReady:
+            // when the client side emulator signals it is ready
+            // we can send it the default disc image file to load (if any)
             console.log('EmulatorReady')
-            this.loadDisc()
+            this.loadDisc({ shouldAutoBoot: true })
+            // start watching for disc image files in the workspace
+            this.startWatcher()
+            return
+          case ClientCommand.Info:
+            vscode.window.showInformationMessage(
+              `BeebVSC: ${message.text ?? 'An error occurred'}`,
+            )
             return
           case ClientCommand.Error:
-            vscode.window.showInformationMessage(
-              `${message.text ?? 'An error occurred'}`,
+            vscode.window.showErrorMessage(
+              `BeebVSC: ${message.text ?? 'An error occurred'}`,
             )
             return
         }
@@ -96,17 +173,41 @@ export class EmulatorPanel {
     )
   }
 
-  setDiscFileUrl(discFile?: vscode.Uri) {
-    this.discFileUrl = discFile
-      ? this.panel.webview.asWebviewUri(discFile).toString()
-      : ''
-    console.log('setDiscFileUrl=' + this.discFileUrl)
+  /**
+   * Instruct client to load the given disc image file
+   * @param discImageOptions - boot options
+   */
+  loadDisc(discImageOptions?: DiscImageOptions) {
+    this.notifyClient({
+      command: HostCommand.LoadDisc,
+      discImageFile: this.discImageFile,
+      discImageOptions,
+    })
   }
 
-  loadDisc() {
-    this.notifyClient({ command: HostCommand.LoadDisc, url: this.discFileUrl })
+  /**
+   * Return DiscImageFile (web url and image name) for the given uri
+   * Returns NO_DISC if uri is undefined
+   * @param uri - optional uri
+   * @returns DiscImageFile
+   */
+  discImageFileFromUri(uri?: vscode.Uri): DiscImageFile {
+    if (!uri) {
+      return NO_DISC
+    }
+    const workspaceRoot = vscode.workspace.workspaceFolders?.[0]
+    return {
+      url: this.panel.webview.asWebviewUri(uri).toString(),
+      name: workspaceRoot
+        ? relative(workspaceRoot.uri.fsPath, uri.fsPath)
+        : uri.fsPath,
+    }
   }
 
+  /**
+   * Send the given message to the client
+   * @param message
+   */
   notifyClient(message: HostMessage) {
     this.panel.webview.postMessage(message).then((result) => {
       if (!result) {
@@ -117,22 +218,29 @@ export class EmulatorPanel {
     })
   }
 
+  setDiscImageFromContextSelection(contextSelection?: vscode.Uri) {
+    this.discImageFile = this.discImageFileFromUri(contextSelection)
+  }
+
   static show(
     context: vscode.ExtensionContext,
     contextSelection?: vscode.Uri,
     _allSelections?: vscode.Uri[],
   ) {
-    if (EmulatorPanel.instance) {
-      EmulatorPanel.instance.panel.reveal(vscode.ViewColumn.One)
-    } else {
+    if (!EmulatorPanel.instance) {
+      // create a new emulator panel webview
       EmulatorPanel.instance = new EmulatorPanel(context)
-    }
-
-    // always update the webview content when creating or revealing
-    // todo: load disc using messages rather than html changes. this way the script can reset the emulator, or optionally auto-boot
-    if (contextSelection) {
-      // TODO: pass message to webview to update disc file
-      EmulatorPanel.instance.setDiscFileUrl(contextSelection)
+      EmulatorPanel.instance.setDiscImageFromContextSelection(contextSelection)
+      // we dont loadDisc here because the client side emulator needs to signal when it is ready within the new webview
+    } else {
+      EmulatorPanel.instance.panel.reveal(vscode.ViewColumn.One)
+      // If we are revealing via a context selection, ensure the new disc is loaded to the emulator
+      if (contextSelection) {
+        EmulatorPanel.instance.setDiscImageFromContextSelection(
+          contextSelection,
+        )
+        EmulatorPanel.instance.loadDisc({ shouldReset: true })
+      }
     }
   }
 
@@ -201,8 +309,6 @@ export class EmulatorPanel {
 
         <vscode-dropdown id="disc-selector" class="fixed-width-selector">
           <span slot="indicator" class="codicon codicon-save"></span>
-          <vscode-option>Empty</vscode-option>
-          <vscode-option>image.dsd</vscode-option>			
         </vscode-dropdown>
 
         <vscode-button id="toolbar-sound" appearance="secondary">
@@ -259,7 +365,7 @@ export class EmulatorPanel {
     return `
 
 Hello world<br>
-You selected disc file '${this.discFileUrl}'<br>
+You selected disc file '${this.discImageFile}'<br>
 
 <vscode-divider></vscode-divider>
 
