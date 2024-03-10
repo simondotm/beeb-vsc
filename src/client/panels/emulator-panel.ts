@@ -156,7 +156,7 @@ export class EmulatorPanel {
             // when the client side emulator signals it is ready
             // we can send it the default disc image file to load (if any)
             console.log('EmulatorReady')
-            this.loadDisc()
+            this.loadDisc({ shouldAutoBoot: true })
             // start watching for disc image files in the workspace
             this.startWatcher()
             return
@@ -171,13 +171,6 @@ export class EmulatorPanel {
       this.disposables,
     )
   }
-
-  // setDiscFileUrl(discFile?: vscode.Uri) {
-  //   this.discImageFile = discFile
-  //     ? this.discImageFileFromUri(discFile)
-  //     : NO_DISC
-  //   console.log('setDiscFileUrl=' + this.discImageFile)
-  // }
 
   /**
    * Instruct client to load the given disc image file
