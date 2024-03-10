@@ -158,7 +158,7 @@ export class EmulatorToolBar {
   }
   private async onRestartClick() {
     if (this.buttonRestart) {
-      await this.emulatorView.resetCpu(true)
+      await this.emulatorView.reboot(true)
       this.emulatorView.focusInput()
     }
   }

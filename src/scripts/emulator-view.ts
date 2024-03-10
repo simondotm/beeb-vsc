@@ -169,7 +169,7 @@ export class EmulatorView {
     return true
   }
 
-  async resetCpu(hard: boolean = false) {
+  async reboot(hard: boolean = false) {
     this.emulator?.resetCpu(hard)
     await this.mountDisc(this.discImageFile)
   }
