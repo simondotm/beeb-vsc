@@ -30,7 +30,7 @@ const commandCompletions: CompletionItem[] = beebasmCommands.map((item) => ({
   label: item.command,
   kind: CompletionItemKind.Method,
   insertTextFormat: InsertTextFormat.Snippet,
-  insertText: `${item.label} $0`,
+  insertText: `${item.command} $0`,
   command: triggerParameterHints,
   detail: 'command',
   documentation: item.documentation,

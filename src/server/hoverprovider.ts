@@ -48,7 +48,7 @@ export class HoverProvider {
           // try to find in list of commands beebasmCommands
           // iterate through beebasmCommands looking for a match
           for (const cmd of beebasmCommands) {
-            if (cmd.label === command) {
+            if (cmd.command === command) {
               const mdText: MarkupContent = {
                 kind: 'markdown',
                 value: `## ${cmd.label}
@@ -133,12 +133,12 @@ ${this.getFlagsTable(info.flags)}`
    */
   private getFlagsTable(flags: string): string {
     /* Flag meanings:
-		-  Flag unaffected
-		*  Flag affected
-		0  Flag reset
-		1  Flag set
-		?  Unknown
-		Order: NV_BDIZC */
+    -  Flag unaffected
+    *  Flag affected
+    0  Flag reset
+    1  Flag set
+    ?  Unknown
+    Order: NV_BDIZC */
 
     if (flags.length === 0) {
       flags = '--------'

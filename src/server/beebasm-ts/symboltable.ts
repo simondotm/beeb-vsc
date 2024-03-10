@@ -1,22 +1,22 @@
 /*************************************************************************************************/
 /**
-	Derived from symboltable.cpp/h
+  Derived from symboltable.cpp/h
 
 
-	Copyright (C) Rich Talbot-Watkins 2007 - 2012
+  Copyright (C) Rich Talbot-Watkins 2007 - 2012
 
-	This file is part of BeebAsm.
+  This file is part of BeebAsm.
 
-	BeebAsm is free software: you can redistribute it and/or modify it under the terms of the GNU
-	General Public License as published by the Free Software Foundation, either version 3 of the
-	License, or (at your option) any later version.
+  BeebAsm is free software: you can redistribute it and/or modify it under the terms of the GNU
+  General Public License as published by the Free Software Foundation, either version 3 of the
+  License, or (at your option) any later version.
 
-	BeebAsm is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
-	even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-	GNU General Public License for more details.
+  BeebAsm is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
+  even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
 
-	You should have received a copy of the GNU General Public License along with BeebAsm, as
-	COPYING.txt.  If not, see <http://www.gnu.org/licenses/>.
+  You should have received a copy of the GNU General Public License along with BeebAsm, as
+  COPYING.txt.  If not, see <http://www.gnu.org/licenses/>.
 */
 /*************************************************************************************************/
 
@@ -178,6 +178,7 @@ export class SymbolTable {
   Reset(): void {
     this._map.clear()
     this._labelScopes = 0
+    this._labelList = []
     this._scopeDetails = []
     this._references.clear()
     this.AddSymbol('PI', Math.PI, noLocation)
@@ -242,6 +243,8 @@ export class SymbolTable {
   }
 
   AddLabel(symbol: string): void {
+    // Note: this data is not used (beebasm uses it for dumping label list to file)
+    // Keeping around for now in case it's useful in debugging
     if (GlobalData.Instance.IsSecondPass()) {
       const addr = ObjectCode.Instance.GetPC()
       const identifier =
@@ -257,7 +260,6 @@ export class SymbolTable {
       }
       this._labelList.push(this._lastLabel)
     }
-    // TODO - check if can add symbol on second pass, currently getting deleted after first pass and not re-added
   }
 
   PushBrace(uri: string, startLine: number, forID: number): void {

@@ -74,7 +74,7 @@ Select the one that you wish to assemble with `BeebAsm`, and a new build target 
 
 ![Screenshot](./docs/images/targetcreated.png?raw=true)
 
-A `tasks.json` file will be created in a `.vscode` folder in your workspace containing the required tasks to build or run your targets.
+A `tasks.json` file will be created in a `.vscode` folder in your workspace containing the required tasks to build or run your targets. A `settings.json` file will also be created in the same location and is used for identifying the target source file(s) so we can parse the files in a suitable order even when viewing a different source file.
 
 ![Screenshot](./docs/images/tasksjson.png?raw=true)
 
@@ -131,6 +131,21 @@ The BeebVSC extension is careful to preserve the contents of the `tasks.json` fi
 The only property that is managed by the extension is `Group -> Kind`, so this is subject to modification.
 Note also that the commandline argument for the test task is managed by the extension, and updates whenever a new build target is selected.
 
+## Directly managing target source files
+If you don't want to use BeebVSC's functionality to add build targets, some functionality will be limited because the extension will not know what order INCLUDE files are processed. In this case, it is necessary to add the target file(s) to the `settings.json` file. For example, if the targets `build.asm` and `loader.asm` are run through BeebAsm then the settings file would look like: 
+```json
+{
+    "beebvsc": {
+        "sourceFile": [
+            "/Users/Games/Test/build.asm",
+            "/Users/Games/Test/loader.asm"
+        ],
+        "targetName": "main.ssd"
+    }
+}
+```
+The easiest way to set this up is adding the build targets in a normal way and they removing the `tasks.json` entries if those are not wanted.
+
 ## Command Line format
 Due to constraints in the way that Visual Studio Code handles tasks, BeebVSC tasks must be executed as single arguments to a shell such as `"cmd.exe"`.
 
@@ -139,6 +154,8 @@ The installation is for Windows by default, but its quite feasible to get it wor
 
 # Release notes
 
+- **0.1.2** - Tweaks to completions
+- **0.1.1** - Substantial internal refactoring and minor bug fixes
 - **0.1.0** - Move to LSP client/server structure, add hovers, completions, diagnostics and reference finding
 - **0.0.6** - Added full build environment support via JS script to extension
 - **0.0.5** - Test version

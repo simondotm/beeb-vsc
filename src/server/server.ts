@@ -3,7 +3,6 @@ import {
   Diagnostic,
   ProposedFeatures,
   InitializeParams,
-  DidChangeConfigurationNotification,
   TextDocumentSyncKind,
   InitializeResult,
   ConfigurationItem,
@@ -28,7 +27,6 @@ const links: Map<string, DocumentLink[]> = new Map<string, DocumentLink[]>()
 // GlobalData and ObjectCode objects are static and will be set up when called in ParseDocument
 
 connection.onInitialize((params: InitializeParams) => {
-  const capabilities = params.capabilities
   const workspaceFolders = params.workspaceFolders
   console.log(`[Server(${process.pid})] Started and initialize received`)
   if (workspaceFolders != null) {
@@ -69,106 +67,104 @@ connection.onInitialize((params: InitializeParams) => {
 })
 
 connection.onInitialized(() => {
-  // Register for all configuration changes.
-  connection.client.register(DidChangeConfigurationNotification.type, undefined)
+  // Register for all configuration changes (when have a configuration that would matter).
+  // connection.client.register(DidChangeConfigurationNotification.type, undefined)
   connection.workspace.onDidChangeWorkspaceFolders((_event) => {
     connection.console.log('Workspace folder change event received.')
   })
 })
 
-// TODO - base settings on beebasm command line options if any are suitable for this extension
-interface ExampleSettings {
-  maxNumberOfProblems: number
-}
+// connection.onDidChangeConfiguration((change) => {
+//   // Revalidate all open text documents
+//   // Only calling once as always start from root document and that will pick up others via INCLUDE statements
+//   const temp = FileHandler.Instance.documents.all().at(0)
+//   if (temp !== undefined) {
+//     ParseDocument(temp)
+//   }
+// })
 
-// The global settings, used when the `workspace/configuration` request is not supported by the client.
-// Please note that this is not the case when using this server with the client provided in this example
-// but could happen with other clients.
-const defaultSettings: ExampleSettings = { maxNumberOfProblems: 1000 }
-
-// Cache the settings of all open documents
-const documentSettings: Map<string, Thenable<ExampleSettings>> = new Map()
-
-connection.onDidChangeConfiguration((change) => {
-  // Reset all cached document settings
-  documentSettings.clear()
-
-  // Revalidate all open text documents
-  // Only calling once as always start from root document and that will pick up others via INCLUDE statements
-  const temp = FileHandler.Instance.documents.all().at(0)
-  if (temp !== undefined) {
-    ParseDocument(temp)
-  }
-})
-
-function getDocumentSettings(resource: string): Thenable<ExampleSettings> {
-  let result = documentSettings.get(resource)
-  if (!result) {
-    result = connection.workspace.getConfiguration({
-      scopeUri: resource,
-      section: 'languageServerExample',
-    })
-    documentSettings.set(resource, result)
-  }
-  return result
-}
-
-// Only keep settings for open documents
-FileHandler.Instance.documents.onDidClose((e) => {
-  documentSettings.delete(e.document.uri)
-})
+// FileHandler.Instance.documents.onDidClose((e) => {
+// })
 
 // The content of a text document has changed. This event is emitted
 // when the text document first opened or when its content has changed.
 FileHandler.Instance.documents.onDidChangeContent((change) => {
-  // console.log(`Document changed: ${change.document.uri}`);
-  ParseDocument(change.document)
+  // Call ParseDocument on root document for the document that has changed
+  // or all root documents if don't have the mapping yet
+  ParseFromRoot(change.document)
 })
+
+async function getStartingFileNames(fileName: string): Promise<string[]> {
+  // try to get the file from the filehandler
+  const file = FileHandler.Instance.GetTargetFileName(fileName)
+  if (file !== undefined) {
+    return [file]
+  }
+  // not known yet, so check the files in settings.json
+  const filenames = await getSourcesFromSettings()
+  return filenames
+}
 
 // Read settings.json setting for source file name
 // TODO - move to FileHandler?
 // TODO - cache the workspace root? Seems to only return sometimes
-async function getSourceFileName(): Promise<string> {
+async function getSourcesFromSettings(): Promise<string[]> {
+  // check the workspace settings
   let workspaceroot = ''
   const folders = await connection.workspace.getWorkspaceFolders()
   if (folders !== null) {
     if (folders.length > 0) {
-      workspaceroot = URI.parse(folders[0].uri).fsPath
+      workspaceroot = URItoPath(folders[0].uri)
     }
-    let filename = ''
     const item: ConfigurationItem = {
       scopeUri: workspaceroot,
       section: 'beebvsc',
     }
     const settings = await connection.workspace.getConfiguration(item)
-    filename = settings['sourceFile']
-    // connection.console.log(`Source file name: ${filename}`);
-    return filename
+    const filename = settings['sourceFile']
+    if (typeof filename === 'string') {
+      return [filename]
+    } else if (filename instanceof Array) {
+      return filename
+    }
   } else {
     connection.console.log('No workspace folders')
-    return ''
   }
+  return []
+}
+
+function URItoPath(uri: string): string {
+  return URI.parse(uri).fsPath
 }
 
 // TODO add GetRootDocument to FileHandler which takes a document and returns the root document
 // Would allow multi-root workspaces to be supported and parse correct document group
-async function ParseDocument(textDocument: TextDocument): Promise<void> {
-  // In this simple example we get the settings for every validate run.
-  const settings = await getDocumentSettings(textDocument.uri)
-  // map from uri to diagnostics
-  const diagnostics = new Map<string, Diagnostic[]>()
-  diagnostics.set(URI.parse(textDocument.uri).fsPath, [])
+async function ParseFromRoot(textDocument: TextDocument): Promise<void> {
+  const fspath = URItoPath(textDocument.uri)
 
   // Get the source file name
-  let sourceFilePath = await getSourceFileName()
-  if (sourceFilePath === '') {
+  let sourceFilePath = await getStartingFileNames(fspath)
+  if (sourceFilePath.length === 0) {
     connection.console.log('No source file name set, using current document')
-    sourceFilePath = URI.parse(textDocument.uri).fsPath // TODO - note return includes textDocument.uri and that mustn't change
+    sourceFilePath = [fspath]
   }
+
+  // Parse each root document (in parallel)
+  Promise.all(
+    sourceFilePath.map((file) => {
+      ParseDocument(file, textDocument.uri)
+    }),
+  )
+}
+
+async function ParseDocument(
+  sourceFilePath: string,
+  activeFile: string,
+): Promise<void> {
+  // map from uri to diagnostics
+  const diagnostics = new Map<string, Diagnostic[]>()
+  diagnostics.set(sourceFilePath, [])
   // Get the document text
-  if (sourceFilePath === undefined) {
-    return
-  }
   const text = FileHandler.Instance.GetDocumentText(sourceFilePath)
 
   SymbolTable.Instance.Reset()
@@ -192,9 +188,10 @@ async function ParseDocument(textDocument: TextDocument): Promise<void> {
   }
   // Remove duplicate diagnostics (due to 2-passes)
   // We keep both passes so that we can report errors that only occur in one pass
-  const currentDiagnostics = diagnostics.get(
-    URI.parse(textDocument.uri).fsPath,
-  )!
+  const currentDiagnostics = diagnostics.get(URItoPath(activeFile))
+  if (currentDiagnostics === undefined) {
+    return
+  }
   let thisDiagnostics: Diagnostic[] = []
   thisDiagnostics = currentDiagnostics.filter((value, index) => {
     const _value = JSON.stringify(value)
@@ -206,9 +203,8 @@ async function ParseDocument(textDocument: TextDocument): Promise<void> {
     )
   })
 
-  // Send the computed diagnostics to VSCode.
   connection.sendDiagnostics({
-    uri: textDocument.uri,
+    uri: activeFile,
     diagnostics: thisDiagnostics,
   })
 }
@@ -248,7 +244,7 @@ connection.onRenameRequest(renameProvider.onRename.bind(renameProvider))
 // TODO - add document link provider for INCBIN, PUTBASIC, PUTTEXT, PUTFILE statements?
 // This extension doesn't support the file types but could still link to them and leave it to the user
 connection.onDocumentLinks((params) => {
-  const doc = URI.parse(params.textDocument.uri).fsPath
+  const doc = URItoPath(params.textDocument.uri)
   const docLinks = links.get(doc)
   if (docLinks !== undefined) {
     return docLinks
