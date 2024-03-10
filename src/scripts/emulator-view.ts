@@ -131,9 +131,9 @@ export class EmulatorView {
     this.showTestCard(this.emulator === undefined)
   }
 
-  private onEmulatorUpdate(_emulator: Emulator) {
+  private onEmulatorUpdate(emulator: Emulator) {
     // update display mode
-    const mode = this.emulator?.cpu.readmem(0x0355) ?? 255
+    const mode = emulator.cpu.readmem(0x0355) ?? 255
     this._displayMode$.next(getDisplayModeInfo(mode))
   }
 
