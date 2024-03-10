@@ -1,24 +1,24 @@
 /*************************************************************************************************/
 /**
-	Derived from lineparser.cpp/h and other files in the same namespace
+  Derived from lineparser.cpp/h and other files in the same namespace
 
-	Represents a line of the source file
+  Represents a line of the source file
 
 
-	Copyright (C) Rich Talbot-Watkins 2007 - 2012
+  Copyright (C) Rich Talbot-Watkins 2007 - 2012
 
-	This file is part of BeebAsm.
+  This file is part of BeebAsm.
 
-	BeebAsm is free software: you can redistribute it and/or modify it under the terms of the GNU
-	General Public License as published by the Free Software Foundation, either version 3 of the
-	License, or (at your option) any later version.
+  BeebAsm is free software: you can redistribute it and/or modify it under the terms of the GNU
+  General Public License as published by the Free Software Foundation, either version 3 of the
+  License, or (at your option) any later version.
 
-	BeebAsm is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
-	even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-	GNU General Public License for more details.
+  BeebAsm is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
+  even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
 
-	You should have received a copy of the GNU General Public License along with BeebAsm, as
-	COPYING.txt.  If not, see <http://www.gnu.org/licenses/>.
+  You should have received a copy of the GNU General Public License along with BeebAsm, as
+  COPYING.txt.  If not, see <http://www.gnu.org/licenses/>.
 */
 /*************************************************************************************************/
 
@@ -2302,7 +2302,7 @@ export class LineParser {
             while (
               this._operatorStackPtr > 0 &&
               thisOp.precedence <
-                this._operatorStack[this._operatorStackPtr - 1].precedence
+              this._operatorStack[this._operatorStackPtr - 1].precedence
             ) {
               this._operatorStackPtr--
               const opHandler =
@@ -2382,7 +2382,7 @@ export class LineParser {
           while (
             this._operatorStackPtr > 0 &&
             thisOp.precedence <=
-              this._operatorStack[this._operatorStackPtr - 1].precedence
+            this._operatorStack[this._operatorStackPtr - 1].precedence
           ) {
             this._operatorStackPtr--
             const opHandler =
@@ -2600,10 +2600,10 @@ export class LineParser {
     let double_value: number
     let canParse: boolean
     let isSymbol = false
-    ;[canParse, this._column, double_value] = this.ParseNumeric(
-      this._line,
-      this._column,
-    )
+      ;[canParse, this._column, double_value] = this.ParseNumeric(
+        this._line,
+        this._column,
+      )
     if (canParse) {
       value = double_value
     } else if (
@@ -2684,10 +2684,10 @@ export class LineParser {
           },
         }
         let hasValue: boolean
-        ;[hasValue, value] = this._sourceCode.GetSymbolValue(
-          symbolName,
-          location,
-        )
+          ;[hasValue, value] = this._sourceCode.GetSymbolValue(
+            symbolName,
+            location,
+          )
         if (!hasValue) {
           // symbol not known
           throw new AsmException.SyntaxError_SymbolNotDefined(
@@ -2733,21 +2733,21 @@ export class LineParser {
       // Copy digits preceding decimal point
       let have_digits: boolean
       let have_digits_post = false
-      ;[have_digits, index, buffer] = this.CopyDigitsSkippingUnderscores(
-        line,
-        index,
-        buffer,
-      )
-      // Copy decimal point
-      if (index < line.length && line[index] == '.') {
-        buffer += line[index]
-        index++
-        // Copy digits after decimal point
-        ;[have_digits_post, index, buffer] = this.CopyDigitsSkippingUnderscores(
+        ;[have_digits, index, buffer] = this.CopyDigitsSkippingUnderscores(
           line,
           index,
           buffer,
         )
+      // Copy decimal point
+      if (index < line.length && line[index] == '.') {
+        buffer += line[index]
+        index++
+          // Copy digits after decimal point
+          ;[have_digits_post, index, buffer] = this.CopyDigitsSkippingUnderscores(
+            line,
+            index,
+            buffer,
+          )
       }
       if (!(have_digits || have_digits_post)) {
         // A decimal point with no number will cause this
@@ -2768,11 +2768,11 @@ export class LineParser {
           index++
         }
         let have_digits_exp: boolean
-        ;[have_digits_exp, index, buffer] = this.CopyDigitsSkippingUnderscores(
-          line,
-          index,
-          buffer,
-        )
+          ;[have_digits_exp, index, buffer] = this.CopyDigitsSkippingUnderscores(
+            line,
+            index,
+            buffer,
+          )
         if (!have_digits_exp) {
           // Exponent needs a value
           // throw new AsmException.SyntaxError_InvalidCharacter( line, index );
@@ -2786,7 +2786,7 @@ export class LineParser {
       // skip the number prefix
       index++
       let can_parse: boolean
-      ;[can_parse, index, result] = this.ParseInteger(line, index, 16, 8)
+        ;[can_parse, index, result] = this.ParseInteger(line, index, 16, 8)
       if (!can_parse) {
         // badly formed hex literal
         // throw new AsmException.SyntaxError_BadHex( line, index );
@@ -2797,7 +2797,7 @@ export class LineParser {
       // skip the number prefix
       index++
       let can_parse: boolean
-      ;[can_parse, index, result] = this.ParseInteger(line, index, 2, 32)
+        ;[can_parse, index, result] = this.ParseInteger(line, index, 2, 32)
       if (!can_parse) {
         // badly formed bin literal
         // throw new AsmException.SyntaxError_BadBin( line, index );
@@ -3578,8 +3578,10 @@ export class LineParser {
           typeof value !== 'number' ||
           value !== ObjectCode.Instance.GetPC()
         ) {
-          // TODO - reenable ideally but may not be possible if want to avoid iterating loops (needs multi-file symbol resolution too)
-          // throw new AsmException.SyntaxError_SecondPassProblem(this._line, oldColumn);
+          throw new AsmException.SyntaxError_SecondPassProblem(
+            this._line,
+            oldColumn,
+          )
         }
         SymbolTable.Instance.AddLabel(symbolName)
       }
