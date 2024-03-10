@@ -192,15 +192,14 @@ export class Emulator {
     }
     if (discImageFile.url) {
       try {
-        console.log('loading disc')
         const fdc = this.cpu.fdc
         const discData = await utils.defaultLoadData(discImageFile.url)
         const discImage = new BaseDisc(fdc, 'disc', discData, () => {})
         this.cpu.fdc.loadDisc(0, discImage)
-        notifyHost({
-          command: ClientCommand.Error,
-          text: `Mounted disc '${discImageFile.name}'`,
-        })
+        // notifyHost({
+        //   command: ClientCommand.Info,
+        //   text: `Mounted disc '${discImageFile.name}'`,
+        // })
         if (discImageOptions?.shouldReset) {
           this.resetCpu(false)
         }

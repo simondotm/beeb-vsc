@@ -8,6 +8,7 @@ export interface MessageBase {
 export const enum ClientCommand {
   EmulatorReady = 'emulatorReady',
   PageLoaded = 'pageLoaded',
+  Info = 'info',
   Error = 'error',
 }
 
@@ -23,6 +24,10 @@ export interface ClientMessagePageLoaded extends ClientMessageBase {
   command: ClientCommand.PageLoaded
 }
 
+export interface ClientMessageInfo extends ClientMessageBase {
+  command: ClientCommand.Info
+  text: string
+}
 export interface ClientMessageError extends ClientMessageBase {
   command: ClientCommand.Error
   text: string
@@ -31,6 +36,7 @@ export interface ClientMessageError extends ClientMessageBase {
 export type ClientMessage =
   | ClientMessageEmulatorReady
   | ClientMessagePageLoaded
+  | ClientMessageInfo
   | ClientMessageError
 
 /**

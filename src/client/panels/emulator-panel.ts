@@ -113,11 +113,9 @@ export class EmulatorPanel {
    */
   private sendDiscImages(_workspaceRoot: vscode.WorkspaceFolder) {
     vscode.workspace.findFiles(glob).then((uris) => {
-      console.log(`found uris:`, uris)
       const allFiles: DiscImageFile[] = uris.map((uri) => {
         return this.discImageFileFromUri(uri)
       })
-      console.log(`found files:`, allFiles)
       this.notifyClient({
         command: HostCommand.DiscImages,
         discImages: allFiles,
@@ -146,11 +144,9 @@ export class EmulatorPanel {
     webview.onDidReceiveMessage(
       (message: ClientMessage) => {
         const command = message.command
-        // const text = message.text;
-
         switch (command) {
           case ClientCommand.PageLoaded:
-            vscode.window.showInformationMessage('loaded page')
+            vscode.window.showInformationMessage('BeebVSC: Emulator started')
             return
           case ClientCommand.EmulatorReady:
             // when the client side emulator signals it is ready
@@ -160,9 +156,14 @@ export class EmulatorPanel {
             // start watching for disc image files in the workspace
             this.startWatcher()
             return
-          case ClientCommand.Error:
+          case ClientCommand.Info:
             vscode.window.showInformationMessage(
-              `${message.text ?? 'An error occurred'}`,
+              `BeebVSC: ${message.text ?? 'An error occurred'}`,
+            )
+            return
+          case ClientCommand.Error:
+            vscode.window.showErrorMessage(
+              `BeebVSC: ${message.text ?? 'An error occurred'}`,
             )
             return
         }

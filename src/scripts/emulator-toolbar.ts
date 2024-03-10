@@ -95,10 +95,10 @@ export class EmulatorToolBar {
     await this.emulatorView.boot(model)
     this.updateEmulatorStatus()
     this.emulatorView.focusInput()
-    notifyHost({
-      command: ClientCommand.Error,
-      text: `Selected model '${model.name}'`,
-    })
+    // notifyHost({
+    //   command: ClientCommand.Info,
+    //   text: `Selected model '${model.name}'`,
+    // })
   }
 
   private async onDiscChange(event: JQuery.ChangeEvent) {
