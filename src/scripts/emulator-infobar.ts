@@ -42,10 +42,14 @@ export class EmulatorInfoBar {
     let html = EMPTY_CHAR
     if (emulator) {
       const totalSeconds = Math.floor(emulator.cpu.currentCycles / 2000000)
-      const seconds = totalSeconds % 60
-      const minutes = Math.floor(totalSeconds / 60)
-      const hours = Math.floor(minutes / 60)
-      const et = `${hours ? hours : ''}${hours ? 'h ' : ''}${minutes ? minutes : ''}${minutes ? 'm ' : ''}${seconds ? seconds : ''}${seconds ? 's' : ''}`
+      const seconds = Math.floor(totalSeconds) % 60
+      const minutes = Math.floor(totalSeconds / 60) % 60
+      const hours = Math.floor(minutes / 60) % 24
+      const days = Math.floor(hours / 24)
+      const showMinutes = minutes > 0 || hours > 0 || days > 0
+      const showHours = hours > 0 || days > 0
+      const showDays = days > 0
+      const et = `${showDays ? days + 'd ' : ''}${showHours ? hours + 'h ' : ''}${showMinutes ? minutes + 'm ' : ''}${seconds}s`
       html = `Runtime: ${et}`
     }
     this.runTime.html(html)
