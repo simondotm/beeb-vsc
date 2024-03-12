@@ -1,22 +1,22 @@
 /*************************************************************************************************/
 /**
-	Derived from objectcode.cpp/h
+  Derived from objectcode.cpp/h
 
 
-	Copyright (C) Rich Talbot-Watkins 2007 - 2012
+  Copyright (C) Rich Talbot-Watkins 2007 - 2012
 
-	This file is part of BeebAsm.
+  This file is part of BeebAsm.
 
-	BeebAsm is free software: you can redistribute it and/or modify it under the terms of the GNU
-	General Public License as published by the Free Software Foundation, either version 3 of the
-	License, or (at your option) any later version.
+  BeebAsm is free software: you can redistribute it and/or modify it under the terms of the GNU
+  General Public License as published by the Free Software Foundation, either version 3 of the
+  License, or (at your option) any later version.
 
-	BeebAsm is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
-	even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-	GNU General Public License for more details.
+  BeebAsm is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
+  even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
 
-	You should have received a copy of the GNU General Public License along with BeebAsm, as
-	COPYING.txt.  If not, see <http://www.gnu.org/licenses/>.
+  You should have received a copy of the GNU General Public License along with BeebAsm, as
+  COPYING.txt.  If not, see <http://www.gnu.org/licenses/>.
 */
 /*************************************************************************************************/
 
@@ -43,6 +43,9 @@ export class ObjectCode {
   private _aMemory: number[] = new Array(0x10000)
   private _aFlags: number[] = new Array(0x10000)
   private _aMapChar: integer[] = new Array(96)
+  // After one consistency error, all subsequent code will probably be wrong, so just raise once
+  // or we'll get a lot of errors and potentially cause severe slowdown
+  private _hadConsistencyError = false
 
   private constructor() {
     //SymbolTable.Instance.AddSymbol( "CPU", this._CPU );
@@ -58,6 +61,7 @@ export class ObjectCode {
     this._aMemory.fill(0)
     this._aFlags.fill(0)
     this._aMapChar.fill(0)
+    this._hadConsistencyError = false
   }
 
   public GetCPU(): number {
@@ -196,8 +200,10 @@ export class ObjectCode {
       !(this._aFlags[this._PC] & FLAGS.DONT_CHECK) &&
       this._aMemory[this._PC] !== opcode
     ) {
-      // TODO - reenable this check if can resolve other issues that prevent code from staying consistent
-      // throw new AsmException.AssembleError_InconsistentCode();
+      if (!this._hadConsistencyError) {
+        this._hadConsistencyError = true
+        throw new AsmException.AssembleError_InconsistentCode()
+      }
     }
     if (this._aFlags[this._PC] & FLAGS.GUARD) {
       throw new AsmException.AssembleError_GuardHit()
@@ -220,7 +226,10 @@ export class ObjectCode {
       !(this._aFlags[this._PC] & FLAGS.DONT_CHECK) &&
       this._aMemory[this._PC] !== opcode
     ) {
-      // throw new AsmException.AssembleError_InconsistentCode();
+      if (!this._hadConsistencyError) {
+        this._hadConsistencyError = true
+        throw new AsmException.AssembleError_InconsistentCode()
+      }
     }
     if (this._aFlags[this._PC] & FLAGS.GUARD) {
       throw new AsmException.AssembleError_GuardHit()
@@ -245,7 +254,10 @@ export class ObjectCode {
       !(this._aFlags[this._PC] & FLAGS.DONT_CHECK) &&
       this._aMemory[this._PC] !== opcode
     ) {
-      // throw new AsmException.AssembleError_InconsistentCode();
+      if (!this._hadConsistencyError) {
+        this._hadConsistencyError = true
+        throw new AsmException.AssembleError_InconsistentCode()
+      }
     }
     if (
       this._aFlags[this._PC] & FLAGS.GUARD ||
