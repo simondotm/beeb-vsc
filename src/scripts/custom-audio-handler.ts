@@ -54,6 +54,10 @@ export class CustomAudioHandler extends AudioHandler {
     return this.audioContext && this.audioContext.state === 'running'
   }
 
+  isMuted(): boolean {
+    return this.muted$.value
+  }
+
   toggleMute(): boolean {
     if (this.muted$.value) {
       this.unmute()

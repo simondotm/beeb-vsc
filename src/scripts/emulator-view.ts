@@ -32,6 +32,8 @@ export class EmulatorView {
   model: Model | undefined
   emulator: Emulator | undefined // Dont hold references to the emulator, it may be paused and destroyed
 
+  private suspended: boolean = false
+
   // shared emulator update observable
   private _emulatorUpdate$ = new Subject<Emulator>()
   get emulatorUpdate$(): Observable<Emulator> {
@@ -185,5 +187,19 @@ export class EmulatorView {
   async reboot(hard: boolean = false) {
     this.emulator?.resetCpu(hard)
     await this.mountDisc(this.discImageFile)
+  }
+
+  private isMutedWhenSuspended: boolean = false
+  suspend() {
+    this.isMutedWhenSuspended = this.audioHandler.isMuted()
+    if (!this.isMutedWhenSuspended) {
+      this.audioHandler.mute()
+    }
+  }
+
+  resume() {
+    if (!this.isMutedWhenSuspended) {
+      this.audioHandler.unmute()
+    }
   }
 }
