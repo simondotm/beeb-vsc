@@ -371,8 +371,8 @@ export class EmulatorPanel {
               <li>caps</li>
               <li>lock</li>
               <li>
-                <img id="led-caps-on" class="led-icon" src="${redLedOn}" hidden>
-                <img id="led-caps-off" class="led-icon" src="${redLedOff}">
+                <img class="led-icon" src="${redLedOn}" hidden>
+                <img class="led-icon" src="${redLedOff}">
               </li>
             </ul>          
           </div>
@@ -381,8 +381,8 @@ export class EmulatorPanel {
               <li>shift</li>
               <li>lock</li>
               <li>
-                <img id="led-shift-on" class="led-icon" src="${redLedOn}" hidden>
-                <img id="led-shift-off" class="led-icon" src="${redLedOff}">
+                <img class="led-icon" src="${redLedOn}" hidden>
+                <img class="led-icon" src="${redLedOff}">
               </li>
             </ul>
           </div>
@@ -391,8 +391,8 @@ export class EmulatorPanel {
               <li>cassette</li>
               <li>motor</li>
               <li>
-                <img id="led-motor-on" class="led-icon" src="${redLedOn}" hidden>
-                <img id="led-motor-off" class="led-icon" src="${redLedOff}">
+                <img class="led-icon" src="${redLedOn}" hidden>
+                <img class="led-icon" src="${redLedOff}">
               </li>
             </ul>          
           </div>
@@ -403,8 +403,8 @@ export class EmulatorPanel {
             <li>drive</li>
             <li>0</li>
             <li>
-              <img id="led-drive0-on" class="led-icon" src="${greenLedOn}" hidden>
-              <img id="led-drive0-off" class="led-icon" src="${greenLedOff}">
+              <img class="led-icon" src="${greenLedOn}" hidden>
+              <img class="led-icon" src="${greenLedOff}">
             </li>
           </ul>          
           </div>
@@ -413,8 +413,8 @@ export class EmulatorPanel {
               <li>drive</li>
               <li>1</li>
               <li>
-                <img id="led-drive1-on" class="led-icon" src="${greenLedOn}" hidden>
-                <img id="led-drive1-off" class="led-icon" src="${greenLedOff}">
+                <img class="led-icon" src="${greenLedOn}" hidden>
+                <img class="led-icon" src="${greenLedOff}">
               </li>
             </ul>            
           </div>  
@@ -425,8 +425,8 @@ export class EmulatorPanel {
               <li>econet</li>
               <li>tx/rx</li>
               <li>
-                <img id="led-econet-on" class="led-icon" src="${greenLedOn}" hidden>
-                <img id="led-econet-off" class="led-icon" src="${greenLedOff}">
+                <img class="led-icon" src="${greenLedOn}" hidden>
+                <img class="led-icon" src="${greenLedOff}">
               </li>
             </ul>           
           </div>          
