@@ -99,7 +99,7 @@ label {
 .led-button {
   margin-top: 4px;
   margin-right: 2px;
-  cursor: pointer;
+  cursor: default;
 }
 
 .led-icon {
