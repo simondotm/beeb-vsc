@@ -10,12 +10,14 @@ import { initialiseVSCode, notifyHost } from './vscode'
 import { EmulatorView } from './emulator-view'
 import { EmulatorInfoBar } from './emulator-infobar'
 import { EmulatorToolBar } from './emulator-toolbar'
+import { EmulatorLedBar } from './emulator-ledbar'
 
 const defaultModel: Model = findModel('MasterADFS')
 
 let emulatorView: EmulatorView
 let emulatorInfoBar: EmulatorInfoBar | undefined
 let emulatorToolBar: EmulatorToolBar | undefined
+let emulatorLedBar: EmulatorLedBar | undefined
 
 async function initialise() {
   initialiseVSCode()
@@ -30,6 +32,7 @@ async function initialise() {
   // create the info bar and toolbar UI
   emulatorInfoBar = new EmulatorInfoBar(emulatorView)
   emulatorToolBar = new EmulatorToolBar(emulatorView)
+  emulatorLedBar = new EmulatorLedBar(emulatorView)
 
   // signal to host that emulator webview is ready
   // it might send us a disc image to mount if we started the

@@ -93,6 +93,34 @@ label {
   font-style: italic;
 }
 
+/**
+  * LED display
+  */
+.led-button {
+  margin-top: 4px;
+  margin-right: 2px;
+  cursor: default;
+}
+
+.led-icon {
+  width: 16px;
+  height: 16px;
+}
+
+.led-list {
+  list-style: none;
+  padding: 0;
+  margin: 2px;
+}
+
+.led-list li {
+  /* background-color: #f2f2f2; */
+  color: #bb862b;
+  padding: 2px;
+  text-align: center;
+  width: 60px;
+}
+
 
 .no-margin {
 	margin: 0;

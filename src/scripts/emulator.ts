@@ -78,6 +78,7 @@ export class Emulator {
 
   margin: EmulatorMargin = margins.normal
 
+  // Only EmulatorView should subscribe to this
   private _emulatorUpdate$ = new Subject<Emulator>()
   get emulatorUpdate$(): Observable<Emulator> {
     return this._emulatorUpdate$

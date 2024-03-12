@@ -43,8 +43,11 @@ declare module 'jsbeeb/6502' {
 
     video: Video
     sysvia: SysVia
+    acia: Acia
 
     fdc: Fdc
+
+    econet?: any
 
     targetCycles: number
     currentCycles: number

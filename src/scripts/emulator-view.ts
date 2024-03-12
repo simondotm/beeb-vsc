@@ -3,7 +3,12 @@ import { bestCanvas } from 'jsbeeb/canvas'
 import { Emulator, EmulatorCanvas } from './emulator'
 import { Model } from 'jsbeeb/models'
 import { CustomAudioHandler } from './custom-audio-handler'
-import { BehaviorSubject, Observable, distinctUntilChanged } from 'rxjs'
+import {
+  BehaviorSubject,
+  Observable,
+  Subject,
+  distinctUntilChanged,
+} from 'rxjs'
 import { DisplayMode, getDisplayModeInfo } from './display-modes'
 import { notifyHost } from './vscode'
 import {
@@ -26,6 +31,12 @@ export class EmulatorView {
 
   model: Model | undefined
   emulator: Emulator | undefined // Dont hold references to the emulator, it may be paused and destroyed
+
+  // shared emulator update observable
+  private _emulatorUpdate$ = new Subject<Emulator>()
+  get emulatorUpdate$(): Observable<Emulator> {
+    return this._emulatorUpdate$
+  }
 
   // currently selected disc image
   private _discImageFile$ = new BehaviorSubject<DiscImageFile>(NO_DISC)
@@ -135,6 +146,8 @@ export class EmulatorView {
     // update display mode
     const mode = emulator.cpu.readmem(0x0355) ?? 255
     this._displayMode$.next(getDisplayModeInfo(mode))
+    // forward emulator update broadcast
+    this._emulatorUpdate$.next(emulator)
   }
 
   toggleFullscreen() {

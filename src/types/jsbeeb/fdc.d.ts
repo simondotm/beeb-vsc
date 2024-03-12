@@ -12,13 +12,20 @@ declare module 'jsbeeb/fdc' {
     format: () => any
     notFoundTask: any // scheduler function
   } // This is actually a BaseDisc but with the interface hard coded to return empty disc results. Needs fixing
-  export class I8271 {
+
+  export class BaseFdc {
+    motorOn: boolean[] // drive 0 and 1
     constructor(cpu: Cpu6502, noise: DdNoise, scheduler: any)
     loadDisc(drive: number, disc: BaseDisc): void
   }
-  export class WD1770 {
-    constructor(cpu: Cpu6502, noise: DdNoise, scheduler: any)
-    loadDisc(drive: number, disc: BaseDisc): void
+
+  export class I8271 extends BaseFdc {
+    // constructor(cpu: Cpu6502, noise: DdNoise, scheduler: any)
+    // loadDisc(drive: number, disc: BaseDisc): void
+  }
+  export class WD1770 extends BaseFdc {
+    // constructor(cpu: Cpu6502, noise: DdNoise, scheduler: any)
+    // loadDisc(drive: number, disc: BaseDisc): void
   }
 
   export class BaseDisc {
