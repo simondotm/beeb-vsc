@@ -38,6 +38,7 @@ declare module 'jsbeeb/models' {
     isTest: boolean
     tube: any
     hasMusic5000: boolean
+    hasEconet: boolean
 
     constructor(
       name: string,
