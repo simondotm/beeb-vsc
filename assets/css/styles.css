@@ -93,18 +93,11 @@ label {
   font-style: italic;
 }
 
-.infobar-led-container {
-  display: flex;
-  flex-flow: row nowrap;
-  align-items: center;
-  justify-content: flex-start;
-  margin: 4px;
-  width: 100px;
-  white-space: pre-line;  
-}
-
+/**
+  * LED display
+  */
 .led-button {
-  margin-top: 2px;
+  margin-top: 4px;
   margin-right: 2px;
   cursor: pointer;
 }
@@ -113,7 +106,6 @@ label {
   width: 16px;
   height: 16px;
 }
-
 
 .led-list {
   list-style: none;
