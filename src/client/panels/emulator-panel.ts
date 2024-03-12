@@ -341,7 +341,96 @@ export class EmulatorPanel {
         <vscode-button id="infobar-mode" appearance="secondary">⌀</vscode-button>
         <vscode-button id="infobar-text-coords" appearance="secondary">⌀</vscode-button>
         <vscode-button id="infobar-graphics-coords" appearance="secondary">⌀</vscode-button>
+        <br>
+        ${this.getLedHtml()}
       </div>
+    `
+  }
+
+  getLedHtml() {
+    const redLedOn = scriptUrl(this.context, this.panel.webview, [
+      'images',
+      'red-led-on.svg',
+    ])
+    const redLedOff = scriptUrl(this.context, this.panel.webview, [
+      'images',
+      'red-led-off.svg',
+    ])
+    const greenLedOn = scriptUrl(this.context, this.panel.webview, [
+      'images',
+      'green-led-on.svg',
+    ])
+    const greenLedOff = scriptUrl(this.context, this.panel.webview, [
+      'images',
+      'green-led-off.svg',
+    ])
+    return `
+        <vscode-button class="led-button" appearance="secondary">
+          <div id="led-caps-lock">
+            <ul class="led-list">
+              <li>caps</li>
+              <li>lock</li>
+              <li>
+                <img id="led-caps-on" class="led-icon" src="${redLedOn}" hidden>
+                <img id="led-caps-off" class="led-icon" src="${redLedOff}">
+              </li>
+            </ul>          
+          </div>
+          <div id="led-shift-lock">
+            <ul class="led-list">
+              <li>shift</li>
+              <li>lock</li>
+              <li>
+                <img id="led-shift-on" class="led-icon" src="${redLedOn}" hidden>
+                <img id="led-shift-off" class="led-icon" src="${redLedOff}">
+              </li>
+            </ul>
+          </div>
+          <div id="led-cassette-motor">
+            <ul class="led-list">
+              <li>cassette</li>
+              <li>motor</li>
+              <li>
+                <img id="led-motor-on" class="led-icon" src="${redLedOn}" hidden>
+                <img id="led-motor-off" class="led-icon" src="${redLedOff}">
+              </li>
+            </ul>          
+          </div>
+        </vscode-button>
+        <vscode-button class="led-button" appearance="secondary">
+         <div id="led-drive-0">
+          <ul class="led-list">
+            <li>drive</li>
+            <li>0</li>
+            <li>
+              <img id="led-drive0-on" class="led-icon" src="${greenLedOn}" hidden>
+              <img id="led-drive0-off" class="led-icon" src="${greenLedOff}">
+            </li>
+          </ul>          
+          </div>
+          <div id="led-drive-1">
+            <ul class="led-list">
+              <li>drive</li>
+              <li>1</li>
+              <li>
+                <img id="led-drive1-on" class="led-icon" src="${greenLedOn}" hidden>
+                <img id="led-drive1-off" class="led-icon" src="${greenLedOff}">
+              </li>
+            </ul>            
+          </div>  
+        </vscode-button>
+        <vscode-button class="led-button" appearance="secondary">
+          <div id="led-econet">
+            <ul class="led-list">
+              <li>econet</li>
+              <li>tx/rx</li>
+              <li>
+                <img id="led-econet-on" class="led-icon" src="${greenLedOn}" hidden>
+                <img id="led-econet-off" class="led-icon" src="${greenLedOff}">
+              </li>
+            </ul>           
+          </div>          
+        </vscode-button>    
     `
   }
 

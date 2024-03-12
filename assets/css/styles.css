@@ -93,6 +93,42 @@ label {
   font-style: italic;
 }
 
+.infobar-led-container {
+  display: flex;
+  flex-flow: row nowrap;
+  align-items: center;
+  justify-content: flex-start;
+  margin: 4px;
+  width: 100px;
+  white-space: pre-line;  
+}
+
+.led-button {
+  margin-top: 2px;
+  margin-right: 2px;
+  cursor: pointer;
+}
+
+.led-icon {
+  width: 16px;
+  height: 16px;
+}
+
+
+.led-list {
+  list-style: none;
+  padding: 0;
+  margin: 2px;
+}
+
+.led-list li {
+  /* background-color: #f2f2f2; */
+  color: #bb862b;
+  padding: 2px;
+  text-align: center;
+  width: 60px;
+}
+
 
 .no-margin {
 	margin: 0;
