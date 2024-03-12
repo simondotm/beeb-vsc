@@ -9,12 +9,12 @@
    <stop stop-color="#ffffff" stop-opacity="0.87451" offset="1" id="stop6510"/>
   </linearGradient>
   <linearGradient id="linearGradient5756">
-   <stop stop-color="#828282" offset="0" id="stop5758"/>
-   <stop stop-color="#929292" stop-opacity="0.352941" offset="1" id="stop5760"/>
+   <stop stop-color="#414141" offset="0" id="stop5758"/>
+   <stop stop-color="#494949" stop-opacity="0.352941" offset="1" id="stop5760"/>
   </linearGradient>
   <linearGradient id="linearGradient5742">
-   <stop stop-color="#adadad" offset="0" id="stop5744"/>
-   <stop stop-color="#f0f0f0" offset="1" id="stop5746"/>
+   <stop stop-color="#565656" offset="0" id="stop5744"/>
+   <stop stop-color="#787878" offset="1" id="stop5746"/>
   </linearGradient>
   <linearGradient y2="0" x2="0.28138" y1="1" x1="0.56263" id="svg_1">
    <stop offset="0" stop-opacity="0.972656" stop-color="#001c00"/>
