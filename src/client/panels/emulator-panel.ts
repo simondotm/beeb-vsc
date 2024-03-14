@@ -50,6 +50,20 @@ export class EmulatorPanel {
         ],
       },
     )
+    this.panel.iconPath = {
+      dark: vscode.Uri.joinPath(
+        context.extensionUri,
+        'assets',
+        'icons',
+        'owl-dark.png',
+      ),
+      light: vscode.Uri.joinPath(
+        context.extensionUri,
+        'assets',
+        'icons',
+        'owl-light.png',
+      ),
+    }
     this.panel.onDidDispose(() => this.dispose(), null, this.disposables)
     this.setWebviewMessageListener(this.panel.webview)
     this.panel.webview.html = this.getWebviewContent()
