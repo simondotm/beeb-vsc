@@ -41,6 +41,9 @@ export class EmulatorView {
   // shared emulator state observable
   private _emulatorRunning$ = new BehaviorSubject<boolean>(false)
   emulatorRunning$ = this._emulatorRunning$.pipe(distinctUntilChanged())
+  get emulatorRunning(): boolean {
+    return this._emulatorRunning$.value
+  }
 
   // currently selected disc image
   private _discImageFile$ = new BehaviorSubject<DiscImageFile>(NO_DISC)
@@ -189,17 +192,12 @@ export class EmulatorView {
     await this.mountDisc(this.discImageFile)
   }
 
-  private isMutedWhenSuspended: boolean = false
   suspend() {
-    this.isMutedWhenSuspended = this.audioHandler.isMuted()
-    if (!this.isMutedWhenSuspended) {
-      this.audioHandler.mute()
-    }
+    this.emulator?.pause()
   }
 
   resume() {
-    if (!this.isMutedWhenSuspended) {
-      this.audioHandler.unmute()
-    }
+    // dont auto resume, make user do this
+    // this.emulator?.resume()
   }
 }

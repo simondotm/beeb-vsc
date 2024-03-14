@@ -76,7 +76,6 @@ export class Emulator {
   ready: boolean
   lastFrameTime: number
   onAnimFrame: FrameRequestCallback
-  // running: boolean = false
   lastShiftLocation: number
   lastAltLocation: number
   lastCtrlLocation: number
@@ -169,12 +168,22 @@ export class Emulator {
   // 	modelName += ' | GXR';
   // }
 
+  private isMutedWhenSuspended: boolean = false
+
   pause() {
     this._emulatorRunning$.next(false)
+    this.isMutedWhenSuspended = this.audioHandler.isMuted()
+    if (!this.isMutedWhenSuspended) {
+      this.audioHandler.mute()
+    }
   }
 
   resume() {
     if (this.emulatorRunning) return
+    if (!this.isMutedWhenSuspended) {
+      this.audioHandler.unmute()
+    }
+
     this._emulatorRunning$.next(true)
     window.requestAnimationFrame(this.onAnimFrame)
   }

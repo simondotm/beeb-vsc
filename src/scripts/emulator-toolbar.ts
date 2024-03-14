@@ -25,9 +25,8 @@ export class EmulatorToolBar {
     this.buttonExpand.on('click', () => this.onExpandClick())
 
     // listener for audio handler state changes
-    emulatorView.audioHandler.enabled$.subscribe((enabled) => {
-      this.buttonSound.prop('appearance', enabled ? 'secondary' : 'primary')
-      this.buttonSound.prop('disabled', !enabled)
+    emulatorView.audioHandler.enabled$.subscribe((_enabled) => {
+      this.updateSoundButton()
     })
     // listener for audio handler mute state changes
     emulatorView.audioHandler.muted$.subscribe((muted) => {
@@ -143,7 +142,12 @@ export class EmulatorToolBar {
       $('span:first', this.buttonControl).addClass('codicon-debug-start')
     }
     this.buttonRestart.prop('disabled', !isRunning)
+    this.buttonExpand.prop('disabled', !isRunning)
     this.buttonControl.prop('appearance', isRunning ? 'secondary' : 'primary')
+
+    // bit of a hack to disable the audio warning so we dont get mute state messed up if not running emulator
+    this.emulatorView.audioHandler.warningNode.prop('disabled', !isRunning)
+    this.updateSoundButton()
   }
 
   private onControlClick() {
@@ -171,5 +175,11 @@ export class EmulatorToolBar {
       this.emulatorView.toggleFullscreen()
       this.emulatorView.focusInput()
     }
+  }
+  private updateSoundButton() {
+    const audioEnabled = this.emulatorView.audioHandler.isEnabled()
+    const buttonEnabled = audioEnabled && this.emulatorView.emulatorRunning
+    this.buttonSound.prop('appearance', audioEnabled ? 'secondary' : 'primary')
+    this.buttonSound.prop('disabled', !buttonEnabled)
   }
 }
