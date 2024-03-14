@@ -50,6 +50,10 @@ export class FileHandler {
     this._textDocuments.clear()
   }
 
+  public ClearIncludeMapping(): void {
+    this.includedToParentMap.clear()
+  }
+
   public ReadTextFromFile(uri: string): string {
     if (this._textDocuments.has(uri)) {
       if (

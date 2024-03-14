@@ -165,8 +165,13 @@ async function ParseDocument(
   const diagnostics = new Map<string, Diagnostic[]>()
   diagnostics.set(sourceFilePath, [])
   // Get the document text
-  const text = FileHandler.Instance.GetDocumentText(sourceFilePath)
-
+  let text: string
+  try {
+    text = FileHandler.Instance.GetDocumentText(sourceFilePath)
+  } catch (error) {
+    connection.console.log(`Error reading file ${sourceFilePath}: ${error}`)
+    return
+  }
   SymbolTable.Instance.Reset()
   MacroTable.Instance.Reset()
   ObjectCode.Instance.Reset()
@@ -210,9 +215,17 @@ async function ParseDocument(
 }
 
 connection.onDidChangeWatchedFiles((_change) => {
-  // Monitored files have change in VSCode - nothing monitored currently
-  // Could be manual edits to settings.json but that should be picked up by onDidChangeConfiguration
-  connection.console.log('We received an file change event')
+  // Settings.json file has changed, hence need to re-parse the source files from the new root(s)
+  // start by clearing the text document map
+  FileHandler.Instance.ClearIncludeMapping()
+  // Trigger a re-parse of the root document(s)
+  const filenames = getSourcesFromSettings()
+  filenames.then((files): void => {
+    files.forEach((file) => {
+      ParseDocument(file, '')
+    })
+  })
+  connection.console.log('Settings.json update event received.')
 })
 
 // Setup completions handling
