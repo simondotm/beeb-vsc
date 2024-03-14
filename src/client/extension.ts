@@ -218,10 +218,10 @@ export function activate(context: ExtensionContext) {
   const clientOptions: LanguageClientOptions = {
     // Register the server for beebasm documents
     documentSelector: [{ scheme: 'file', language: 'beebasm' }],
-    // synchronize: {
-    // 	// Notify the server about file changes to '.clientrc files contained in the workspace
-    // 	fileEvents: workspace.createFileSystemWatcher('**/.clientrc')
-    // }
+    synchronize: {
+      // Notify the server about file changes to the settings.json file
+      fileEvents: workspace.createFileSystemWatcher('**/.vscode/settings.json'),
+    },
   }
 
   // Start the client. This will also launch the server
