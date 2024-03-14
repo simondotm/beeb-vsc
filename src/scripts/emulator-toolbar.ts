@@ -76,7 +76,9 @@ export class EmulatorToolBar {
       this.onDiscChange(event),
     )
 
-    this.updateEmulatorStatus()
+    this.emulatorView.emulatorRunning$.subscribe((isRunning) =>
+      this.onEmulatorRunStateChange(isRunning),
+    )
   }
 
   private async onModelChange(event: JQuery.ChangeEvent) {
@@ -93,7 +95,6 @@ export class EmulatorToolBar {
     }
     console.log(JSON.stringify(model))
     await this.emulatorView.boot(model)
-    this.updateEmulatorStatus()
     this.emulatorView.focusInput()
     // notifyHost({
     //   command: ClientCommand.Info,
@@ -133,8 +134,7 @@ export class EmulatorToolBar {
     this.discSelector.val(`${discImage.url}|${discImage.name}`)
   }
 
-  private updateEmulatorStatus() {
-    const isRunning = this.emulatorView.emulator?.running
+  private onEmulatorRunStateChange(isRunning: boolean) {
     if (isRunning) {
       $('span:first', this.buttonControl).removeClass('codicon-debug-start')
       $('span:first', this.buttonControl).addClass('codicon-debug-pause')
@@ -148,13 +148,12 @@ export class EmulatorToolBar {
 
   private onControlClick() {
     const emulator = this.emulatorView.emulator
-    if (emulator?.running) {
+    if (emulator?.emulatorRunning) {
       emulator.pause()
     } else {
-      emulator?.start()
+      emulator?.resume()
       this.emulatorView.focusInput()
     }
-    this.updateEmulatorStatus()
   }
   private async onRestartClick() {
     if (this.buttonRestart) {
