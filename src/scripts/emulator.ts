@@ -15,7 +15,12 @@ import {
   DiscImageOptions,
 } from '../types/shared/messages'
 import { CustomAudioHandler } from './custom-audio-handler'
-import { Observable, Subject } from 'rxjs'
+import {
+  BehaviorSubject,
+  Observable,
+  Subject,
+  distinctUntilChanged,
+} from 'rxjs'
 
 const ClocksPerSecond = (2 * 1000 * 1000) | 0
 const BotStartCycles = 725000 // bbcmicrobot start time
@@ -71,17 +76,22 @@ export class Emulator {
   ready: boolean
   lastFrameTime: number
   onAnimFrame: FrameRequestCallback
-  running: boolean = false
   lastShiftLocation: number
   lastAltLocation: number
   lastCtrlLocation: number
 
   margin: EmulatorMargin = margins.normal
 
-  // Only EmulatorView should subscribe to this
+  // Only EmulatorView should subscribe to these
   private _emulatorUpdate$ = new Subject<Emulator>()
   get emulatorUpdate$(): Observable<Emulator> {
     return this._emulatorUpdate$
+  }
+
+  private _emulatorRunning$ = new BehaviorSubject<boolean>(false)
+  emulatorRunning$ = this._emulatorRunning$.pipe(distinctUntilChanged())
+  get emulatorRunning(): boolean {
+    return this._emulatorRunning$.value
   }
 
   constructor(
@@ -158,14 +168,24 @@ export class Emulator {
   // 	modelName += ' | GXR';
   // }
 
-  start() {
-    if (this.running) return
-    this.running = true
-    window.requestAnimationFrame(this.onAnimFrame)
-  }
+  private isMutedWhenSuspended: boolean = false
 
   pause() {
-    this.running = false
+    this._emulatorRunning$.next(false)
+    this.isMutedWhenSuspended = this.audioHandler.isMuted()
+    if (!this.isMutedWhenSuspended) {
+      this.audioHandler.mute()
+    }
+  }
+
+  resume() {
+    if (this.emulatorRunning) return
+    if (!this.isMutedWhenSuspended) {
+      this.audioHandler.unmute()
+    }
+
+    this._emulatorRunning$.next(true)
+    window.requestAnimationFrame(this.onAnimFrame)
   }
 
   shutdown() {
@@ -252,7 +272,7 @@ export class Emulator {
     processor.writemem(0x12, endLow)
     processor.writemem(0x13, endHigh)
     this.writeToKeyboardBuffer('RUN\r')
-    this.start()
+    this.resume()
   }
 
   writeToKeyboardBuffer(text: string) {
@@ -284,7 +304,7 @@ export class Emulator {
       ) {
         this.pause()
         this.state = this.snapshot.save(this.cpu).state
-        this.start()
+        this.resume()
         console.log('snapshot taken at ' + this.cpu.currentCycles + ' cycles')
       }
 
@@ -298,19 +318,19 @@ export class Emulator {
         this.snapshot.load(this.state, this.cpu)
         this.cpu.currentCycles = this.loopStart
         this.cpu.targetCycles = this.loopStart
-        this.start()
+        this.resume()
       }
 
-      if (this.running && this.lastFrameTime !== 0) {
+      if (this.emulatorRunning && this.lastFrameTime !== 0) {
         const sinceLast = now - this.lastFrameTime
         let cycles = ((sinceLast * ClocksPerSecond) / 1000) | 0
         cycles = Math.min(cycles, MaxCyclesPerFrame)
         try {
           if (!this.cpu.execute(cycles)) {
-            this.running = false // TODO: breakpoint
+            this._emulatorRunning$.next(false) // TODO: breakpoint
           }
         } catch (e) {
-          this.running = false
+          this._emulatorRunning$.next(false)
           this.dbgr.debug(this.cpu.pc)
           throw e
         }
@@ -342,7 +362,7 @@ export class Emulator {
   }
 
   onKeyDown(event: JQuery.KeyDownEvent) {
-    if (!this.running) return
+    if (!this.emulatorRunning) return
 
     const code = this.getKeyCode(event)
     const processor = this.cpu
@@ -366,7 +386,7 @@ export class Emulator {
     const code = this.getKeyCode(event)
     const processor = this.cpu
     if (processor && processor.sysvia) processor.sysvia.keyUp(code)
-    if (!this.running) return
+    if (!this.emulatorRunning) return
     if (code === utils.keyCodes.F12 || code === utils.keyCodes.BREAK) {
       processor.setReset(false)
     }

@@ -69,6 +69,11 @@ window.addEventListener('message', (event) => {
       // We handle focus via window events at the moment
       // since these can arrive before the webview is ready
       // but we may want to do something with visibility or active state later
+      if (message.focus.visible) {
+        emulatorView.resume()
+      } else {
+        emulatorView.suspend()
+      }
       break
     case HostCommand.DiscImages:
       emulatorView.setDiscImages(message.discImages)

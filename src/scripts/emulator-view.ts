@@ -32,34 +32,38 @@ export class EmulatorView {
   model: Model | undefined
   emulator: Emulator | undefined // Dont hold references to the emulator, it may be paused and destroyed
 
+  private suspended: boolean = false
+
   // shared emulator update observable
   private _emulatorUpdate$ = new Subject<Emulator>()
-  get emulatorUpdate$(): Observable<Emulator> {
-    return this._emulatorUpdate$
+  emulatorUpdate$: Observable<Emulator> = this._emulatorUpdate$
+
+  // shared emulator state observable
+  private _emulatorRunning$ = new BehaviorSubject<boolean>(false)
+  emulatorRunning$ = this._emulatorRunning$.pipe(distinctUntilChanged())
+  get emulatorRunning(): boolean {
+    return this._emulatorRunning$.value
   }
 
   // currently selected disc image
   private _discImageFile$ = new BehaviorSubject<DiscImageFile>(NO_DISC)
-  get discImageFile$(): Observable<DiscImageFile> {
-    return this._discImageFile$
-  }
+  discImageFile$: Observable<DiscImageFile> = this._discImageFile$
   get discImageFile(): DiscImageFile {
     return this._discImageFile$.value
   }
 
   // disc images in the current workspace
   private _discImages$ = new BehaviorSubject<DiscImageFile[]>([])
-  get discImages$(): Observable<DiscImageFile[]> {
-    return this._discImages$
-  }
-
+  discImages$: Observable<DiscImageFile[]> = this._discImages$
   setDiscImages(discImages: DiscImageFile[]) {
     this._discImages$.next(discImages)
   }
 
   // observables
   private _displayMode$ = new BehaviorSubject<DisplayMode>(null)
-  readonly displayMode$: Observable<DisplayMode>
+  readonly displayMode$: Observable<DisplayMode> = this._displayMode$.pipe(
+    distinctUntilChanged(),
+  )
 
   private _fullscreen$ = new BehaviorSubject(false)
   get fullscreen$(): Observable<boolean> {
@@ -103,9 +107,6 @@ export class EmulatorView {
     // start playing without user interaction, so we need to delay a
     // little to get a reliable indication.
     window.setTimeout(() => this.audioHandler.checkStatus(), 1000)
-
-    // setup observables
-    this.displayMode$ = this._displayMode$.pipe(distinctUntilChanged())
   }
 
   async initialise() {
@@ -130,11 +131,15 @@ export class EmulatorView {
       // re-mount any existing disc if we change model
       this.mountDisc(this.discImageFile)
 
-      this.emulator.start()
+      this.emulator.resume()
       // will automatically unsubscribe when emulator is shutdown
       this.emulator.emulatorUpdate$.subscribe((emulator) =>
         this.onEmulatorUpdate(emulator),
       )
+      // forward emulator running state to our own observable
+      this.emulator.emulatorRunning$.subscribe((running) => {
+        this._emulatorRunning$.next(running)
+      })
     } catch (e) {
       notifyHost({ command: ClientCommand.Error, text: (e as Error).message })
       this.emulator = undefined
@@ -185,5 +190,14 @@ export class EmulatorView {
   async reboot(hard: boolean = false) {
     this.emulator?.resetCpu(hard)
     await this.mountDisc(this.discImageFile)
+  }
+
+  suspend() {
+    this.emulator?.pause()
+  }
+
+  resume() {
+    // dont auto resume, make user do this
+    // this.emulator?.resume()
   }
 }

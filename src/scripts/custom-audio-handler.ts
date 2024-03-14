@@ -9,7 +9,7 @@ export class CustomAudioHandler extends AudioHandler {
   enabled$ = new BehaviorSubject<boolean>(false)
 
   constructor(
-    warningNode: JQuery<HTMLElement>,
+    public warningNode: JQuery<HTMLElement>,
     audioFilterFreq: number,
     audioFilterQ: number,
     noSeek: boolean,
@@ -52,6 +52,10 @@ export class CustomAudioHandler extends AudioHandler {
    */
   isEnabled(): boolean {
     return this.audioContext && this.audioContext.state === 'running'
+  }
+
+  isMuted(): boolean {
+    return this.muted$.value
   }
 
   toggleMute(): boolean {
