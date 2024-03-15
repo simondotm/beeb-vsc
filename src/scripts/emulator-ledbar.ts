@@ -20,7 +20,6 @@ class LedIcon {
 
   on() {
     if (this.parent && !this.isOn) {
-      console.log('LedIcon.on', this.id)
       this.parent.find('img').toggle()
       this.isOn = true
     }
@@ -28,7 +27,6 @@ class LedIcon {
 
   off() {
     if (this.parent && this.isOn) {
-      console.log('LedIcon.off', this.id)
       this.parent.find('img').toggle()
       this.isOn = false
     }

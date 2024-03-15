@@ -30,11 +30,7 @@ const urlParams = new URLSearchParams(window.location.search)
 export type EmulatorCanvas = Canvas | GlCanvas
 
 // patch the jsbeeb loader to use the resource urls from the webview
-utils.setLoader((url: string) => {
-  const newUrl = window.JSBEEB_RESOURCES[url]
-  console.log('Loading ' + url + ' as ' + newUrl)
-  return utils.defaultLoadData(newUrl)
-})
+utils.setUrlMap(window.JSBEEB_RESOURCES)
 
 type EmulatorMargin = {
   leftMargin: number
@@ -214,7 +210,7 @@ export class Emulator {
     if (discImageFile.url) {
       try {
         const fdc = this.cpu.fdc
-        const discData = await utils.defaultLoadData(discImageFile.url)
+        const discData = await utils.loadData(discImageFile.url)
         const discImage = new BaseDisc(fdc, 'disc', discData, () => {})
         this.cpu.fdc.loadDisc(0, discImage)
         // notifyHost({

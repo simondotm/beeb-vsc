@@ -160,7 +160,6 @@ export class EmulatorPanel {
         const command = message.command
         switch (command) {
           case ClientCommand.PageLoaded:
-            vscode.window.showInformationMessage('BeebVSC: Emulator started')
             return
           case ClientCommand.EmulatorReady:
             // when the client side emulator signals it is ready
@@ -169,6 +168,7 @@ export class EmulatorPanel {
             this.loadDisc({ shouldAutoBoot: true })
             // start watching for disc image files in the workspace
             this.startWatcher()
+            vscode.window.showInformationMessage('BeebVSC: Emulator started')
             return
           case ClientCommand.Info:
             vscode.window.showInformationMessage(

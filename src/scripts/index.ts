@@ -20,24 +20,32 @@ let emulatorToolBar: EmulatorToolBar | undefined
 let emulatorLedBar: EmulatorLedBar | undefined
 
 async function initialise() {
-  initialiseVSCode()
+  try {
+    initialiseVSCode()
 
-  // create the emulator view container
-  emulatorView = new EmulatorView()
-  await emulatorView.initialise()
+    // create the emulator view container
+    emulatorView = new EmulatorView()
+    await emulatorView.initialise()
 
-  // boot the emulator
-  await emulatorView.boot(defaultModel)
+    // boot the emulator
+    await emulatorView.boot(defaultModel)
 
-  // create the info bar and toolbar UI
-  emulatorInfoBar = new EmulatorInfoBar(emulatorView)
-  emulatorToolBar = new EmulatorToolBar(emulatorView)
-  emulatorLedBar = new EmulatorLedBar(emulatorView)
+    // create the info bar and toolbar UI
+    emulatorInfoBar = new EmulatorInfoBar(emulatorView)
+    emulatorToolBar = new EmulatorToolBar(emulatorView)
+    emulatorLedBar = new EmulatorLedBar(emulatorView)
 
-  // signal to host that emulator webview is ready
-  // it might send us a disc image to mount if we started the
-  // webview with a file context
-  notifyHost({ command: ClientCommand.EmulatorReady })
+    // signal to host that emulator webview is ready
+    // it might send us a disc image to mount if we started the
+    // webview with a file context
+    notifyHost({ command: ClientCommand.EmulatorReady })
+  } catch (error) {
+    console.error('BeebVSC: Error initialising emulator', error)
+    notifyHost({
+      command: ClientCommand.Error,
+      text: `Error initialising emulator: ${(error as any).message}`,
+    })
+  }
 }
 
 // Handle the message inside the webview
