@@ -221,9 +221,6 @@ declare module 'jsbeeb/utils' {
   export function uint8ArrayToString(array: string | Uint8Array): string
   export function stringToUint8Array(str: string): Uint8Array
   export function loadData(url: string): Promise<Uint8Array> // maybe throws
-  export function defaultLoadData(url: string): Promise<Uint8Array> // maybe throws
-
-  export function setLoader(loader: (url: string) => Promise<Uint8Array>): void
   export function readInt32(data: Uint8Array, offset: number): number
   export function readInt16(data: Uint8Array, offset: number): number
   export function readFloat32(data: Uint8Array, offset: number): number
@@ -243,4 +240,8 @@ declare module 'jsbeeb/utils' {
   export class Fifo {
     constructor(capacity: number)
   }
+
+  //SM: this is a patch to jsbeeb/utils to allow us to intercept https loading of files
+  // with vscode webview url's
+  export function setUrlMap(map: Record<string, string>): void
 }
