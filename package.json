@@ -112,7 +112,7 @@
       },
       {
         "command": "extension.emulator.start",
-        "title": "BeebVSC: Open in Emulator"
+        "title": "BeebVSC: Open Emulator"
       },
       {
         "command": "extension.emulator.option1",
