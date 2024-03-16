@@ -19,9 +19,8 @@ export interface Config {
 }
 
 const featureFlags = {
-  emulator: 'dev',
-  emulatorToolBar: 'dev',
-  newStatusBar: 'dev',
+  emulator: 'prod',
+  emulatorContextMenu: 'dev',
 } satisfies FeatureFlagsType
 
 export const config: Config = {
@@ -32,7 +31,11 @@ export type FeatureFlags = keyof typeof featureFlags
 
 export function isFeatureEnabled(flag: FeatureFlags): boolean {
   const flagConfig = config.featureFlags[flag]
-  return flagConfig !== 'disabled' && config.featureFlags[flag] === environment
+  return (
+    flagConfig !== 'disabled' &&
+    (config.featureFlags[flag] === environment ||
+      config.featureFlags[flag] === 'prod')
+  )
 }
 
 export function isProd(): boolean {

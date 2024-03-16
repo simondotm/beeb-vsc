@@ -9,7 +9,7 @@ import {
   HostMessage,
   NO_DISC,
 } from '../../types/shared/messages'
-import { isDev, isFeatureEnabled } from '../../types/shared/config'
+import { isDev } from '../../types/shared/config'
 import { relative } from 'path'
 
 const glob = '**/*.{ssd,dsd}'
@@ -291,7 +291,7 @@ export class EmulatorPanel {
       </head>
       <body>
 
-          ${isFeatureEnabled('emulatorToolBar') ? this.getToolbarHtml() : ''}
+          ${this.getToolbarHtml()}
           ${this.getEmulatorHtml()}
           ${this.getInfoBarHtml()}
           ${this.getFooterHtml()}

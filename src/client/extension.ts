@@ -26,7 +26,7 @@ import {
   TransportKind,
 } from 'vscode-languageclient/node'
 import { EmulatorPanel } from './panels/emulator-panel'
-import { isFeatureEnabled } from '../types/shared/config'
+import { FeatureFlags, isFeatureEnabled } from '../types/shared/config'
 
 let client: LanguageClient
 
@@ -161,35 +161,43 @@ export function activate(context: ExtensionContext) {
     }),
   )
 
+  function setFeatureFlagContext(flag: FeatureFlags) {
+    commands.executeCommand(
+      'setContext',
+      `extension.feature.${flag}`,
+      isFeatureEnabled(flag),
+    )
+  }
+
   const emulatorEnabled = isFeatureEnabled('emulator')
   // allow `when` clauses in the package.json contributions to check if the emulator is enabled for context menus
-  commands.executeCommand(
-    'setContext',
-    'extension.emulatorEnabled',
-    emulatorEnabled,
-  )
+  setFeatureFlagContext('emulator')
+  setFeatureFlagContext('emulatorContextMenu')
 
   if (emulatorEnabled) {
-    context.subscriptions.push(
-      commands.registerCommand(
-        'extension.emulator.option1',
-        (contextSelection: Uri, allSelections: Uri[]) => {
-          window.showInformationMessage(
-            'BeebVSC: extension.emulator.option1 selected',
-          )
-        },
-      ),
-    )
-    context.subscriptions.push(
-      commands.registerCommand(
-        'extension.emulator.option2',
-        (contextSelection: Uri, allSelections: Uri[]) => {
-          window.showInformationMessage(
-            'BeebVSC: extension.emulator.option2 selected',
-          )
-        },
-      ),
-    )
+    if (isFeatureEnabled('emulatorContextMenu')) {
+      //WIP
+      context.subscriptions.push(
+        commands.registerCommand(
+          'extension.emulator.option1',
+          (contextSelection: Uri, allSelections: Uri[]) => {
+            window.showInformationMessage(
+              'BeebVSC: extension.emulator.option1 selected',
+            )
+          },
+        ),
+      )
+      context.subscriptions.push(
+        commands.registerCommand(
+          'extension.emulator.option2',
+          (contextSelection: Uri, allSelections: Uri[]) => {
+            window.showInformationMessage(
+              'BeebVSC: extension.emulator.option2 selected',
+            )
+          },
+        ),
+      )
+    }
 
     context.subscriptions.push(
       commands.registerCommand(
@@ -315,7 +323,7 @@ function setCurrentTarget(
             // no target file specified, so use the default target file
             targetFile = getTargetName(
               workspace.getConfiguration('beebvsc').get<string>('sourceFile') ??
-              'main.asm',
+                'main.asm',
             )
           }
         }
