@@ -170,26 +170,29 @@ export function activate(context: ExtensionContext) {
   )
 
   if (emulatorEnabled) {
-    context.subscriptions.push(
-      commands.registerCommand(
-        'extension.emulator.option1',
-        (contextSelection: Uri, allSelections: Uri[]) => {
-          window.showInformationMessage(
-            'BeebVSC: extension.emulator.option1 selected',
-          )
-        },
-      ),
-    )
-    context.subscriptions.push(
-      commands.registerCommand(
-        'extension.emulator.option2',
-        (contextSelection: Uri, allSelections: Uri[]) => {
-          window.showInformationMessage(
-            'BeebVSC: extension.emulator.option2 selected',
-          )
-        },
-      ),
-    )
+    if (isFeatureEnabled('emulatorContextMenu')) {
+      //WIP
+      context.subscriptions.push(
+        commands.registerCommand(
+          'extension.emulator.option1',
+          (contextSelection: Uri, allSelections: Uri[]) => {
+            window.showInformationMessage(
+              'BeebVSC: extension.emulator.option1 selected',
+            )
+          },
+        ),
+      )
+      context.subscriptions.push(
+        commands.registerCommand(
+          'extension.emulator.option2',
+          (contextSelection: Uri, allSelections: Uri[]) => {
+            window.showInformationMessage(
+              'BeebVSC: extension.emulator.option2 selected',
+            )
+          },
+        ),
+      )
+    }
 
     context.subscriptions.push(
       commands.registerCommand(
@@ -315,7 +318,7 @@ function setCurrentTarget(
             // no target file specified, so use the default target file
             targetFile = getTargetName(
               workspace.getConfiguration('beebvsc').get<string>('sourceFile') ??
-              'main.asm',
+                'main.asm',
             )
           }
         }
