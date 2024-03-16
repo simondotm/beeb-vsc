@@ -126,7 +126,7 @@
     "menus": {
       "explorer/context": [
         {
-          "when": "(resourceExtname == .ssd || resourceExtname == .dsd) && extension.emulatorEnabled",
+          "when": "(resourceExtname == .ssd || resourceExtname == .dsd) && extension.feature.emulator",
           "command": "extension.emulator.start",
           "group": "YourGroup@1"
         }
@@ -134,11 +134,11 @@
       "webview/context": [
         {
           "command": "extension.emulator.option1",
-          "when": "webviewId == 'emulator'"
+          "when": "webviewId == 'emulator' && extension.feature.emulatorContextMenu"
         },
         {
           "command": "extension.emulator.option2",
-          "when": "webviewId == 'emulator' && webviewSection == 'editor'"
+          "when": "webviewId == 'emulator' && webviewSection == 'editor' && extension.feature.emulatorContextMenu"
         }
       ]
     },
