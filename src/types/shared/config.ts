@@ -20,8 +20,6 @@ export interface Config {
 
 const featureFlags = {
   emulator: 'dev',
-  emulatorToolBar: 'dev',
-  newStatusBar: 'dev',
 } satisfies FeatureFlagsType
 
 export const config: Config = {
