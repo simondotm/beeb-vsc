@@ -19,7 +19,7 @@ export interface Config {
 }
 
 const featureFlags = {
-  emulator: 'dev',
+  emulator: 'prod',
   emulatorContextMenu: 'dev',
 } satisfies FeatureFlagsType
 
