@@ -11,6 +11,7 @@ import {
 } from '../../types/shared/messages'
 import { isDev } from '../../types/shared/config'
 import { relative } from 'path'
+import { isTelemetryEnabled } from '../utils/extension-telemetry'
 
 const glob = '**/*.{ssd,dsd}'
 
@@ -282,6 +283,7 @@ export class EmulatorPanel {
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
           <title>JSBeeb</title>
           <script type='text/javascript'>
+            window.TELEMETRY_ENABLED=${isTelemetryEnabled()};
             window.JSBEEB_RESOURCES=${JSON.stringify(JSBEEB_RESOURCES)};
             ${isDev() ? 'console.log("Window JSBEEB_RESOURCES Config=" + window.JSBEEB_RESOURCES);' : ''}
           </script>
