@@ -152,15 +152,7 @@ Due to constraints in the way that Visual Studio Code handles tasks, BeebVSC tas
 ## Linux/Mac support
 The installation is for Windows by default, but its quite feasible to get it working for Linux and MacOS. Primarily this is done by changing the settings for `"beebvsc.assembler"` and `"beebvsc.emulator"`.
 
-# Release notes
 
-- **0.1.2** - Tweaks to completions
-- **0.1.1** - Substantial internal refactoring and minor bug fixes
-- **0.1.0** - Move to LSP client/server structure, add hovers, completions, diagnostics and reference finding
-- **0.0.6** - Added full build environment support via JS script to extension
-- **0.0.5** - Test version
-- **0.0.4** - Test update
-- **0.0.3** - Initial version
 
 **Possible further features to add**
 - Support for BBC BASIC text files (can be compiled to SSD via BeebAsm) and full syntax colouring
