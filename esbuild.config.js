@@ -5,6 +5,9 @@ const { rimraf } = require('rimraf')
 const { copy } = require('esbuild-plugin-copy')
 const { join } = require('path')
 
+const package = require('./package.json')
+const APP_VERSION = package.version
+
 const TEST_PROD = false // do not commit this as true. Its just for testing prod builds locally
 
 const minify = argv['minify'] ?? false
@@ -18,7 +21,7 @@ const sharedConfig = {
   sourcemap: true,
   minify,
   banner: {
-    js: `const environment = ${isProd ? "'prod'" : "'dev'"};`,
+    js: `const environment = ${isProd ? "'prod'" : "'dev'"}; const APP_VERSION = '${APP_VERSION}';`,
   },
   external: ['vscode*'], //Object.keys(require('../package.json').dependencies),
 }
