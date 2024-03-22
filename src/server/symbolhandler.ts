@@ -15,9 +15,10 @@ import {
 import { SymbolTable } from './beebasm-ts/symboltable'
 import { FileHandler } from './filehandler'
 import { URI } from 'vscode-uri'
+import { MacroTable } from './beebasm-ts/macro'
 
 export class RenameProvider {
-  constructor() {}
+  constructor() { }
 
   onPrepareRename(params: PrepareRenameParams): Range | null {
     const textDocument = FileHandler.Instance.documents.get(
@@ -117,7 +118,7 @@ export class RenameProvider {
 }
 
 export class SymbolProvider {
-  constructor() {}
+  constructor() { }
 
   // TODO - consider to change symbol to type outerLabel.innerLabel instead of label_@...
   // Might not be possible, depends on label style of programmer
@@ -142,6 +143,19 @@ export class SymbolProvider {
             selectionRange: symboldata.GetLocation().range,
           })
         }
+        // add macros
+        const macros = MacroTable.Instance.GetMacros()
+        macros.forEach((macro, macroName) => {
+          if (macro.GetLocation().uri === cleanPath) {
+            symbolList.push({
+              name: macroName,
+              detail: '',
+              kind: SymbolKind.Constant, // Macro kind doesn't exist yet
+              range: macro.GetLocation().range,
+              selectionRange: macro.GetLocation().range,
+            })
+          }
+        })
       })
       return symbolList
     }
