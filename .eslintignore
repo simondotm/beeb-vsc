@@ -1,1 +1,9 @@
 node_modules
+dist
+out
+patches
+docs
+assets
+.github
+.vscode
+
