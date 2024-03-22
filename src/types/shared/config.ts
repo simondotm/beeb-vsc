@@ -2,7 +2,14 @@ export type Environment = 'dev' | 'prod'
 
 // injected by esbuild
 declare global {
+  /**
+   * The runtime environment of the application build, injected by esbuild
+   */
   const environment: Environment
+  /**
+   * The version of the application, injected by esbuild
+   */
+  const APP_VERSION: string
 }
 
 /**

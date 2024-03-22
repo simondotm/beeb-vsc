@@ -27,6 +27,7 @@ import {
 } from 'vscode-languageclient/node'
 import { EmulatorPanel } from './panels/emulator-panel'
 import { FeatureFlags, isFeatureEnabled } from '../types/shared/config'
+import { initialiseExtensionTelemetry } from './utils/extension-telemetry'
 
 let client: LanguageClient
 
@@ -131,6 +132,8 @@ export function activate(context: ExtensionContext) {
   // This line of code will only be executed once when your extension is activated
   console.log('BeebVSC extension activated!')
   console.log('path ' + getWorkspacePath())
+
+  initialiseExtensionTelemetry(context)
 
   // The command has been defined in the package.json file
   // Now provide the implementation of the command with registerCommand

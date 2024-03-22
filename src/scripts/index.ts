@@ -1,4 +1,11 @@
 // This script is loaded by the WebView
+import {
+  initialiseWebViewTelemetry,
+  sendTelemetryEvent,
+  sendTelemetryException,
+} from './webview-telemetry'
+initialiseWebViewTelemetry()
+
 import { Model, findModel } from 'jsbeeb/models'
 import {
   ClientCommand,
@@ -20,6 +27,8 @@ let emulatorToolBar: EmulatorToolBar | undefined
 let emulatorLedBar: EmulatorLedBar | undefined
 
 async function initialise() {
+  sendTelemetryEvent('emulatorActivated')
+
   try {
     initialiseVSCode()
 
@@ -45,6 +54,7 @@ async function initialise() {
       command: ClientCommand.Error,
       text: `Error initialising emulator: ${(error as any).message}`,
     })
+    sendTelemetryException(error as Error)
   }
 }
 
