@@ -218,7 +218,9 @@
     "typescript": "^5.3.3"
   },
   "dependencies": {
+    "@microsoft/applicationinsights-web": "^3.1.1",
     "@vscode/codicons": "^0.0.35",
+    "@vscode/extension-telemetry": "^0.9.3",
     "@vscode/webview-ui-toolkit": "^1.4.0",
     "jsbeeb": "git+https://github.com/mattgodbolt/jsbeeb.git#bea43f5bf060f666a65d50d91afb4f4e6613aa78",
     "resize-observer-polyfill": "^1.5.1",
