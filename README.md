@@ -1,11 +1,11 @@
 # Beeb VSC
-[Visual Studio Code](https://code.visualstudio.com/) Extension to support code development primarily for BBC Micro, but it might be useful for other 6502 based machines.
+A [Visual Studio Code](https://code.visualstudio.com/) Extension to support code development for the Acorn BBC Micro/Master range of 6502 based micro computers from the 1980's.
 
 Visual Studio Code is free and really good for general retro/6502 development, so this extension was created to enhance the experience by providing syntax colouring for 6502 opcodes, labels, and BBC BASIC commands & functions supported by [BeebAsm](https://github.com/stardot/beebasm) as well as various types of VS Code functionality.
 
+See the [CHANGELOG](./CHANGELOG.md) for full release history.
 
 # Features
-
 
 ## Syntax Highlighting:
 - All **6502 op-codes** (no 65C02 op codes yet)
@@ -40,9 +40,9 @@ Provides a list of potential matches as you start to type.
 - Symbols and labels
 
 ## Supported Filetypes:
-- .6502
-- .asm
-- .s
+- `.6502`
+- `.asm`
+- `.s`
 
 ## Build tools
 - Assemble & test 6502 projects all within Visual Studio Code
@@ -51,6 +51,13 @@ Provides a list of potential matches as you start to type.
 - Easily create new build targets (supports multiple targets within a project folder)
 - Easily select 'default' build targets  
 - Run build targets in the emulator of your choice
+
+## Integrated BBC Micro Emulator
+
+- [Preview your projects](./docs/emulator.md) directly within VSCode using an integrated [JSBeeb](https://github.com/mattgodbolt/jsbeeb) emulator
+
+![Screenshot](./docs/images/emulator-view.png?raw=true)
+
 
 # Quick Setup
 
@@ -152,16 +159,6 @@ Due to constraints in the way that Visual Studio Code handles tasks, BeebVSC tas
 ## Linux/Mac support
 The installation is for Windows by default, but its quite feasible to get it working for Linux and MacOS. Primarily this is done by changing the settings for `"beebvsc.assembler"` and `"beebvsc.emulator"`.
 
-# Release notes
-
-- **0.1.2** - Tweaks to completions
-- **0.1.1** - Substantial internal refactoring and minor bug fixes
-- **0.1.0** - Move to LSP client/server structure, add hovers, completions, diagnostics and reference finding
-- **0.0.6** - Added full build environment support via JS script to extension
-- **0.0.5** - Test version
-- **0.0.4** - Test update
-- **0.0.3** - Initial version
-
 **Possible further features to add**
 - Support for BBC BASIC text files (can be compiled to SSD via BeebAsm) and full syntax colouring
 - Support 'remove target' feature
@@ -170,50 +167,34 @@ The installation is for Windows by default, but its quite feasible to get it wor
 
 
 
-# Footnotes
+## Contributors & Kudos
 
-## Source code
-The extension uses TypeScript, as that is the language used for most online examples, especially those from MicroSoft.
-There are some tests (not very high coverage). These can be run from the Testing side-panel in VS Code by installing the Mocha Test Explorer from the extensions marketplace.
-To get the tests to show up, you may need to go to the command palette and select "Mocha Test Explorer: Enable for a workspace folder" command.  
+Many thanks to the following people who have contributed directly & indirectly to this project:
 
-The project includes an adapted version of BeebAsm version 1.10 to perform the code analysis, helping to identify potential compile issues as you type. It was converted to TypeScript, changed to capture all errors instead of exiting on the first error and enhanced with the ability to capture information about the code that drives functionality such as code completion and reference finding. This remains under the GPL and is in a separate folder /server/src/beebasm-ts.
+* **[Tom Helm](https://github.com/tommy9)**
+* **[Rich Talbot-Watkins](https://github.com/richtw1)**
+* **[Matt Godbolt](https://github.com/mattgodbolt)**
 
-Also incuded is the [JavaScript port of strftime() by T. H. Doan](https://thdoan.github.io/strftime/) for implementing the `TIME$` functionality.
+More information [here](docs/extension-development.md) about developing the extension.
 
-Contributions, suggestions or bug reports to this extension are welcome, via the [Beeb-VSC](https://github.com/simondotm/beeb-vsc) GitHub repository
+## Acorn Community
 
-## Syntax parsing
-The language syntax system VSC uses is based on TextMate, which basically a bunch of regular expressions.
-For your sanity when messing with these, I highly recommend [this site](https://regex101.com/) to help make sense of those regexes!
-
-## Building this VSC extension
-If you are looking at this repo to help you write your own VSC extension, great!, that's exactly how I figured it out too, so here's some tips for you, (as well as a future reference for me!)
-
-To build [VSC extensions](https://code.visualstudio.com/docs/extensions/overview), you'll need to install node.js (I used [chocolatey](https://chocolatey.org/) on Windows for this)
-
-If you are building/testing the extension, you'll need to clone the repo, then type `npm install` in the workspace folder to install the `node_modules` packages.
-
-Finally, use the [vsce tool to publish](https://code.visualstudio.com/docs/tools/vscecli) (you'll need to setup an account on Microsoft team services site so you can publish the extension to their [marketplace](https://code.visualstudio.com/docs/editor/extension-gallery)).
-
-## Kudos
-
-The official Microsoft documentation for Visual Studio Code extensions is still a bit light on detail, so I figured out a lot by simply looking at how other folks had implemented bits and pieces in their extensions. So here's a list of useful references:
-
-- [A nice little Project Manager Extension for Visual Studio Code](https://github.com/alefragnani/vscode-project-manager)
-- [Cordova VSC Extension](https://github.com/Microsoft/vscode-cordova)
-- [VSCE keybindings documentation](https://code.visualstudio.com/docs/customization/keybindings#_preferences)
-- [Node.js fs module documentation](https://nodejs.org/api/fs.html)
-- [Microsoft's official Visual Studio Code Github repo](https://github.com/Microsoft/vscode)
-- [VSCE Tasks documentation](https://code.visualstudio.com/docs/editor/tasks#_running-multiple-commands)
-- [Brilliant regular expressions sandbox](https://regex101.com/#javascript)
-- [Language Server Protocol specification](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification)
-- [VS Code extension samples](https://github.com/microsoft/vscode-extension-samples)
-
-BBC Micro/6502 Resources:
+### Development tools
 - [Rich Talbot-Watkin's rather brilliant BeebAsm project](https://github.com/stardot/beebasm/blob/master/README.md)
+
+### Emulators
 - [BeebEm Emulator](http://www.mkw.me.uk/beebem/index.html)
+- [BeebEm Emulator for Windows](https://github.com/stardot/beebem-windows)
+- [B2 emulator](https://github.com/tom-seddon/b2)
+- [B-Em emulator](https://github.com/stardot/b-em)
+- [JSBeeb Emulator](https://bbc.godbolt.org/)
+
+### BBC Micro/6502 Resources:
 - [Stardot Acorn/BBC Micro forums](http://stardot.org.uk/forums/)
+- [Stardot Github](https://github.com/stardot)
+- [bbcmicro.co.uk](https://bbcmicro.co.uk/)
+- [Owlet BBC Basic Editor](https://bbcmic.ro/)
+- [BBC Micro Bot](https://www.bbcmicrobot.com/)
 
 
 
