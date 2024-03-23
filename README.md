@@ -7,7 +7,6 @@ See the [CHANGELOG](./CHANGELOG.md) for full release history.
 
 # Features
 
-
 ## Syntax Highlighting:
 - All **6502 op-codes** (no 65C02 op codes yet)
 - **.label** style labels
@@ -52,6 +51,13 @@ Provides a list of potential matches as you start to type.
 - Easily create new build targets (supports multiple targets within a project folder)
 - Easily select 'default' build targets  
 - Run build targets in the emulator of your choice
+
+## Integrated BBC Micro Emulator
+
+- [Preview your projects](./docs/emulator.md) directly within VSCode using an integrated [JSBeeb](https://github.com/mattgodbolt/jsbeeb) emulator
+
+![Screenshot](./docs/images/emulator-view.png?raw=true)
+
 
 # Quick Setup
 
