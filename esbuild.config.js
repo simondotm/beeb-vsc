@@ -23,7 +23,7 @@ const sharedConfig = {
   banner: {
     js: `const environment = ${isProd ? "'prod'" : "'dev'"}; const APP_VERSION = '${APP_VERSION}';`,
   },
-  external: ['vscode*'], //Object.keys(require('../package.json').dependencies),
+  external: ['vscode'], //Object.keys(require('../package.json').dependencies),
 }
 
 const extensionConfig = {
