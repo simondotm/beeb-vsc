@@ -2,6 +2,9 @@
 
 See [Releases on Github](https://github.com/simondotm/beeb-vsc/releases) for full release history.
 
+### 0.2.1
+- Hotfix for dependency issue preventing extension from activating
+
 ### 0.2.0
 - Added support for integrated JSBeeb emulator within VSCode editor
 - Improved source code parsing
