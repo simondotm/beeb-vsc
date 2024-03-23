@@ -2,10 +2,38 @@
 
 See [Releases on Github](https://github.com/simondotm/beeb-vsc/releases) for full release history.
 
-- **0.1.2** - Tweaks to completions
-- **0.1.1** - Substantial internal refactoring and minor bug fixes
-- **0.1.0** - Move to LSP client/server structure, add hovers, completions, diagnostics and reference finding
-- **0.0.6** - Added full build environment support via JS script to extension
-- **0.0.5** - Test version
-- **0.0.4** - Test update
-- **0.0.3** - Initial version
+### 0.2.0
+- Added support for integrated JSBeeb emulator within VSCode editor
+- Improved source code parsing
+- Autodetect changes to `settings.json`
+- Added usage telemetry (opt-in based on user's VSCode telemetry settings)
+
+### 0.1.2
+- Improve completions for symbols and commands
+
+### 0.1.1
+- Substantial internal refactoring and minor bug fixes
+- Added support for 65C02 opcodes
+- Fix for target adding and switching
+
+### 0.1.0
+- Migrated extension to Typescript
+- Move to Language Server Protocol
+- Support for source code hover information (on opcodes, symbols, labels, functions and commands)
+- Support for auto completions (BeebAsm functions and commands + symbols and labels within the workspace)
+- Support for diagnostics to highlight BeebAsm compilation errors in code editor
+- Support for reference finding (goto, peek, find all, rename refactoring)
+- Improved syntax parsing for BeebAsm keywords from 1.08 to 1.10
+
+### 0.0.6
+- Added full build environment support via JS script to extension
+- First version published to Visual Studio Code Marketplace
+
+### 0.0.5
+- Test version
+
+### 0.0.4
+- Test update
+
+### 0.0.3
+- Initial version
