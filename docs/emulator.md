@@ -2,6 +2,10 @@
 
 The BeebVSC extension includes an integrated BBC Micro emulator, powered by [JSBeeb](https://github.com/mattgodbolt/jsbeeb).
 
+This integrated emulator is just for assisting with previewing, testing & development purposes and works alongside any standalone external emulator that you may be using with the `tasks.json` file.
+
+## Launching the Emulator
+
 To launch the integrated emulator, open the command palette (Ctrl+Shift+P) and type `BeebVSC: Open Emulator`.
 
 ![Screenshot](./images/emulator-palette.png?raw=true)
