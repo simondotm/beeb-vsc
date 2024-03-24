@@ -5,6 +5,7 @@ import {
   GetCommandFromAST,
   GetUnaryOpFromAST,
   GetSymbolOrLabelFromAST,
+  GetMacroCallFromAST,
 } from './ast'
 import {
   opcodeData,
@@ -15,6 +16,7 @@ import {
 import { URI } from 'vscode-uri'
 import { SymbolTable } from './beebasm-ts/symboltable'
 import { FileHandler } from './filehandler'
+import { MacroTable } from './beebasm-ts/macro'
 
 export class HoverProvider {
   private trees: Map<string, AST[]>
@@ -105,6 +107,19 @@ Return: ${cmd.return}`,
           const mdText: MarkupContent = {
             kind: 'markdown',
             value: ['```beebasm', line, '```'].join('\n'),
+          }
+          return { contents: mdText }
+        }
+        // Macro calls
+        const macroName = GetMacroCallFromAST(lineTree, location.character)
+        if (macroName !== '') {
+          const macro = MacroTable.Instance.Get(macroName)
+          if (macro === undefined) {
+            return null
+          }
+          const mdText: MarkupContent = {
+            kind: 'markdown',
+            value: '```beebasm' + macro.GetBody() + '\n```',
           }
           return { contents: mdText }
         }

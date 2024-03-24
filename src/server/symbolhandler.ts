@@ -143,19 +143,19 @@ export class SymbolProvider {
             selectionRange: symboldata.GetLocation().range,
           })
         }
-        // add macros
-        const macros = MacroTable.Instance.GetMacros()
-        macros.forEach((macro, macroName) => {
-          if (macro.GetLocation().uri === cleanPath) {
-            symbolList.push({
-              name: macroName,
-              detail: '',
-              kind: SymbolKind.Constant, // Macro kind doesn't exist yet
-              range: macro.GetLocation().range,
-              selectionRange: macro.GetLocation().range,
-            })
-          }
-        })
+      })
+      // add macros
+      const macros = MacroTable.Instance.GetMacros()
+      macros.forEach((macro, macroName) => {
+        if (macro.GetLocation().uri === cleanPath) {
+          symbolList.push({
+            name: macroName,
+            detail: '',
+            kind: SymbolKind.Constant, // Macro kind doesn't exist yet
+            range: macro.GetLocation().range,
+            selectionRange: macro.GetLocation().range,
+          })
+        }
       })
       return symbolList
     }
@@ -251,6 +251,12 @@ export function FindDefinition(
     result = matched.GetLocation()
     return result
   }
+  // lookup macro in macro table
+  const macro = MacroTable.Instance.Get(symbolname)
+  if (macro) {
+    result = macro.GetLocation()
+    return result
+  }
   return null
 }
 
@@ -269,13 +275,21 @@ export function FindReferences(
     uri,
     location.line,
   )
-  if (matched === undefined) {
-    return null
+  if (matched !== undefined) {
+    const refs = SymbolTable.Instance.GetReferences(fullSymbolName)
+    if (refs !== undefined) {
+      return refs
+    }
   }
 
-  const refs = SymbolTable.Instance.GetReferences(fullSymbolName)
-  if (refs === undefined) {
-    return null
+  // lookup macro in macro table
+  const isMacro = MacroTable.Instance.Exists(symbolname)
+  if (isMacro) {
+    const refs = MacroTable.Instance.GetReferences(symbolname)
+    if (refs !== undefined) {
+      return refs
+    }
   }
-  return refs
+
+  return null
 }

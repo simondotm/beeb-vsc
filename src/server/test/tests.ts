@@ -10,7 +10,7 @@ import {
   TextDocumentPositionParams,
 } from 'vscode-languageserver'
 import { GlobalData } from '../beebasm-ts/globaldata'
-import { SymbolData, SymbolTable } from '../beebasm-ts/symboltable'
+import { SymbolTable } from '../beebasm-ts/symboltable'
 import { ObjectCode } from '../beebasm-ts/objectcode'
 import { CompletionProvider, SignatureProvider } from '../completions'
 import { FindDefinition, FindReferences } from '../symbolhandler'
@@ -91,6 +91,9 @@ suite('LineParser', function () {
     })
     test('Test macro naming', function () {
       testMacroNaming()
+    })
+    test('Test macro body', function () {
+      testMacroBody()
     })
     test('Test forward reference with decrement', function () {
       testForwardReferenceWithDecrement()
@@ -248,6 +251,9 @@ suite('LineParser', function () {
     test('Test multi-line For loop', function () {
       testASTForLoopMultipleLines()
     })
+    test('Test Macro call', function () {
+      testASTMacroCall()
+    })
   })
 })
 
@@ -272,10 +278,8 @@ function testSymbolAssignmentNumber() {
     links,
   )
   const parser = new LineParser(sourceCode, sourceCode.GetLine(1), 1)
-  let result: string | number = ''
   parser.Process()
-  let found = false
-  ;[found, result] = sourceCode.GetSymbolValue('a')
+  const [_found, result] = sourceCode.GetSymbolValue('a')
   assert.equal(result, 10)
 }
 
@@ -290,10 +294,8 @@ function testSymbolAssignmentString() {
     links,
   )
   const parser = new LineParser(sourceCode, sourceCode.GetLine(3), 3)
-  let result: string | number = ''
   parser.Process()
-  let found = false
-  ;[found, result] = sourceCode.GetSymbolValue('c')
+  const [_found, result] = sourceCode.GetSymbolValue('c')
   assert.equal(result, 'hello')
 }
 
@@ -308,10 +310,8 @@ function testSymbolAssignmentHex() {
     links,
   )
   const parser = new LineParser(sourceCode, sourceCode.GetLine(7), 7)
-  let result: string | number = ''
   parser.Process()
-  let found = false
-  ;[found, result] = sourceCode.GetSymbolValue('oswrch')
+  const [_found, result] = sourceCode.GetSymbolValue('oswrch')
   assert.equal(result, 0xffee)
 }
 
@@ -326,13 +326,11 @@ function testSymbolAssignmentMultistatement() {
     links,
   )
   const parser = new LineParser(sourceCode, sourceCode.GetLine(2), 2)
-  let result: string | number = ''
   parser.Process()
-  let found = false
-  ;[found, result] = sourceCode.GetSymbolValue('b')
-  assert.equal(result, 20)
-  ;[found, result] = sourceCode.GetSymbolValue('d')
-  assert.equal(result, 30)
+  const [_found1, result1] = sourceCode.GetSymbolValue('b')
+  assert.equal(result1, 20)
+  const [_found2, result2] = sourceCode.GetSymbolValue('d')
+  assert.equal(result2, 30)
 }
 
 function testSymbolAssignmentUpdated() {
@@ -401,14 +399,12 @@ function testLabelAllGlobalLevels() {
     links,
   )
   sourceCode.Process()
-  let found = false
-  let result: string | number = ''
-  ;[found, result] = sourceCode.GetSymbolValue('loop')
-  assert.equal(found, true)
-  ;[found, result] = sourceCode.GetSymbolValue('above')
-  assert.equal(found, true)
-  ;[found, result] = sourceCode.GetSymbolValue('global')
-  assert.equal(found, true)
+  const [found1, _result1] = sourceCode.GetSymbolValue('loop')
+  assert.equal(found1, true)
+  const [found2, _result2] = sourceCode.GetSymbolValue('above')
+  assert.equal(found2, true)
+  const [found3, _result3] = sourceCode.GetSymbolValue('global')
+  assert.equal(found3, true)
   assert.equal(diagnostics.get('')!.length, 1) // .loop is a duplicate label
 }
 
@@ -427,9 +423,7 @@ function testInnerLabel() {
     const parser = new LineParser(sourceCode, sourceCode.GetLine(i), i)
     parser.Process()
   }
-  let found = false
-  let result: string | number = ''
-  ;[found, result] = sourceCode.GetSymbolValue('inner')
+  const [found, _result] = sourceCode.GetSymbolValue('inner')
   assert.equal(found, true)
 }
 
@@ -514,12 +508,18 @@ function testMultipleFiles() {
     input2.Process()
   }
   // check definition
-  let symbol: SymbolData | undefined
-  let fullname: string
-  ;[symbol, fullname] = SymbolTable.Instance.GetSymbolByLine('a', 'file1', 0)
-  assert.equal(symbol?.GetValue(), 1)
-  ;[symbol, fullname] = SymbolTable.Instance.GetSymbolByLine('a', 'file2', 0)
-  assert.equal(symbol?.GetValue(), 2)
+  const [symbol1, _fullname1] = SymbolTable.Instance.GetSymbolByLine(
+    'a',
+    'file1',
+    0,
+  )
+  assert.equal(symbol1?.GetValue(), 1)
+  const [symbol2, _fullname2] = SymbolTable.Instance.GetSymbolByLine(
+    'a',
+    'file2',
+    0,
+  )
+  assert.equal(symbol2?.GetValue(), 2)
 }
 
 function testMacroNaming() {
@@ -542,6 +542,16 @@ ENDMACRO
   MacroTable.Instance.Reset()
   Run2Passes(code)
   assert.equal(diagnostics.get('')!.length, 0)
+}
+
+function testMacroBody() {
+  const code = `
+MACRO TEMP a
+  PRINT a
+ENDMACRO`
+  Run2Passes(code)
+  const body = MacroTable.Instance.Get('TEMP')?.GetBody()
+  assert.equal(body, '\nPRINT a\n')
 }
 
 function testMismatchedBraces() {
@@ -802,7 +812,7 @@ async function testCompletions() {
   }
   const completions = completionHandler.onCompletion(pos)
   let output
-  const temp = completions.then((result) => {
+  completions.then((result) => {
     output = result
     assert.equal(output.length, 1)
   })
@@ -1006,15 +1016,15 @@ function testFindFunctionNameCHR$() {
 function testFindFunctionNameMID$() {
   const code = 'MID$("Hello", 2, 3)'
   const provider = new SignatureProvider()
-  let [match, parameterNo] = provider.findMatchingFunction(code, 5)
-  assert.equal(match, 'MID$')
-  assert.equal(parameterNo, 0)
-  ;[match, parameterNo] = provider.findMatchingFunction(code, 13)
-  assert.equal(match, 'MID$')
-  assert.equal(parameterNo, 1)
-  ;[match, parameterNo] = provider.findMatchingFunction(code, 16)
-  assert.equal(match, 'MID$')
-  assert.equal(parameterNo, 2)
+  const [match1, parameterNo1] = provider.findMatchingFunction(code, 5)
+  assert.equal(match1, 'MID$')
+  assert.equal(parameterNo1, 0)
+  const [match2, parameterNo2] = provider.findMatchingFunction(code, 13)
+  assert.equal(match2, 'MID$')
+  assert.equal(parameterNo2, 1)
+  const [match3, parameterNo3] = provider.findMatchingFunction(code, 16)
+  assert.equal(match3, 'MID$')
+  assert.equal(parameterNo3, 2)
 }
 
 function testASTAssign() {
@@ -1208,4 +1218,18 @@ NEXT`
   console.log(tree.children)
   tree = input.GetTrees().get('')![2]
   console.log(tree.children)
+}
+
+function testASTMacroCall() {
+  const code = `
+MACRO TEMP n
+PRINT n
+ENDMACRO
+TEMP 1`
+  const input = new SourceCode(code, 0, null, diagnostics, '', trees, links)
+  input.Process()
+  const tree = input.GetTrees().get('')![4]
+  console.log(tree.children)
+  console.log(tree.children[0].children)
+  assert.equal(tree.children.length, 1)
 }

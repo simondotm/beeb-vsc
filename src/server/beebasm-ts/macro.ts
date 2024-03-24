@@ -50,8 +50,10 @@ export class Macro {
     return this._name
   }
 
-  SetName(name: string): void {
+  SetName(name: string, column: number): void {
     this._name = name
+    // Update column based on start of name, not end of MACRO keyword
+    this._column = column - name.length
   }
 
   GetNumberOfParameters(): number {
@@ -94,6 +96,7 @@ export class Macro {
 
 export class MacroTable {
   private _macros: Map<string, Macro> = new Map<string, Macro>()
+  private _references = new Map<string, Location[]>()
   private static _instance: MacroTable
 
   public static get Instance() {
@@ -121,5 +124,16 @@ export class MacroTable {
 
   GetMacros(): Map<string, Macro> {
     return this._macros
+  }
+
+  AddReference(name: string, location: Location): void {
+    if (!this._references.has(name)) {
+      this._references.set(name, [])
+    }
+    this._references.get(name)?.push(location)
+  }
+
+  GetReferences(name: string): Location[] | undefined {
+    return this._references.get(name)
   }
 }

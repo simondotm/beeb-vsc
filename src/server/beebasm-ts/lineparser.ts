@@ -1678,9 +1678,9 @@ export class LineParser {
   }
 
   public Process(): void {
-    const processedSomething = false
+    let processedSomething = false
     while (this.AdvanceAndCheckEndOfLine()) {
-      const bProcessedSomething = true
+      processedSomething = true
       const oldColumn: integer = this._column
 
       // Priority: check if it's symbol assignment and let it take priority over keywords
@@ -1832,6 +1832,30 @@ export class LineParser {
         const macro = MacroTable.Instance.Get(macroName)
         if (macro !== undefined) {
           this.HandleOpenBrace()
+
+          // add reference
+          if (GlobalData.Instance.IsSecondPass()) {
+            const loc = {
+              uri: this._sourceCode.GetURI(),
+              range: {
+                start: {
+                  line: this._lineno,
+                  character: this._column - macroName.length,
+                },
+                end: { line: this._lineno, character: this._column },
+              },
+            }
+            MacroTable.Instance.AddReference(macroName, loc)
+          }
+
+          // add macro reference to AST
+          this._currentAST = {
+            type: ASTType.MacroCall,
+            value: macroName,
+            startColumn: oldColumn,
+            children: [],
+          }
+          this._parentAST.children.push(this._currentAST)
 
           for (let i = 0; i < macro.GetNumberOfParameters(); i++) {
             const paramName =
@@ -4272,7 +4296,7 @@ export class LineParser {
             this._column,
           )
         }
-        this._sourceCode.GetCurrentMacro()!.SetName(macroName)
+        this._sourceCode.GetCurrentMacro()!.SetName(macroName, this._column)
       }
     } else {
       throw new AsmException.SyntaxError_InvalidMacroName(

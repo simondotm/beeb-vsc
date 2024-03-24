@@ -51,34 +51,29 @@ export function GetCommandFromAST(ast: AST, position: number): string {
 // UnaryOp e.g. CHR$()
 // Need to search whole tree since can be nested
 export function GetUnaryOpFromAST(ast: AST, position: number): string {
-  const queue: AST[] = []
-  queue.push(ast)
-  while (queue.length > 0) {
-    const node = queue.shift()
-    if (node !== undefined) {
-      if (
-        node.type === ASTType.UnaryOp &&
-        node.startColumn <= position &&
-        node.startColumn + String(node.value).length > position
-      ) {
-        return String(node.value)
-      }
-      for (const child of node.children) {
-        queue.push(child)
-      }
-    }
-  }
-  return ''
+  return GetStringRefByType(ast, position, ASTType.UnaryOp)
 }
 
 export function GetSymbolOrLabelFromAST(ast: AST, position: number): string {
+  return GetStringRefByType(ast, position, ASTType.Symbol)
+}
+
+export function GetMacroCallFromAST(ast: AST, position: number): string {
+  return GetStringRefByType(ast, position, ASTType.MacroCall)
+}
+
+function GetStringRefByType(
+  ast: AST,
+  position: number,
+  asttype: ASTType,
+): string {
   const queue: AST[] = []
   queue.push(ast)
   while (queue.length > 0) {
     const node = queue.shift()
     if (node !== undefined) {
       if (
-        node.type === ASTType.Symbol &&
+        node.type === asttype &&
         node.startColumn <= position &&
         node.startColumn + String(node.value).length > position
       ) {
