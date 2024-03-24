@@ -117,9 +117,13 @@ Return: ${cmd.return}`,
           if (macro === undefined) {
             return null
           }
+          let header = macro.GetName()
+          for (let i = 0; i < macro.GetNumberOfParameters(); i++) {
+            header += ` ${macro.GetParameter(i)}`
+          }
           const mdText: MarkupContent = {
             kind: 'markdown',
-            value: '```beebasm' + macro.GetBody() + '\n```',
+            value: '```beebasm' + '\n' + header + macro.GetBody() + '\n```',
           }
           return { contents: mdText }
         }
