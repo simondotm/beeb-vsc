@@ -794,28 +794,14 @@ function testMapChar() {
   assert.equal(diagnostics.get('')!.length, 0)
 }
 
-// function asyncMethod() {
-// 	return new Promise<CompletionItem[]>((resolve) => {
-// 		setTimeout(() => {
-// 			resolve();
-// 		}, 1000);
-// 	});
-// }
-
-// NOT WORKING - HAVE TO FIGURE OUT HOW TO TEST ASYNC
-// Or just extract function and test that???
 async function testCompletions() {
   const completionHandler = new CompletionProvider()
   const pos: TextDocumentPositionParams = {
     textDocument: { uri: '' },
     position: { line: 0, character: 0 },
   }
-  const completions = completionHandler.onCompletion(pos)
-  let output
-  completions.then((result) => {
-    output = result
-    assert.equal(output.length, 1)
-  })
+  const completions = await completionHandler.onCompletion(pos)
+  assert.notEqual(completions.length, 0)
 }
 
 function testSymbolReference() {
