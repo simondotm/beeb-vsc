@@ -235,6 +235,9 @@ export function activate(context: ExtensionContext) {
     },
   }
 
+  // Warn if no sourceFile is set in settings.json
+  checkSourceFilesSpecified()
+
   // Start the client. This will also launch the server
   client = new LanguageClient(
     'BeebVSC',
@@ -250,6 +253,35 @@ export function deactivate(): Thenable<void> | undefined {
     return undefined
   }
   return client.stop()
+}
+
+// checkSourceFilesSpecified
+function checkSourceFilesSpecified() {
+  let settingsIssue: boolean = false
+  const settingsPath = path.join(getWorkspacePath(), '.vscode', 'settings.json')
+  if (fileExists(settingsPath)) {
+    // settings.json exists, so load it
+    let settingsObject: Partial<BeebVSCSettings> = {}
+    try {
+      settingsObject = JSON.parse(fs.readFileSync(settingsPath, 'utf8'))
+    } catch (err) {
+      settingsIssue = true
+    }
+    if (settingsObject.beebvsc === undefined) {
+      settingsIssue = true
+    } else {
+      if (settingsObject.beebvsc?.sourceFile === undefined) {
+        settingsIssue = true
+      }
+    }
+  } else {
+    settingsIssue = true
+  }
+  if (settingsIssue) {
+    window.showErrorMessage(
+      "BeebVSC: 'Could not find sourceFile in settings\nPlease add targets using the 'BeebVSC: Create New Build Target' command",
+    )
+  }
 }
 
 //----------------------------------------------------------------------------------------
@@ -326,7 +358,7 @@ function setCurrentTarget(
             // no target file specified, so use the default target file
             targetFile = getTargetName(
               workspace.getConfiguration('beebvsc').get<string>('sourceFile') ??
-                'main.asm',
+              'main.asm',
             )
           }
         }
