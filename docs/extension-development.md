@@ -1,5 +1,7 @@
 # Extension Development
 
+See [Release Process](release-process.md) for information on how to bump the version number and create a new release.
+
 ## Source code
 The extension uses TypeScript, as that is the language used for most online examples, especially those from MicroSoft.
 There are some tests (not very high coverage). These can be run from the Testing side-panel in VS Code by installing the Mocha Test Explorer from the extensions marketplace.
