@@ -195,6 +195,11 @@ async function ParseDocument(
   // We keep both passes so that we can report errors that only occur in one pass
   const currentDiagnostics = diagnostics.get(URItoPath(activeFile))
   if (currentDiagnostics === undefined) {
+    // Send empty diagnostics to ensure any previous diagnostics are cleared on re-parse
+    connection.sendDiagnostics({
+      uri: activeFile,
+      diagnostics: [],
+    })
     return
   }
   let thisDiagnostics: Diagnostic[] = []
