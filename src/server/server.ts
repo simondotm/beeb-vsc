@@ -8,7 +8,6 @@ import {
   ConfigurationItem,
   DocumentLink,
 } from 'vscode-languageserver/node'
-import { URI } from 'vscode-uri'
 import { TextDocument } from 'vscode-languageserver-textdocument'
 import { CompletionProvider, SignatureProvider } from './completions'
 import { SymbolTable } from './beebasm-ts/symboltable'
@@ -17,7 +16,7 @@ import { ObjectCode } from './beebasm-ts/objectcode'
 import { SourceFile } from './beebasm-ts/sourcefile'
 import { RenameProvider, SymbolProvider } from './symbolhandler'
 import { MacroTable } from './beebasm-ts/macro'
-import { FileHandler } from './filehandler'
+import { FileHandler, URItoPath } from './filehandler'
 import { HoverProvider } from './hoverprovider'
 import { AST } from './ast'
 
@@ -133,10 +132,6 @@ async function getSourcesFromSettings(): Promise<string[]> {
   return []
 }
 
-function URItoPath(uri: string): string {
-  return URI.parse(uri).fsPath
-}
-
 async function ParseFromRoot(textDocument: TextDocument): Promise<void> {
   const fspath = URItoPath(textDocument.uri)
 
@@ -151,9 +146,10 @@ async function ParseFromRoot(textDocument: TextDocument): Promise<void> {
   for (const file of sourceFilePath) {
     await ParseDocument(file, textDocument.uri)
     // check if the document is in this root
-    const root = FileHandler.Instance.GetTargetFileName(
-      URItoPath(textDocument.uri),
-    )
+    const root = FileHandler.Instance.GetTargetFileName(fspath)
+    if (root === undefined) {
+      console.log(`No root found yet for ${fspath}`)
+    }
     if (root === file) {
       break
     }
