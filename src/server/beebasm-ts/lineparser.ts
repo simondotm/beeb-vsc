@@ -3702,7 +3702,12 @@ export class LineParser {
       throw new AsmException.SyntaxError_CantInclude(this._line, this._column)
     }
     const filename = this.EvaluateExpressionAsString().replace(/\\/g, '/')
-    const fspath = URI.parse(path.resolve(filename)).fsPath
+    let fspath: string
+    if (process.platform === 'win32') {
+      fspath = URI.parse('file:///' + path.resolve(filename)).fsPath
+    } else {
+      fspath = URI.parse(path.resolve(filename)).fsPath
+    }
     let includeFile: string
     if (process.platform === 'win32') {
       includeFile = URI.parse('file:///' + path.resolve(filename)).toString()

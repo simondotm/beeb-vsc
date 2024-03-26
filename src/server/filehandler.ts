@@ -43,7 +43,7 @@ export class FileHandler {
   }
 
   public SetTargetFileName(fileName: string, targetFileName: string): void {
-    this.includedToParentMap.set(fileName, targetFileName)
+    this.includedToParentMap.set(URItoPath(fileName), URItoPath(targetFileName))
   }
 
   public Clear(): void {
@@ -114,4 +114,21 @@ export class FileHandler {
     }
     return ''
   }
+}
+
+export function URItoPath(uri: string): string {
+  let fsPath: string
+  try {
+    if (process.platform === 'win32' && !uri.startsWith('file:/')) {
+      const unixStyle = uri.replace(/\\/g, '/')
+      // console.log('unixStyle ' + unixStyle)
+      fsPath = URI.parse('file:///' + unixStyle).fsPath
+    } else {
+      fsPath = URI.parse(uri).fsPath
+    }
+  } catch (error) {
+    console.log(`Error converting URI ${uri} to path: ${error}`)
+    return ''
+  }
+  return fsPath
 }
