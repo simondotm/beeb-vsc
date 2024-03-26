@@ -2,6 +2,9 @@
 
 See [Releases on Github](https://github.com/simondotm/beeb-vsc/releases) for full release history.
 
+### 0.2.2
+- Fix for error parsing issues when settings.json is not set up
+
 ### 0.2.1
 - Hotfix for dependency issue preventing extension from activating
 
