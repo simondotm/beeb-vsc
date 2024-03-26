@@ -70,7 +70,7 @@ connection.onInitialized(() => {
   // Register for all configuration changes (when have a configuration that would matter).
   // connection.client.register(DidChangeConfigurationNotification.type, undefined)
   connection.workspace.onDidChangeWorkspaceFolders((_event) => {
-    connection.console.log('Workspace folder change event received.')
+    console.log('Workspace folder change event received.')
   })
 })
 
@@ -128,7 +128,7 @@ async function getSourcesFromSettings(): Promise<string[]> {
       return filename
     }
   } else {
-    connection.console.log('No workspace folders')
+    console.log('No workspace folders')
   }
   return []
 }
@@ -137,30 +137,34 @@ function URItoPath(uri: string): string {
   return URI.parse(uri).fsPath
 }
 
-// TODO add GetRootDocument to FileHandler which takes a document and returns the root document
-// Would allow multi-root workspaces to be supported and parse correct document group
 async function ParseFromRoot(textDocument: TextDocument): Promise<void> {
   const fspath = URItoPath(textDocument.uri)
 
   // Get the source file name
   let sourceFilePath = await getStartingFileNames(fspath)
   if (sourceFilePath.length === 0) {
-    connection.console.log('No source file name set, using current document')
-    sourceFilePath = [fspath]
+    console.log('No source file name set, language server disabled.')
+    sourceFilePath = []
   }
 
-  // Parse each root document (in parallel)
-  Promise.all(
-    sourceFilePath.map((file) => {
-      ParseDocument(file, textDocument.uri)
-    }),
-  )
+  // Parse each root in turn, until find the one that contains the document
+  for (const file of sourceFilePath) {
+    await ParseDocument(file, textDocument.uri)
+    // check if the document is in this root
+    const root = FileHandler.Instance.GetTargetFileName(
+      URItoPath(textDocument.uri),
+    )
+    if (root === file) {
+      break
+    }
+  }
 }
 
 async function ParseDocument(
   sourceFilePath: string,
   activeFile: string,
 ): Promise<void> {
+  console.log(`Parsing ${activeFile} from root ${sourceFilePath}`)
   // map from uri to diagnostics
   const diagnostics = new Map<string, Diagnostic[]>()
   diagnostics.set(sourceFilePath, [])
@@ -169,7 +173,7 @@ async function ParseDocument(
   try {
     text = FileHandler.Instance.GetDocumentText(sourceFilePath)
   } catch (error) {
-    connection.console.log(`Error reading file ${sourceFilePath}: ${error}`)
+    console.log(`Error reading file ${sourceFilePath}: ${error}`)
     return
   }
   SymbolTable.Instance.Reset()
@@ -217,6 +221,7 @@ async function ParseDocument(
     uri: activeFile,
     diagnostics: thisDiagnostics,
   })
+  console.log(`Parsing ${activeFile} complete`)
 }
 
 connection.onDidChangeWatchedFiles((_change) => {
@@ -230,7 +235,7 @@ connection.onDidChangeWatchedFiles((_change) => {
       ParseDocument(file, '')
     })
   })
-  connection.console.log('Settings.json update event received.')
+  console.log('Settings.json update event received.')
 })
 
 // Setup completions handling
