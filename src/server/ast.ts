@@ -51,13 +51,29 @@ export function GetCommandFromAST(ast: AST, position: number): string {
 // UnaryOp e.g. CHR$()
 // Need to search whole tree since can be nested
 export function GetUnaryOpFromAST(ast: AST, position: number): string {
+  return GetStringRefByType(ast, position, ASTType.UnaryOp)
+}
+
+export function GetSymbolOrLabelFromAST(ast: AST, position: number): string {
+  return GetStringRefByType(ast, position, ASTType.Symbol)
+}
+
+export function GetMacroCallFromAST(ast: AST, position: number): string {
+  return GetStringRefByType(ast, position, ASTType.MacroCall)
+}
+
+function GetStringRefByType(
+  ast: AST,
+  position: number,
+  asttype: ASTType,
+): string {
   const queue: AST[] = []
   queue.push(ast)
   while (queue.length > 0) {
     const node = queue.shift()
     if (node !== undefined) {
       if (
-        node.type === ASTType.UnaryOp &&
+        node.type === asttype &&
         node.startColumn <= position &&
         node.startColumn + String(node.value).length > position
       ) {
@@ -71,23 +87,24 @@ export function GetUnaryOpFromAST(ast: AST, position: number): string {
   return ''
 }
 
-export function GetSymbolOrLabelFromAST(ast: AST, position: number): string {
+export function GetSemanticTokens(ast: AST, lineNum: number): number[] {
+  const tokens: number[] = []
   const queue: AST[] = []
   queue.push(ast)
   while (queue.length > 0) {
     const node = queue.shift()
     if (node !== undefined) {
-      if (
-        node.type === ASTType.Symbol &&
-        node.startColumn <= position &&
-        node.startColumn + String(node.value).length > position
-      ) {
-        return String(node.value)
+      if (node.type === ASTType.MacroCall) {
+        tokens.push(lineNum)
+        tokens.push(node.startColumn)
+        tokens.push((node.value as string).length)
+        tokens.push(0) // tokenType (index into tokenTypes declared in server capabilities)
+        tokens.push(0) // tokenModifiers (index into tokenModifiers declared in server capabilities)
       }
       for (const child of node.children) {
         queue.push(child)
       }
     }
   }
-  return ''
+  return tokens
 }

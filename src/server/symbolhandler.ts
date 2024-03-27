@@ -15,9 +15,10 @@ import {
 import { SymbolTable } from './beebasm-ts/symboltable'
 import { FileHandler } from './filehandler'
 import { URI } from 'vscode-uri'
+import { MacroTable } from './beebasm-ts/macro'
 
 export class RenameProvider {
-  constructor() {}
+  constructor() { }
 
   onPrepareRename(params: PrepareRenameParams): Range | null {
     const textDocument = FileHandler.Instance.documents.get(
@@ -117,7 +118,7 @@ export class RenameProvider {
 }
 
 export class SymbolProvider {
-  constructor() {}
+  constructor() { }
 
   // TODO - consider to change symbol to type outerLabel.innerLabel instead of label_@...
   // Might not be possible, depends on label style of programmer
@@ -140,6 +141,19 @@ export class SymbolProvider {
               : SymbolKind.Variable,
             range: symboldata.GetLocation().range, // Could include any trailing comments for full scope of definition
             selectionRange: symboldata.GetLocation().range,
+          })
+        }
+      })
+      // add macros
+      const macros = MacroTable.Instance.GetMacros()
+      macros.forEach((macro, macroName) => {
+        if (macro.GetLocation().uri === cleanPath) {
+          symbolList.push({
+            name: macroName,
+            detail: '',
+            kind: SymbolKind.Constant, // Macro kind doesn't exist yet
+            range: macro.GetLocation().range,
+            selectionRange: macro.GetLocation().range,
           })
         }
       })
@@ -237,6 +251,12 @@ export function FindDefinition(
     result = matched.GetLocation()
     return result
   }
+  // lookup macro in macro table
+  const macro = MacroTable.Instance.Get(symbolname)
+  if (macro) {
+    result = macro.GetLocation()
+    return result
+  }
   return null
 }
 
@@ -255,13 +275,21 @@ export function FindReferences(
     uri,
     location.line,
   )
-  if (matched === undefined) {
-    return null
+  if (matched !== undefined) {
+    const refs = SymbolTable.Instance.GetReferences(fullSymbolName)
+    if (refs !== undefined) {
+      return refs
+    }
   }
 
-  const refs = SymbolTable.Instance.GetReferences(fullSymbolName)
-  if (refs === undefined) {
-    return null
+  // lookup macro in macro table
+  const isMacro = MacroTable.Instance.Exists(symbolname)
+  if (isMacro) {
+    const refs = MacroTable.Instance.GetReferences(symbolname)
+    if (refs !== undefined) {
+      return refs
+    }
   }
-  return refs
+
+  return null
 }

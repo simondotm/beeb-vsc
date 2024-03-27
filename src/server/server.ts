@@ -19,6 +19,7 @@ import { MacroTable } from './beebasm-ts/macro'
 import { FileHandler, URItoPath } from './filehandler'
 import { HoverProvider } from './hoverprovider'
 import { AST } from './ast'
+import { SemanticTokensProvider } from './semantictokenprovider'
 
 const connection = createConnection(ProposedFeatures.all)
 const trees: Map<string, AST[]> = new Map<string, AST[]>()
@@ -54,6 +55,13 @@ connection.onInitialize((params: InitializeParams) => {
       },
       documentLinkProvider: {
         resolveProvider: false,
+      },
+      semanticTokensProvider: {
+        legend: {
+          tokenTypes: ['macro'],
+          tokenModifiers: [],
+        },
+        full: true,
       },
     },
   }
@@ -266,6 +274,11 @@ connection.onDocumentLinks((params) => {
 
 const hoverHandler = new HoverProvider(trees)
 connection.onHover(hoverHandler.onHover.bind(hoverHandler))
+
+const semanticTokensProvider = new SemanticTokensProvider(trees)
+connection.languages.semanticTokens.on(
+  semanticTokensProvider.on.bind(semanticTokensProvider),
+)
 
 // Make the text document manager listen on the connection
 // for open, change and close text document events
