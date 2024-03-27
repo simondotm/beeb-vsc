@@ -86,3 +86,25 @@ function GetStringRefByType(
   }
   return ''
 }
+
+export function GetSemanticTokens(ast: AST, lineNum: number): number[] {
+  const tokens: number[] = []
+  const queue: AST[] = []
+  queue.push(ast)
+  while (queue.length > 0) {
+    const node = queue.shift()
+    if (node !== undefined) {
+      if (node.type === ASTType.MacroCall) {
+        tokens.push(lineNum)
+        tokens.push(node.startColumn)
+        tokens.push((node.value as string).length)
+        tokens.push(0) // tokenType (index into tokenTypes declared in server capabilities)
+        tokens.push(0) // tokenModifiers (index into tokenModifiers declared in server capabilities)
+      }
+      for (const child of node.children) {
+        queue.push(child)
+      }
+    }
+  }
+  return tokens
+}
