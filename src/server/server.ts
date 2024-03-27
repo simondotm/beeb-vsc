@@ -7,7 +7,6 @@ import {
   InitializeResult,
   ConfigurationItem,
   DocumentLink,
-  SemanticTokensParams,
 } from 'vscode-languageserver/node'
 import { TextDocument } from 'vscode-languageserver-textdocument'
 import { CompletionProvider, SignatureProvider } from './completions'
@@ -19,7 +18,8 @@ import { RenameProvider, SymbolProvider } from './symbolhandler'
 import { MacroTable } from './beebasm-ts/macro'
 import { FileHandler, URItoPath } from './filehandler'
 import { HoverProvider } from './hoverprovider'
-import { AST, GetSemanticTokens } from './ast'
+import { AST } from './ast'
+import { SemanticTokensProvider } from './semantictokenprovider'
 
 const connection = createConnection(ProposedFeatures.all)
 const trees: Map<string, AST[]> = new Map<string, AST[]>()
@@ -275,43 +275,9 @@ connection.onDocumentLinks((params) => {
 const hoverHandler = new HoverProvider(trees)
 connection.onHover(hoverHandler.onHover.bind(hoverHandler))
 
-connection.onRequest(
-  'textDocument/semanticTokens/full',
-  (params: SemanticTokensParams) => {
-    const doc = URItoPath(params.textDocument.uri)
-    const asts = trees.get(doc)
-    if (asts === undefined) {
-      return { data: [] }
-    }
-    let lastLine: number = 0
-    const tokens: number[] = []
-    // loop through line numbers
-    for (let i = 0; i < asts.length; i++) {
-      const ast = asts[i]
-      const lineTokens = GetSemanticTokens(ast, i)
-      // calculate delta for line and start character
-      if (lineTokens.length > 0) {
-        const currentLine = lineTokens[0]
-        // did we have a previous line?
-        const lineDelta = i - lastLine
-        lineTokens[0] = lineDelta
-        for (let j = lineTokens.length / 5 - 1; j >= 0; j--) {
-          // do we have multiple tokens on this line?
-          if (j > 0) {
-            lineTokens[5 * j] = 0
-            lineTokens[5 * j + 1] -= lineTokens[5 * (j - 1) + 1]
-          }
-        }
-        tokens.push(...lineTokens)
-        // set last tokens to last 5 tokens of line tokens
-        lastLine = currentLine
-      }
-    }
-
-    return {
-      data: tokens,
-    }
-  },
+const semanticTokensProvider = new SemanticTokensProvider(trees)
+connection.languages.semanticTokens.on(
+  semanticTokensProvider.on.bind(semanticTokensProvider),
 )
 
 // Make the text document manager listen on the connection
