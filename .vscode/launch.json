@@ -21,5 +21,19 @@
 				"script": "build"
 			}
 		},
+		{
+			"name": "Language Server E2E Test",
+			"type": "extensionHost",
+			"request": "launch",
+			"runtimeExecutable": "${execPath}",
+			"args": [
+				"--extensionDevelopmentPath=${workspaceRoot}",
+				"--extensionTestsPath=${workspaceRoot}/out/client/test/index",
+				"${workspaceRoot}/src/client/test/testFixture"
+			],
+			"outFiles": [
+				"${workspaceRoot}/out/client/test/**/*.js"
+			]
+		}
 	]
 }

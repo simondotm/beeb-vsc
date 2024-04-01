@@ -1,0 +1,5 @@
+; List of all the files to include in the build
+; i.e. all the files that need to be parsed for the test suite
+
+INCLUDE "completion.6502"
+INCLUDE "diagnostics.6502"
