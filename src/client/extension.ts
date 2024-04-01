@@ -266,16 +266,22 @@ function checkSourceFilesSpecified() {
       settingsObject = JSON.parse(fs.readFileSync(settingsPath, 'utf8'))
     } catch (err) {
       settingsIssue = true
+      console.log('Error reading ' + settingsPath + ' ' + err)
     }
     if (settingsObject.beebvsc === undefined) {
       settingsIssue = true
+      console.log('Error with settingsObject.beebvsc === undefined')
     } else {
       if (settingsObject.beebvsc?.sourceFile === undefined) {
         settingsIssue = true
+        console.log(
+          'Error with settingsObject.beebvsc?.sourceFile === undefined',
+        )
       }
     }
   } else {
     settingsIssue = true
+    console.log('Error with settingsPath not existing ' + settingsPath)
   }
   if (settingsIssue) {
     window.showErrorMessage(
