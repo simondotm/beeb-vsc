@@ -1,12 +1,10 @@
-// import { readFile, stat } from 'fs/promises';
 import { TextDocuments } from 'vscode-languageserver/node'
 import { TextDocument } from 'vscode-languageserver-textdocument'
 import { readFileSync, statSync } from 'fs'
 import { URI } from 'vscode-uri'
 
-// Users should always check the TextDocuments collection before using this class
-// to avoid trying to access a file owned by the client
-
+// The TextDocuments collection is the files managed by vscode
+// For any included files, we manage with the _textDocuments map
 export class FileHandler {
   private static _instance: FileHandler
   private _textDocuments: Map<string, { contents: string; modified: Date }> =
@@ -57,7 +55,8 @@ export class FileHandler {
   public ReadTextFromFile(uri: string): string {
     if (this._textDocuments.has(uri)) {
       if (
-        this._textDocuments.get(uri)!.modified == this.GetFileModifiedTime(uri)
+        this._textDocuments.get(uri)!.modified.getTime() ==
+        this.GetFileModifiedTime(uri).getTime()
       ) {
         return this._textDocuments.get(uri)!.contents
       }
@@ -86,14 +85,10 @@ export class FileHandler {
 
   public GetDocumentText(uri: string): string {
     const cleanPath = URI.parse(uri).fsPath
-    const documentsText = this.GetFromDocumentsWithFSPath(cleanPath) // revert if not helping?
+    const documentsText = this.GetFromDocumentsWithFSPath(cleanPath)
     if (documentsText !== '') {
       return documentsText
     }
-    // const textDocument = this.documents.get(uri);
-    // if (textDocument) {
-    // 	return textDocument.getText();
-    // }
     // not managed by vscode so read from file directly
     const text = this.ReadTextFromFile(uri)
     return text
@@ -103,7 +98,6 @@ export class FileHandler {
     // iterate through documents, convert document uri to fsPath and compare to uri
     let docText: string | undefined
     this.documents.keys().forEach((key) => {
-      //const document = this.documents.get(key);
       if (URI.parse(key).fsPath === uri) {
         const document = this.documents.get(key)!
         docText = document.getText()

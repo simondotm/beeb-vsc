@@ -20,6 +20,8 @@ import { FileHandler, URItoPath } from './filehandler'
 import { HoverProvider } from './hoverprovider'
 import { AST } from './ast'
 import { SemanticTokensProvider } from './semantictokenprovider'
+import { URI, Utils } from 'vscode-uri'
+import * as path from 'path'
 
 const connection = createConnection(ProposedFeatures.all)
 const trees: Map<string, AST[]> = new Map<string, AST[]>()
@@ -114,25 +116,34 @@ async function getStartingFileNames(fileName: string): Promise<string[]> {
 
 // Read settings.json setting for source file name
 // TODO - move to FileHandler?
-// TODO - cache the workspace root? Seems to only return sometimes
 async function getSourcesFromSettings(): Promise<string[]> {
   // check the workspace settings
-  let workspaceroot = ''
   const folders = await connection.workspace.getWorkspaceFolders()
   if (folders !== null) {
     if (folders.length > 0) {
-      workspaceroot = URItoPath(folders[0].uri)
-    }
-    const item: ConfigurationItem = {
-      scopeUri: workspaceroot,
-      section: 'beebvsc',
-    }
-    const settings = await connection.workspace.getConfiguration(item)
-    const filename = settings['sourceFile']
-    if (typeof filename === 'string') {
-      return [filename]
-    } else if (filename instanceof Array) {
-      return filename
+      const workspaceroot = URI.parse(folders[0].uri)
+      const item: ConfigurationItem = {
+        scopeUri: workspaceroot.toString(),
+        section: 'beebvsc',
+      }
+      const settings = await connection.workspace.getConfiguration(item)
+      let filename = settings['sourceFile']
+      if (typeof filename === 'string') {
+        // prefix the workspace root if this is not an absolute path
+        if (!path.isAbsolute(filename)) {
+          filename = Utils.joinPath(workspaceroot, filename)
+        }
+        return [filename]
+      } else if (filename instanceof Array) {
+        // prefix the workspace root if this is not an absolute path
+        filename = filename.map((file) => {
+          if (!path.isAbsolute(file)) {
+            return Utils.joinPath(workspaceroot, file)
+          }
+          return file
+        })
+        return filename
+      }
     }
   } else {
     console.log('No workspace folders')
@@ -261,8 +272,8 @@ const renameProvider = new RenameProvider()
 connection.onPrepareRename(renameProvider.onPrepareRename.bind(renameProvider))
 connection.onRenameRequest(renameProvider.onRename.bind(renameProvider))
 
-// TODO - add document link provider for INCBIN, PUTBASIC, PUTTEXT, PUTFILE statements?
-// This extension doesn't support the file types but could still link to them and leave it to the user
+// TODO - add document link provider for INCBIN, PUTFILE statements?
+// Those may not have file handlers but could still link to them and leave it to the user
 connection.onDocumentLinks((params) => {
   const doc = URItoPath(params.textDocument.uri)
   const docLinks = links.get(doc)
