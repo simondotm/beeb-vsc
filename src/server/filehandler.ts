@@ -79,7 +79,7 @@ export class FileHandler {
       })
       return fileContents
     } catch (error) {
-      throw new Error(`Unable to read file ${uri} with error ${error}`)
+      throw new Error(`Unable to read file ${uriPath} with error ${error}`)
     }
   }
 
@@ -128,21 +128,10 @@ export class FileHandler {
 
 // Tries to replicate format provided by params passed from vscode
 export function URItoVSCodeURI(uri: string): string {
+  if (URI.parse(uri).scheme === 'file') {
+    return URI.parse(uri).toString()
+  }
   return URI.parse(uri).toString()
-  // let fsPath: string
-  // try {
-  //   if (process.platform === 'win32' && !uri.startsWith('file:/')) {
-  //     const unixStyle = uri.replace(/\\/g, '/')
-  //     // console.log('unixStyle ' + unixStyle)
-  //     fsPath = URI.parse('file:///' + unixStyle).fsPath
-  //   } else {
-  //     fsPath = URI.parse(uri).fsPath
-  //   }
-  // } catch (error) {
-  //   console.log(`Error converting URI ${uri} to path: ${error}`)
-  //   return ''
-  // }
-  // return fsPath
 }
 
 export function URItoReference(uri: string): string {

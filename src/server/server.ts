@@ -7,6 +7,7 @@ import {
   InitializeResult,
   ConfigurationItem,
   DocumentLink,
+  Files,
 } from 'vscode-languageserver/node'
 import { TextDocument } from 'vscode-languageserver-textdocument'
 import { CompletionProvider, SignatureProvider } from './completions'
@@ -122,6 +123,7 @@ async function getSourcesFromSettings(): Promise<string[]> {
   if (folders !== null) {
     if (folders.length > 0) {
       const workspaceroot = URItoVSCodeURI(folders[0].uri)
+      const rootpath = Files.uriToFilePath(workspaceroot) ?? ''
       const item: ConfigurationItem = {
         scopeUri: workspaceroot,
         section: 'beebvsc',
@@ -131,7 +133,7 @@ async function getSourcesFromSettings(): Promise<string[]> {
       if (typeof filename === 'string') {
         // prefix the workspace root if this is not an absolute path
         if (!path.isAbsolute(filename)) {
-          filename = URItoVSCodeURI(path.join(workspaceroot, filename))
+          filename = URItoVSCodeURI(path.join(rootpath, filename))
         } else {
           filename = URItoVSCodeURI(filename)
         }
@@ -140,7 +142,7 @@ async function getSourcesFromSettings(): Promise<string[]> {
         // prefix the workspace root if this is not an absolute path
         filename = filename.map((file: string) => {
           if (!path.isAbsolute(file)) {
-            return URItoVSCodeURI(path.join(workspaceroot, file))
+            return URItoVSCodeURI(path.join(rootpath, file))
           }
           return URItoVSCodeURI(file)
         })
