@@ -13,7 +13,6 @@ import {
   beebasmCommands,
   beebasmFunctions,
 } from './shareddata'
-import { URI } from 'vscode-uri'
 import { SymbolTable } from './beebasm-ts/symboltable'
 import { FileHandler } from './filehandler'
 import { MacroTable } from './beebasm-ts/macro'
@@ -26,8 +25,8 @@ export class HoverProvider {
   }
 
   onHover(params: HoverParams): Hover | null {
-    const fspath = URI.parse(params.textDocument.uri).fsPath
-    const docTrees = this.trees.get(fspath)
+    const uri = params.textDocument.uri
+    const docTrees = this.trees.get(uri)
     const location = params.position
     if (docTrees !== undefined) {
       const lineTree = docTrees[location.line]
@@ -87,7 +86,7 @@ Return: ${cmd.return}`,
         if (symbol !== '') {
           const [defn, _] = SymbolTable.Instance.GetSymbolByLine(
             symbol,
-            fspath,
+            uri,
             location.line,
           )
           if (defn === undefined) {
@@ -97,9 +96,7 @@ Return: ${cmd.return}`,
           if (loc.uri === '') {
             return null // Built in constant - could have special info here documenting P%, CPU etc.
           }
-          const document = FileHandler.Instance.GetDocumentText(
-            URI.parse(loc.uri).fsPath,
-          )
+          const document = FileHandler.Instance.GetDocumentText(loc.uri)
           if (document === undefined) {
             return null
           }

@@ -16,11 +16,10 @@ import { ObjectCode } from './beebasm-ts/objectcode'
 import { SourceFile } from './beebasm-ts/sourcefile'
 import { RenameProvider, SymbolProvider } from './symbolhandler'
 import { MacroTable } from './beebasm-ts/macro'
-import { FileHandler, URItoPath } from './filehandler'
+import { FileHandler, URItoVSCodeURI } from './filehandler'
 import { HoverProvider } from './hoverprovider'
 import { AST } from './ast'
 import { SemanticTokensProvider } from './semantictokenprovider'
-import { URI, Utils } from 'vscode-uri'
 import * as path from 'path'
 
 const connection = createConnection(ProposedFeatures.all)
@@ -35,6 +34,7 @@ connection.onInitialize((params: InitializeParams) => {
     workspaceFolders.forEach((folder) => {
       console.log(`Folder: ${folder.name} (${folder.uri})`)
     })
+    FileHandler.Instance.SetWorkspaceRoot(workspaceFolders[0].uri)
   }
 
   const result: InitializeResult = {
@@ -121,9 +121,9 @@ async function getSourcesFromSettings(): Promise<string[]> {
   const folders = await connection.workspace.getWorkspaceFolders()
   if (folders !== null) {
     if (folders.length > 0) {
-      const workspaceroot = URI.parse(folders[0].uri)
+      const workspaceroot = URItoVSCodeURI(folders[0].uri)
       const item: ConfigurationItem = {
-        scopeUri: workspaceroot.toString(),
+        scopeUri: workspaceroot,
         section: 'beebvsc',
       }
       const settings = await connection.workspace.getConfiguration(item)
@@ -131,16 +131,18 @@ async function getSourcesFromSettings(): Promise<string[]> {
       if (typeof filename === 'string') {
         // prefix the workspace root if this is not an absolute path
         if (!path.isAbsolute(filename)) {
-          filename = Utils.joinPath(workspaceroot, filename)
+          filename = URItoVSCodeURI(path.join(workspaceroot, filename))
+        } else {
+          filename = URItoVSCodeURI(filename)
         }
         return [filename]
       } else if (filename instanceof Array) {
         // prefix the workspace root if this is not an absolute path
-        filename = filename.map((file) => {
+        filename = filename.map((file: string) => {
           if (!path.isAbsolute(file)) {
-            return Utils.joinPath(workspaceroot, file)
+            return URItoVSCodeURI(path.join(workspaceroot, file))
           }
-          return file
+          return URItoVSCodeURI(file)
         })
         return filename
       }
@@ -152,10 +154,10 @@ async function getSourcesFromSettings(): Promise<string[]> {
 }
 
 async function ParseFromRoot(textDocument: TextDocument): Promise<void> {
-  const fspath = URItoPath(textDocument.uri)
+  const uri = textDocument.uri
 
   // Get the source file name
-  let sourceFilePath = await getStartingFileNames(fspath)
+  let sourceFilePath = await getStartingFileNames(uri)
   if (sourceFilePath.length === 0) {
     console.log('No source file name set, language server disabled.')
     sourceFilePath = []
@@ -165,9 +167,9 @@ async function ParseFromRoot(textDocument: TextDocument): Promise<void> {
   for (const file of sourceFilePath) {
     await ParseDocument(file, textDocument.uri)
     // check if the document is in this root
-    const root = FileHandler.Instance.GetTargetFileName(fspath)
+    const root = FileHandler.Instance.GetTargetFileName(uri)
     if (root === undefined) {
-      console.log(`No root found yet for ${fspath}`)
+      console.log(`No root found yet for ${uri}`)
     }
     if (root === file) {
       break
@@ -212,8 +214,7 @@ async function ParseDocument(
   }
   // Remove duplicate diagnostics (due to 2-passes)
   // We keep both passes so that we can report errors that only occur in one pass
-  const currentDiagnostics =
-    diagnostics.get(URItoPath(activeFile)) ?? ([] as Diagnostic[])
+  const currentDiagnostics = diagnostics.get(activeFile) ?? ([] as Diagnostic[])
   let thisDiagnostics: Diagnostic[] = []
   thisDiagnostics = currentDiagnostics.filter((value, index) => {
     const _value = JSON.stringify(value)
@@ -275,7 +276,7 @@ connection.onRenameRequest(renameProvider.onRename.bind(renameProvider))
 // TODO - add document link provider for INCBIN, PUTFILE statements?
 // Those may not have file handlers but could still link to them and leave it to the user
 connection.onDocumentLinks((params) => {
-  const doc = URItoPath(params.textDocument.uri)
+  const doc = params.textDocument.uri
   const docLinks = links.get(doc)
   if (docLinks !== undefined) {
     return docLinks

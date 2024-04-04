@@ -32,9 +32,8 @@ import { MacroTable } from './macro'
 import * as AsmException from './asmexception'
 import { strftime } from '../strftime-master/strftime'
 import { AST, ASTType } from '../ast'
-import { FileHandler } from '../filehandler'
-import * as path from 'path'
-import { URI } from 'vscode-uri'
+import { FileHandler, URItoReference, URItoVSCodeURI } from '../filehandler'
+import path from 'path'
 // import exp = require('constants');
 // import { match } from 'assert';
 
@@ -3726,21 +3725,8 @@ export class LineParser {
       throw new AsmException.SyntaxError_CantInclude(this._line, this._column)
     }
     const filename = this.EvaluateExpressionAsString().replace(/\\/g, '/')
-    let fspath: string
-    if (process.platform === 'win32') {
-      fspath = URI.parse('file:///' + path.resolve(filename)).fsPath
-    } else {
-      fspath = URI.parse(path.resolve(filename)).fsPath
-    }
-    let includeFile: string
-    if (process.platform === 'win32') {
-      includeFile = URI.parse('file:///' + path.resolve(filename)).toString()
-      // if (includeFile.endsWith('/')) {
-      // 	includeFile = includeFile.substring(0, includeFile.length - 1);
-      // }
-    } else {
-      includeFile = fspath
-    }
+    const fspath = URItoVSCodeURI(path.resolve(filename))
+    const includeFile: string = URItoReference(fspath)
     if (
       this._ASTValueStack[0].type === ASTType.Value &&
       this._ASTValueStack[0].value === '"' + filename + '"'
@@ -4200,15 +4186,7 @@ export class LineParser {
     ) {
       const startColumn = this._ASTValueStack[0].startColumn + 1
       const endColumn = startColumn + hostFilename.length
-      let filelink: string
-      if (process.platform === 'win32') {
-        filelink = URI.parse('file:///' + path.resolve(hostFilename)).toString()
-        if (filelink.endsWith('/')) {
-          filelink = filelink.substring(0, filelink.length - 1)
-        }
-      } else {
-        filelink = URI.parse(path.resolve(hostFilename)).fsPath
-      }
+      const filelink = URItoVSCodeURI(path.resolve(hostFilename))
       const link: DocumentLink = {
         range: {
           start: { line: this._lineno, character: startColumn },
@@ -4240,15 +4218,7 @@ export class LineParser {
     ) {
       const startColumn = this._ASTValueStack[0].startColumn + 1
       const endColumn = startColumn + hostFilename.length
-      let filelink: string
-      if (process.platform === 'win32') {
-        filelink = URI.parse('file:///' + path.resolve(hostFilename)).toString()
-        if (filelink.endsWith('/')) {
-          filelink = filelink.substring(0, filelink.length - 1)
-        }
-      } else {
-        filelink = URI.parse(path.resolve(hostFilename)).fsPath
-      }
+      const filelink = URItoVSCodeURI(path.resolve(hostFilename))
       const link: DocumentLink = {
         range: {
           start: { line: this._lineno, character: startColumn },

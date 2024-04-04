@@ -13,8 +13,7 @@ import {
   DefinitionParams,
 } from 'vscode-languageserver/node'
 import { SymbolTable } from './beebasm-ts/symboltable'
-import { FileHandler } from './filehandler'
-import { URI } from 'vscode-uri'
+import { FileHandler, URItoReference } from './filehandler'
 import { MacroTable } from './beebasm-ts/macro'
 
 export class RenameProvider {
@@ -24,7 +23,7 @@ export class RenameProvider {
     const textDocument = FileHandler.Instance.documents.get(
       params.textDocument.uri,
     )
-    const fspath = URI.parse(params.textDocument.uri).fsPath
+    const uri = params.textDocument.uri
     const position = params.position
     if (textDocument) {
       const currentLine = textDocument.getText().split(/\r?\n/g)[position.line]
@@ -33,9 +32,9 @@ export class RenameProvider {
         return null
       }
       // lookup symbol in symbol table to confirm it exists
-      const [matched, fullSymbolName] = SymbolTable.Instance.GetSymbolByLine(
+      const [matched, _fullSymbolName] = SymbolTable.Instance.GetSymbolByLine(
         symbolname,
-        fspath,
+        uri,
         position.line,
       )
       if (matched === undefined) {
@@ -55,8 +54,8 @@ export class RenameProvider {
     const textDocument = FileHandler.Instance.documents.get(
       params.textDocument.uri,
     )
-    const fspath = URI.parse(params.textDocument.uri).fsPath
-    const version = textDocument?.version
+    const uri = params.textDocument.uri
+    // const version = textDocument?.version
     const position = params.position
     if (!textDocument) {
       return null
@@ -68,7 +67,7 @@ export class RenameProvider {
     }
     const [matched, _] = SymbolTable.Instance.GetSymbolByLine(
       symbolname,
-      fspath,
+      uri,
       position.line,
     )
     if (matched === undefined) {
@@ -92,7 +91,7 @@ export class RenameProvider {
     // then put references in
     for (const ref of references) {
       const uri = ref.uri
-      const formattedURI = URI.parse(uri).toString() // Convert fsPath to stringified URI as would be sent from vscode
+      const formattedURI = URItoReference(uri)
       if (!editsByUri.has(formattedURI)) {
         editsByUri.set(formattedURI, [])
       }
@@ -126,13 +125,12 @@ export class SymbolProvider {
     const textDocument = FileHandler.Instance.documents.get(
       params.textDocument.uri,
     )
-    // TODO - URI from params is not same format as from filesystem (e.g. file:///path vs path)
-    const cleanPath = URI.parse(params.textDocument.uri).fsPath
+    const uri = params.textDocument.uri
     if (textDocument) {
       const symbols = SymbolTable.Instance.GetSymbols()
       const symbolList: DocumentSymbol[] = []
       symbols.forEach((symboldata, symbolname) => {
-        if (symboldata.GetLocation().uri === cleanPath) {
+        if (symboldata.GetLocation().uri === uri) {
           symbolList.push({
             name: symbolname,
             detail: '',
@@ -147,7 +145,7 @@ export class SymbolProvider {
       // add macros
       const macros = MacroTable.Instance.GetMacros()
       macros.forEach((macro, macroName) => {
-        if (macro.GetLocation().uri === cleanPath) {
+        if (macro.GetLocation().uri === uri) {
           symbolList.push({
             name: macroName,
             detail: '',
@@ -166,12 +164,12 @@ export class SymbolProvider {
     const textDocument = FileHandler.Instance.documents.get(
       params.textDocument.uri,
     )
-    const fspath = URI.parse(params.textDocument.uri).fsPath
+    const uri = params.textDocument.uri
     const location = params.position
     if (textDocument) {
       const currentLine = textDocument.getText().split(/\r?\n/g)[location.line] // Would be nice to get just the line using a range argument but not sure what end position would be
-      const refs = FindReferences(currentLine, fspath, location)
-      const definition = FindDefinition(currentLine, fspath, location)
+      const refs = FindReferences(currentLine, uri, location)
+      const definition = FindDefinition(currentLine, uri, location)
       if (definition !== null) {
         if (refs === null) {
           return [definition]
@@ -187,11 +185,11 @@ export class SymbolProvider {
     const textDocument = FileHandler.Instance.documents.get(
       params.textDocument.uri,
     )
-    const fspath = URI.parse(params.textDocument.uri).fsPath
+    const uri = params.textDocument.uri
     const location = params.position
     if (textDocument) {
       const currentLine = textDocument.getText().split(/\r?\n/g)[location.line]
-      return FindDefinition(currentLine, fspath, location)
+      return FindDefinition(currentLine, uri, location)
     }
     return null
   }

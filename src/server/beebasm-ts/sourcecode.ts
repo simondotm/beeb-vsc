@@ -35,7 +35,6 @@ import {
 } from 'vscode-languageserver'
 import { integer } from 'vscode-languageserver'
 import { AST } from '../ast'
-import { URI } from 'vscode-uri'
 import path = require('path')
 
 const MAX_FOR_LEVELS = 256
@@ -277,10 +276,7 @@ export class SourceCode {
   }
 
   GetURI(): string {
-    let uri = this._uri
-    if (process.platform === 'win32') {
-      uri = URI.parse('file:///' + path.resolve(this._uri)).toString()
-    }
+    const uri = this._uri
     return uri
   }
 

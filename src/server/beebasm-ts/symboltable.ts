@@ -23,7 +23,6 @@
 import { integer, Location } from 'vscode-languageserver'
 import { GlobalData } from './globaldata'
 import { ObjectCode } from './objectcode'
-import { URI } from 'vscode-uri'
 
 // can't use Symbol as a type name because it's a reserved word
 export class SymbolData {
@@ -106,7 +105,7 @@ export class SymbolTable {
   // Get all symbols in scope for a particular location
   GetSymbolsByLocation(uri: string, line: number): Map<string, SymbolData> {
     const symbols = new Map<string, SymbolData>()
-    const uriSanitised = URI.parse(uri).fsPath
+    const uriSanitised = uri
     for (const [name, symbolData] of this._map.entries()) {
       if (!name.includes('@')) {
         // global symbols always included
