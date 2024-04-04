@@ -416,7 +416,10 @@ function createTargetCommand(): void {
 
   // Create list of files in the root folder with the supported file extensions
   const rootPath = getWorkspacePath()
-  let targetList = fs.readdirSync(rootPath)
+  let targetList = fs.readdirSync(rootPath, {
+    encoding: 'utf-8',
+    recursive: true,
+  })
   targetList = targetList.filter((file) =>
     supportedFileTypes.includes(file.split('.').pop()!),
   )
