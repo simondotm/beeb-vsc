@@ -165,6 +165,12 @@ async function ParseFromRoot(textDocument: TextDocument): Promise<void> {
     sourceFilePath = []
   }
 
+  // Check if the document is in the sourceFilePath list
+  if (sourceFilePath.includes(uri)) {
+    await ParseDocument(uri, uri)
+    return
+  }
+
   // Parse each root in turn, until find the one that contains the document
   for (const file of sourceFilePath) {
     await ParseDocument(file, textDocument.uri)
