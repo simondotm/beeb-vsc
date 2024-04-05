@@ -32,8 +32,11 @@
 				"${workspaceRoot}/src/client/test/testFixture"
 			],
 			"outFiles": [
-				"${workspaceRoot}/out/client/test/**/*.js"
-			]
+				"${workspaceRoot}/dist/main.js",
+				"${workspaceRoot}/dist/server.js"
+			],
+			"sourceMaps": true,
+			"autoAttachChildProcesses": true,
 		}
 	]
 }
