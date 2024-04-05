@@ -7,6 +7,7 @@ import {
   InitializeResult,
   ConfigurationItem,
   DocumentLink,
+  Files,
 } from 'vscode-languageserver/node'
 import { TextDocument } from 'vscode-languageserver-textdocument'
 import { CompletionProvider, SignatureProvider } from './completions'
@@ -16,10 +17,11 @@ import { ObjectCode } from './beebasm-ts/objectcode'
 import { SourceFile } from './beebasm-ts/sourcefile'
 import { RenameProvider, SymbolProvider } from './symbolhandler'
 import { MacroTable } from './beebasm-ts/macro'
-import { FileHandler, URItoPath } from './filehandler'
+import { FileHandler, URItoVSCodeURI } from './filehandler'
 import { HoverProvider } from './hoverprovider'
 import { AST } from './ast'
 import { SemanticTokensProvider } from './semantictokenprovider'
+import * as path from 'path'
 
 const connection = createConnection(ProposedFeatures.all)
 const trees: Map<string, AST[]> = new Map<string, AST[]>()
@@ -33,6 +35,7 @@ connection.onInitialize((params: InitializeParams) => {
     workspaceFolders.forEach((folder) => {
       console.log(`Folder: ${folder.name} (${folder.uri})`)
     })
+    FileHandler.Instance.SetWorkspaceRoot(workspaceFolders[0].uri)
   }
 
   const result: InitializeResult = {
@@ -114,25 +117,37 @@ async function getStartingFileNames(fileName: string): Promise<string[]> {
 
 // Read settings.json setting for source file name
 // TODO - move to FileHandler?
-// TODO - cache the workspace root? Seems to only return sometimes
 async function getSourcesFromSettings(): Promise<string[]> {
   // check the workspace settings
-  let workspaceroot = ''
   const folders = await connection.workspace.getWorkspaceFolders()
   if (folders !== null) {
     if (folders.length > 0) {
-      workspaceroot = URItoPath(folders[0].uri)
-    }
-    const item: ConfigurationItem = {
-      scopeUri: workspaceroot,
-      section: 'beebvsc',
-    }
-    const settings = await connection.workspace.getConfiguration(item)
-    const filename = settings['sourceFile']
-    if (typeof filename === 'string') {
-      return [filename]
-    } else if (filename instanceof Array) {
-      return filename
+      const workspaceroot = URItoVSCodeURI(folders[0].uri)
+      const rootpath = Files.uriToFilePath(workspaceroot) ?? ''
+      const item: ConfigurationItem = {
+        scopeUri: workspaceroot,
+        section: 'beebvsc',
+      }
+      const settings = await connection.workspace.getConfiguration(item)
+      let filename = settings['sourceFile']
+      if (typeof filename === 'string') {
+        // prefix the workspace root if this is not an absolute path
+        if (!path.isAbsolute(filename)) {
+          filename = URItoVSCodeURI(path.join(rootpath, filename))
+        } else {
+          filename = URItoVSCodeURI(filename)
+        }
+        return [filename]
+      } else if (filename instanceof Array) {
+        // prefix the workspace root if this is not an absolute path
+        filename = filename.map((file: string) => {
+          if (!path.isAbsolute(file)) {
+            return URItoVSCodeURI(path.join(rootpath, file))
+          }
+          return URItoVSCodeURI(file)
+        })
+        return filename
+      }
     }
   } else {
     console.log('No workspace folders')
@@ -141,22 +156,28 @@ async function getSourcesFromSettings(): Promise<string[]> {
 }
 
 async function ParseFromRoot(textDocument: TextDocument): Promise<void> {
-  const fspath = URItoPath(textDocument.uri)
+  const uri = textDocument.uri
 
   // Get the source file name
-  let sourceFilePath = await getStartingFileNames(fspath)
+  let sourceFilePath = await getStartingFileNames(uri)
   if (sourceFilePath.length === 0) {
     console.log('No source file name set, language server disabled.')
     sourceFilePath = []
+  }
+
+  // Check if the document is in the sourceFilePath list
+  if (sourceFilePath.includes(uri)) {
+    await ParseDocument(uri, uri)
+    return
   }
 
   // Parse each root in turn, until find the one that contains the document
   for (const file of sourceFilePath) {
     await ParseDocument(file, textDocument.uri)
     // check if the document is in this root
-    const root = FileHandler.Instance.GetTargetFileName(fspath)
+    const root = FileHandler.Instance.GetTargetFileName(uri)
     if (root === undefined) {
-      console.log(`No root found yet for ${fspath}`)
+      console.log(`No root found yet for ${uri}`)
     }
     if (root === file) {
       break
@@ -201,8 +222,7 @@ async function ParseDocument(
   }
   // Remove duplicate diagnostics (due to 2-passes)
   // We keep both passes so that we can report errors that only occur in one pass
-  const currentDiagnostics =
-    diagnostics.get(URItoPath(activeFile)) ?? ([] as Diagnostic[])
+  const currentDiagnostics = diagnostics.get(activeFile) ?? ([] as Diagnostic[])
   let thisDiagnostics: Diagnostic[] = []
   thisDiagnostics = currentDiagnostics.filter((value, index) => {
     const _value = JSON.stringify(value)
@@ -261,10 +281,10 @@ const renameProvider = new RenameProvider()
 connection.onPrepareRename(renameProvider.onPrepareRename.bind(renameProvider))
 connection.onRenameRequest(renameProvider.onRename.bind(renameProvider))
 
-// TODO - add document link provider for INCBIN, PUTBASIC, PUTTEXT, PUTFILE statements?
-// This extension doesn't support the file types but could still link to them and leave it to the user
+// TODO - add document link provider for INCBIN, PUTFILE statements?
+// Those may not have file handlers but could still link to them and leave it to the user
 connection.onDocumentLinks((params) => {
-  const doc = URItoPath(params.textDocument.uri)
+  const doc = params.textDocument.uri
   const docLinks = links.get(doc)
   if (docLinks !== undefined) {
     return docLinks

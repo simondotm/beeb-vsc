@@ -35,7 +35,6 @@ import {
 } from 'vscode-languageserver'
 import { integer } from 'vscode-languageserver'
 import { AST } from '../ast'
-import { URI } from 'vscode-uri'
 import path = require('path')
 
 const MAX_FOR_LEVELS = 256
@@ -103,7 +102,7 @@ export class SourceCode {
     this._lineNumber = lineNumber
     this._parent = parent
     this._lineStartPointer = 0
-    this._lines = contents.split('\n')
+    this._lines = contents.split(/\r\n|\n/g)
     this._diagnostics = diagnostics
     if (this._diagnostics.get(uri) === undefined) {
       this._diagnostics.set(uri, [])
@@ -277,10 +276,7 @@ export class SourceCode {
   }
 
   GetURI(): string {
-    let uri = this._uri
-    if (process.platform === 'win32') {
-      uri = URI.parse('file:///' + path.resolve(this._uri)).toString()
-    }
+    const uri = this._uri
     return uri
   }
 

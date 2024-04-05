@@ -1,6 +1,6 @@
 {
 	"beebvsc": {
-		"sourceFile": "/Users/tomtom/Documents/Beeb/VSCode/github-fork/beeb-vsc/src/client/test/testFixture/main.6502",
+		"sourceFile": "main.6502",
 		"targetName": "main.ssd"
 	}
 }

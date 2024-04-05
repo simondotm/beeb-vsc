@@ -330,7 +330,7 @@ function CreateNewLocalSettingsJson(sourceFile: string, targetName: string) {
   // this will be used to store local settings for the current workspace
   // (eg. assembler/emulator paths)
   const settingsPath = path.join(getWorkspacePath(), '.vscode', 'settings.json')
-  const sourcePath = path.join(getWorkspacePath(), sourceFile)
+  const sourcePath = sourceFile
 
   const settingsObject: BeebVSCSettings = {
     beebvsc: {
@@ -416,7 +416,10 @@ function createTargetCommand(): void {
 
   // Create list of files in the root folder with the supported file extensions
   const rootPath = getWorkspacePath()
-  let targetList = fs.readdirSync(rootPath)
+  let targetList = fs.readdirSync(rootPath, {
+    encoding: 'utf-8',
+    recursive: true,
+  })
   targetList = targetList.filter((file) =>
     supportedFileTypes.includes(file.split('.').pop()!),
   )
@@ -454,7 +457,7 @@ function createTargetCommand(): void {
     // get the tasks array, we will add out new target here
     const tasks = tasksObject.tasks
 
-    // Check if this target is already present, we don't hanlde this presently
+    // Check if this target is already present, we don't handle this presently
     // TODO: offer option to replace
     for (let i = 0; i < tasks.length; i++) {
       if (target.toLowerCase() === tasks[i].label.toLowerCase()) {
@@ -598,8 +601,11 @@ function SaveJSONFiles(
     } else {
       newSourceFile = []
     }
-    if (!newSourceFile.includes(path.join(rootPath, selection))) {
-      newSourceFile.push(path.join(rootPath, selection))
+    if (
+      !newSourceFile.includes(path.join(rootPath, selection)) && // legacy check for full path
+      !newSourceFile.includes(selection)
+    ) {
+      newSourceFile.push(selection)
     }
     settingsObject.beebvsc = {
       sourceFile: newSourceFile,
