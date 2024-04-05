@@ -131,7 +131,7 @@ export function URItoVSCodeURI(uri: string): string {
   if (URI.parse(uri).scheme === 'file') {
     return URI.parse(uri).toString()
   }
-  return URI.parse(uri).toString()
+  return URI.file(uri).toString()
 }
 
 export function URItoReference(uri: string): string {
