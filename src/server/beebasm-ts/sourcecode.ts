@@ -102,7 +102,7 @@ export class SourceCode {
     this._lineNumber = lineNumber
     this._parent = parent
     this._lineStartPointer = 0
-    this._lines = contents.split('\n')
+    this._lines = contents.split(/\r\n|\n/g)
     this._diagnostics = diagnostics
     if (this._diagnostics.get(uri) === undefined) {
       this._diagnostics.set(uri, [])
