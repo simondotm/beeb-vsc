@@ -259,6 +259,7 @@ export function deactivate(): Thenable<void> | undefined {
 function checkSourceFilesSpecified() {
   let settingsIssue: boolean = false
   const settingsPath = path.join(getWorkspacePath(), '.vscode', 'settings.json')
+  let fixable = false
   if (fileExists(settingsPath)) {
     // settings.json exists, so load it
     let settingsObject: Partial<BeebVSCSettings> = {}
@@ -270,24 +271,90 @@ function checkSourceFilesSpecified() {
     }
     if (settingsObject.beebvsc === undefined) {
       settingsIssue = true
+      fixable = true
       console.log('Error with settingsObject.beebvsc === undefined')
     } else {
-      if (settingsObject.beebvsc?.sourceFile === undefined) {
+      if (settingsObject.beebvsc.sourceFile === undefined) {
         settingsIssue = true
         console.log(
-          'Error with settingsObject.beebvsc?.sourceFile === undefined',
+          'Error with settingsObject.beebvsc.sourceFile === undefined',
         )
       }
     }
   } else {
     settingsIssue = true
+    fixable = true
     console.log('Error with settingsPath not existing ' + settingsPath)
   }
-  if (settingsIssue) {
+  if (settingsIssue && !fixable) {
     window.showErrorMessage(
       "BeebVSC: 'Could not find sourceFile in settings\nPlease add targets using the 'BeebVSC: Create New Build Target' command",
     )
+  } else if (settingsIssue) {
+    console.log('Trying to create settings.json from tasks.json')
+    const tasksObject = loadTasks()
+    if (tasksObject === null) {
+      console.log(
+        'Error loading tasks.json file - could not create settings.json',
+      )
+      return
+    }
+    const tasks = tasksObject.tasks
+    if (tasks.length === 0) {
+      console.log(
+        'No targets available in tasks.json file - could not create settings.json',
+      )
+      return
+    }
+    const settings = tryGetSettingsFromTasks(tasksObject, tasks)
+    if (
+      Array.isArray(settings.beebvsc.sourceFile) &&
+      settings.beebvsc.sourceFile.length > 0
+    ) {
+      CreateNewLocalSettingsJson(
+        settings.beebvsc.sourceFile,
+        settings.beebvsc.targetName,
+      )
+    }
   }
+}
+
+// Loop throught tasks object then create settings.json from the tasks object
+// by extracting the sourceFile name (entry in args array of the task after the -i entry)
+// and the targetName (entry in args array after the -do entry)
+function tryGetSettingsFromTasks(
+  tasksObject: VSTasks,
+  tasks: VSTask[],
+): BeebVSCSettings {
+  const sourceFiles: string[] = []
+  let targetName: string = ''
+  const version = tasksObject.version
+  for (let i = 0; i < tasks.length; i++) {
+    const task = tasks[i]
+    let args = task.args
+    if (args !== undefined) {
+      // version 0.1.0, args is an array with one string inside of format 'BeebAsm.exe -v -i main.asm -do main.ssd etc.'
+      // version 2.0.0, args is an array of strings e.g. ['-v', '-i', 'main.asm', '-do', 'main.ssd', etc.]
+      if (version === '0.1.0' && args.length === 1) {
+        args = args[0].split(' ')
+      }
+      for (let i = 0; i < args.length - 1; i++) {
+        if (args[i] === '-i') {
+          sourceFiles.push(args[i + 1])
+          break
+        }
+      }
+      for (let i = 0; i < args.length - 1; i++) {
+        if (args[i] === '-do') {
+          targetName = args[i + 1] // Will get overwritten if multiple tasks but presume all have same target
+          break
+        }
+      }
+    }
+  }
+  console.log('Adding details to settings.json: ' + sourceFiles)
+  // CreateNewLocalSettingsJson(sourceFiles, targetName)
+  return { beebvsc: { sourceFile: sourceFiles, targetName: targetName } }
 }
 
 //----------------------------------------------------------------------------------------
@@ -325,20 +392,27 @@ function checkConfiguration(): boolean {
   return true
 }
 
-function CreateNewLocalSettingsJson(sourceFile: string, targetName: string) {
+function CreateNewLocalSettingsJson(sourceFiles: string[], targetName: string) {
   // create a new settings.json file in the .vscode folder
   // this will be used to store local settings for the current workspace
   // (eg. assembler/emulator paths)
   const settingsPath = path.join(getWorkspacePath(), '.vscode', 'settings.json')
-  const sourcePath = sourceFile
 
   const settingsObject: BeebVSCSettings = {
     beebvsc: {
-      sourceFile: [sourcePath],
+      sourceFile: sourceFiles,
       targetName: targetName,
     },
   }
-  fs.writeFileSync(settingsPath, JSON.stringify(settingsObject, null, 4))
+  if (!fileExists(settingsPath)) {
+    fs.writeFileSync(settingsPath, JSON.stringify(settingsObject, null, 4))
+  } else {
+    // add the new settings to the existing settings.json file (we know that
+    // there is no beebvsc object in the settings.json file as checked by the caller)
+    const currentSettings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'))
+    currentSettings.beebvsc = settingsObject.beebvsc
+    fs.writeFileSync(settingsPath, JSON.stringify(currentSettings, null, 4))
+  }
 }
 
 //----------------------------------------------------------------------------------------
@@ -579,7 +653,7 @@ function SaveJSONFiles(
   // Check if it exists first
   const settingsPath = path.join(getWorkspacePath(), '.vscode', 'settings.json')
   if (!fileExists(settingsPath)) {
-    CreateNewLocalSettingsJson(selection, targetDiskImage)
+    CreateNewLocalSettingsJson([selection], targetDiskImage)
   } else {
     // settings.json exists, so load it
     let settingsObject: Partial<BeebVSCSettings> = {}
