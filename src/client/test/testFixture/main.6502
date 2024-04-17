@@ -3,3 +3,4 @@
 
 INCLUDE "completion.6502"
 INCLUDE "diagnostics.6502"
+INCLUDE "rename.6502"

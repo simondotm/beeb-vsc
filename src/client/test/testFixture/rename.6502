@@ -1,0 +1,8 @@
+symbol = %01001010
+ORG &1000
+.label
+{
+	LDA #symbol
+	CMP &80
+	BEQ label
+}
