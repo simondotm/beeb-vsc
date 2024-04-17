@@ -169,14 +169,17 @@ export class SymbolProvider {
     if (textDocument) {
       const currentLine = textDocument.getText().split(/\r?\n/g)[location.line] // Would be nice to get just the line using a range argument but not sure what end position would be
       const refs = FindReferences(currentLine, uri, location)
+      const allRefs: Location[] = []
       const definition = FindDefinition(currentLine, uri, location)
       if (definition !== null) {
-        if (refs === null) {
-          return [definition]
-        }
-        refs.push(definition)
+        allRefs.push(definition)
       }
-      return refs
+      if (refs !== null) {
+        for (const ref of refs) {
+          allRefs.push(ref)
+        }
+      }
+      return allRefs
     }
     return null
   }
