@@ -2,6 +2,12 @@
 
 See [Releases on Github](https://github.com/simondotm/beeb-vsc/releases) for full release history.
 
+### 0.2.3
+- Add functionality around macros (references, symbol highlighting etc.)
+- Change default paths in settings.json to be relative so projects are portable
+- If settings.json doesn't exist, will try to create from tasks.json information
+- Fix for rename failing after performing 'find all references' on the symbol to be renamed
+
 ### 0.2.2
 - Fix for error parsing issues when settings.json is not set up
 
