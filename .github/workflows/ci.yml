@@ -41,5 +41,5 @@ jobs:
         run: echo npm run test
 
       - name: e2e
-        run: npm run e2e
+        run: xvfb-run npm run e2e
 
