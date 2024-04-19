@@ -17,6 +17,8 @@ on:
       - master    
 
 jobs:
+  # setup just installs node_modules and caches npm packages
+  # other jobs are dependent on this mainly to ensure it succeeds first, and to share the cache
   setup:
     runs-on: ubuntu-latest
     steps:
@@ -51,8 +53,10 @@ jobs:
       - run: npm ci
       - run: npm run lint
 
+
+  # test depends on build to ensure the build step succeeds before even trying the tests
   test:
-    needs: setup
+    needs: [ setup, build ]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -64,8 +68,9 @@ jobs:
       - run: npm run package
       - run: npm run test
 
+  # e2e depends on build to ensure the build step succeeds before even trying the e2e
   e2e:
-    needs: setup
+    needs: [ setup, build ]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

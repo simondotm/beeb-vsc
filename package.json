@@ -190,7 +190,8 @@
     "pretest:client": "npm run compile && npm run lint",
     "test_orig:client": "node ./client/out/test/runTest.js",
     "test:client": "node ./out/server/test/tests.js",
-    "e2e": "tsc -b && node ./out/client/test/runTest.js"
+    "e2e": "tsc -b && node ./out/client/test/runTest.js",
+    "test": "echo run the unit tests at some point!"
   },
   "devDependencies": {
     "@types/jquery": "^3.5.29",
