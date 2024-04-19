@@ -40,3 +40,6 @@ jobs:
       - name: Test
         run: echo npm run test
 
+      - name: e2e
+        run: npm run e2e
+
