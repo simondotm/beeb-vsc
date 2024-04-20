@@ -1018,7 +1018,6 @@ function testASTAssign() {
   const input = new SourceCode(code, 0, null, diagnostics, '', trees, links)
   input.Process()
   const tree = input.GetTrees().get('')![0]
-  console.log(tree.children)
   assert.equal(tree.children[0].type, AST.ASTType.VariableDeclaration)
   assert.equal(tree.children.length, 1)
   assert.equal(tree.children[0].children[0].type, AST.ASTType.Value)
@@ -1030,14 +1029,11 @@ function testASTAssignExpr() {
   const input = new SourceCode(code, 0, null, diagnostics, '', trees, links)
   input.Process()
   const tree = input.GetTrees().get('')![0]
-  // console.log(tree.children);
   assert.equal(tree.children[0].type, AST.ASTType.VariableDeclaration)
   assert.equal(tree.children.length, 1)
   const outerFunc = tree.children[0].children[0]
-  // console.log(outerFunc);
   assert.equal(outerFunc.type, AST.ASTType.UnaryOp)
   const innerExpr = outerFunc.children[0]
-  console.log(innerExpr)
   assert.equal(innerExpr.type, AST.ASTType.BinaryOp)
 }
 
@@ -1047,9 +1043,6 @@ function testASTCommand() {
   const thisLine = new LineParser(input, code, 0)
   thisLine.Process()
   const tree = thisLine.GetTree()
-  console.log(tree.children)
-  console.log(tree.children[0].children)
-  console.log(tree.children[0].children[0].children)
   assert.equal(tree.children[0].children.length, 1)
   assert.equal(tree.children[0].type, AST.ASTType.Command)
   assert.equal(tree.children[0].children[0].type, AST.ASTType.UnaryOp)
@@ -1061,9 +1054,6 @@ function testASTAssignCommand() {
   const thisLine = new LineParser(input, code, 0)
   thisLine.Process()
   const tree = thisLine.GetTree()
-  console.log(tree.children)
-  console.log(tree.children[0].children)
-  console.log(tree.children[0].children[0].children)
   assert.equal(tree.children[0].children.length, 1)
   assert.equal(tree.children[0].type, AST.ASTType.VariableDeclaration)
   assert.equal(tree.children[0].children[0].type, AST.ASTType.UnaryOp)
@@ -1074,12 +1064,10 @@ function testAST2Expressions() {
   const input = new SourceCode(code, 0, null, diagnostics, '', trees, links)
   input.Process()
   const tree = input.GetTrees().get('')![0]
-  console.log(tree.children)
   assert.equal(tree.children.length, 3)
   assert.equal(tree.children[0].type, AST.ASTType.VariableDeclaration)
   assert.equal(tree.children[1].type, AST.ASTType.Command) // Separator (:)
   assert.equal(tree.children[2].type, AST.ASTType.VariableDeclaration)
-  console.log(tree.children[2])
 }
 
 function testASTAssembler1() {
@@ -1087,7 +1075,6 @@ function testASTAssembler1() {
   const input = new SourceCode(code, 0, null, diagnostics, '', trees, links)
   input.Process()
   const tree = input.GetTrees().get('')![0]
-  console.log(tree.children)
   assert.equal(tree.children.length, 1)
   assert.equal(tree.children[0].type, AST.ASTType.Assembly)
   assert.equal(tree.children[0].children.length, 0)
@@ -1098,7 +1085,6 @@ function testASTAssembler2() {
   const input = new SourceCode(code, 0, null, diagnostics, '', trees, links)
   input.Process()
   const tree = input.GetTrees().get('')![0]
-  console.log(tree.children)
   assert.equal(tree.children.length, 1)
   assert.equal(tree.children[0].type, AST.ASTType.Assembly)
   assert.equal(tree.children[0].children.length, 1)
@@ -1111,8 +1097,6 @@ function testASTAssembler3() {
   const input = new SourceCode(code, 0, null, diagnostics, '', trees, links)
   input.Process()
   const tree = input.GetTrees().get('')![0]
-  console.log(tree.children)
-  console.log(tree.children[0].children[0])
   assert.equal(tree.children.length, 1)
   assert.equal(tree.children[0].type, AST.ASTType.Assembly)
   assert.equal(tree.children[0].children.length, 1)
@@ -1125,8 +1109,6 @@ function testASTModeACC() {
   const input = new SourceCode(code, 0, null, diagnostics, '', trees, links)
   input.Process()
   const tree = input.GetTrees().get('')![0]
-  console.log(tree.children)
-  console.log(tree.children[0].children[0])
   assert.equal(tree.children.length, 1)
   assert.equal(tree.children[0].type, AST.ASTType.Assembly)
   assert.equal(tree.children[0].children.length, 1)
@@ -1139,8 +1121,6 @@ function testASTModeINDX() {
   const input = new SourceCode(code, 0, null, diagnostics, '', trees, links)
   input.Process()
   const tree = input.GetTrees().get('')![0]
-  console.log(tree.children)
-  console.log(tree.children[0].children[0])
   assert.equal(tree.children[0].children.length, 2)
   assert.equal(tree.children[0].children[0].value, '&FF')
   assert.equal(tree.children[0].children[1].value, 'X')
@@ -1153,8 +1133,6 @@ JMP (&1000,X)`
   const input = new SourceCode(code, 0, null, diagnostics, '', trees, links)
   input.Process()
   const tree = input.GetTrees().get('')![2]
-  console.log(tree.children)
-  console.log(tree.children[0].children[0])
   assert.equal(tree.children[0].children.length, 2)
   assert.equal(tree.children[0].children[0].value, '&1000')
   assert.equal(tree.children[0].children[1].value, 'X')
@@ -1165,8 +1143,6 @@ function testASTEQUB() {
   const input = new SourceCode(code, 0, null, diagnostics, '', trees, links)
   input.Process()
   const tree = input.GetTrees().get('')![0]
-  console.log(tree.children)
-  console.log(tree.children[0].children)
   assert.equal(tree.children[0].children.length, 3)
   assert.equal(tree.children[0].children[0].value, '1')
   assert.equal(tree.children[0].children[1].value, '2')
@@ -1184,8 +1160,6 @@ function testASTForLoop() {
   const input = new SourceCode(code, 0, null, diagnostics, '', trees, links)
   input.Process()
   const tree = input.GetTrees().get('')![0]
-  console.log(tree.children)
-  console.log(tree.children[0].children)
   assert.equal(tree.children.length, 5) // includes statement separator
 }
 
@@ -1197,13 +1171,8 @@ EQUB n
 NEXT`
   const input = new SourceCode(code, 0, null, diagnostics, '', trees, links)
   input.Process()
-  let tree = input.GetTrees().get('')![0]
-  console.log(tree.children)
-  console.log(tree.children[0].children)
-  tree = input.GetTrees().get('')![1]
-  console.log(tree.children)
-  tree = input.GetTrees().get('')![2]
-  console.log(tree.children)
+  const tree = input.GetTrees().get('')![0]
+  assert.equal(tree.children[0].children.length, 2) // start and end range values
 }
 
 function testASTMacroCall() {
@@ -1215,7 +1184,5 @@ TEMP 1`
   const input = new SourceCode(code, 0, null, diagnostics, '', trees, links)
   input.Process()
   const tree = input.GetTrees().get('')![4]
-  console.log(tree.children)
-  console.log(tree.children[0].children)
   assert.equal(tree.children.length, 1)
 }
