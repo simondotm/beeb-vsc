@@ -186,12 +186,12 @@
     "compile-for-tests": "tsc -b -w",
     "lint": "eslint ./src --ext .ts,.tsx",
     "package": "vsce package",
-    "test:server": "ts-mocha server/src/test/*.ts",
+    "test:server": "ts-mocha src/server/test/runTests.ts",
     "pretest:client": "npm run compile && npm run lint",
     "test_orig:client": "node ./client/out/test/runTest.js",
     "test:client": "node ./out/server/test/tests.js",
     "e2e": "tsc -b && node ./out/client/test/runTest.js",
-    "test": "echo run the unit tests at some point!"
+    "test": "npm run test:server && echo setup unit tests for the client at some point!"
   },
   "devDependencies": {
     "@types/jquery": "^3.5.29",
