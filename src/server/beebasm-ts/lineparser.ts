@@ -3601,10 +3601,13 @@ export class LineParser {
           typeof value !== 'number' ||
           value !== ObjectCode.Instance.GetPC()
         ) {
-          throw new AsmException.SyntaxError_SecondPassProblem(
-            this._line,
-            oldColumn,
-          )
+          if (!ObjectCode.Instance.HadSecondPassError) {
+            ObjectCode.Instance.HadSecondPassError = true
+            throw new AsmException.SyntaxError_SecondPassProblem(
+              this._line,
+              oldColumn,
+            )
+          }
         }
         SymbolTable.Instance.AddLabel(symbolName)
       }
