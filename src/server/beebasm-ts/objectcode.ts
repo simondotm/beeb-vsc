@@ -46,6 +46,7 @@ export class ObjectCode {
   // After one consistency error, all subsequent code will probably be wrong, so just raise once
   // or we'll get a lot of errors and potentially cause severe slowdown
   private _hadConsistencyError = false
+  private _hadSecondPassError = false
 
   private constructor() {
     //SymbolTable.Instance.AddSymbol( "CPU", this._CPU );
@@ -62,6 +63,7 @@ export class ObjectCode {
     this._aFlags.fill(0)
     this._aMapChar.fill(0)
     this._hadConsistencyError = false
+    this._hadSecondPassError = false
   }
 
   public GetCPU(): number {
@@ -79,6 +81,14 @@ export class ObjectCode {
 
   public SetPC(i: number): void {
     this._PC = i
+  }
+
+  public get HadSecondPassError(): boolean {
+    return this._hadSecondPassError
+  }
+
+  public set HadSecondPassError(s: boolean) {
+    this._hadSecondPassError = s
   }
 
   public PutByte(b: number): void {
