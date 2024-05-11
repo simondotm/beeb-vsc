@@ -8,7 +8,7 @@ import {
   SignatureHelp,
   SignatureInformation,
 } from 'vscode-languageserver/node'
-import { beebasmCommands, beebasmFunctions } from './shareddata'
+import { beebasmCommands, beebasmFunctions, opcodeData } from './shareddata'
 import { TextDocument } from 'vscode-languageserver-textdocument'
 import { SymbolTable } from './beebasm-ts/symboltable'
 
@@ -34,6 +34,28 @@ const commandCompletions: CompletionItem[] = beebasmCommands.map((item) => ({
   command: triggerParameterHints,
   detail: 'command',
   documentation: item.documentation,
+}))
+const uniqueOpcodes = new Set<string>()
+opcodeData.forEach((item) => {
+  uniqueOpcodes.add(item.mnemonic)
+})
+const opcodeCompletions: CompletionItem[] = Array.from(uniqueOpcodes).map(
+  (item) => ({
+    label: item,
+    kind: CompletionItemKind.Keyword,
+    insertTextFormat: InsertTextFormat.PlainText,
+    insertText: item,
+    detail: 'opcode',
+    documentation: '',
+  }),
+)
+const registerCompletions: CompletionItem[] = ['A', 'X', 'Y'].map((item) => ({
+  label: item,
+  kind: CompletionItemKind.Keyword,
+  insertTextFormat: InsertTextFormat.PlainText,
+  insertText: item,
+  detail: 'register',
+  documentation: '',
 }))
 
 export class CompletionProvider {
@@ -61,6 +83,8 @@ export class CompletionProvider {
 
     return functionCompletions
       .concat(commandCompletions)
+      .concat(opcodeCompletions)
+      .concat(registerCompletions)
       .concat(symbolCompletionItems)
   }
 
