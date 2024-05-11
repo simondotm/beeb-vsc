@@ -7,13 +7,13 @@
   "name": "6502/BeebAsm Assembly",
   "patterns": [
     { "include": "#comments" },
+    { "include": "#labels" },
     { "include": "#constants" },
     { "include": "#control" },
     { "include": "#6502" },
     { "include": "#beebasm" },
     { "include": "#quotes" },
-    { "include": "#operators" },
-    { "include": "#labels" }
+    { "include": "#operators" }
   ],
   "repository": {
     "6502": {
