@@ -149,6 +149,9 @@ export class SignatureProvider {
     line: string,
     character: number,
   ): [string, number] {
+    if (this.inComment(line, character)) {
+      return ['', 0]
+    }
     // Parse text for function name
     // Find all words in line then check against functionAndCommand set
     const pattern = /[a-z][\w$]+/gi
@@ -202,5 +205,20 @@ export class SignatureProvider {
     }
     // console.log(`potentialmatch: ${potentialmatch}, commas: ${commas}, character: ${character}`);
     return [potentialmatch, commas]
+  }
+
+  private inComment(line: string, character: number): boolean {
+    // Check if the line is in a comment
+    // Comments are after a semi-colon (not in quotes)
+    let inQuotes = false
+    for (let i = 0; i < character; i++) {
+      if (line[i] === '"' || line[i] === "'") {
+        inQuotes = !inQuotes
+      }
+      if (line[i] === ';' && !inQuotes) {
+        return true
+      }
+    }
+    return false
   }
 }

@@ -206,6 +206,9 @@ suite('LineParser', function () {
     test('Test find function name MID$', function () {
       testFindFunctionNameMID$()
     })
+    test('Test not function in comments', function () {
+      testNotFunctionInComments()
+    })
   })
 
   suite('AST', function () {
@@ -1011,6 +1014,13 @@ function testFindFunctionNameMID$() {
   const [match3, parameterNo3] = provider.findMatchingFunction(code, 16)
   assert.equal(match3, 'MID$')
   assert.equal(parameterNo3, 2)
+}
+
+function testNotFunctionInComments() {
+  const code = 'PRINT "Hello World" ; PRINT "Goodbye World"'
+  const provider = new SignatureProvider()
+  const [match, _parameterNo] = provider.findMatchingFunction(code, 27)
+  assert.equal(match, '')
 }
 
 function testASTAssign() {
