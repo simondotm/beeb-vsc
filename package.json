@@ -22,7 +22,8 @@
     "url": "https://ko-fi.com/simondotm"
   },
   "categories": [
-    "Programming Languages"
+    "Programming Languages",
+    "Debuggers"
   ],
   "keywords": [
     "6502",
@@ -55,6 +56,9 @@
     }
   ],
   "main": "./dist/main.js",
+  "activationEvents": [
+    "onDebugResolve:jsbeebdebugger"
+  ],
   "contributes": {
     "languages": [
       {
@@ -121,6 +125,10 @@
       {
         "command": "extension.emulator.option2",
         "title": "BeebVSC: Emulator option2"
+      },
+      {
+        "command": "extension.jsbeebdebugger.debug",
+        "title": "BeebVSC: Debug"
       }
     ],
     "menus": {
@@ -128,6 +136,11 @@
         {
           "when": "(resourceExtname == .ssd || resourceExtname == .dsd) && extension.feature.emulator",
           "command": "extension.emulator.start",
+          "group": "YourGroup@1"
+        },
+        {
+          "when": "(resourceExtname == .ssd || resourceExtname == .dsd) && extension.feature.emulator",
+          "command": "extension.jsbeebdebugger.debug",
           "group": "YourGroup@1"
         }
       ],
@@ -173,6 +186,42 @@
         "key": "Ctrl+Shift+R",
         "mac": "Ctrl+Shift+R"
       }
+    ],
+    "breakpoints": [
+      {
+        "language": "beebasm"
+      }
+    ],
+    "debuggers": [
+      {
+        "type": "jsbeebdebugger",
+        "label": "Debug in built-in emulator",
+        "languages": [
+          "beebasm"
+        ],
+        "program": "./dist/main.js",
+        "runtime": "node",
+        "configurationAttributes": {
+          "launch": {
+            "required": "program",
+            "properties": {
+              "program": {
+                "type": "string",
+                "description": "Path to the program to debug"
+              }
+            }
+          },
+          "attach": {
+            "required": "program",
+            "properties": {
+              "program": {
+                "type": "string",
+                "description": "Path to the program to debug"
+              }
+            }
+          }
+        }
+      }
     ]
   },
   "scripts": {
@@ -202,6 +251,9 @@
     "@types/vscode-webview": "^1.57.5",
     "@typescript-eslint/eslint-plugin": "^6.21.0",
     "@typescript-eslint/parser": "^6.21.0",
+    "@vscode/debugadapter": "^1.65.0",
+    "@vscode/debugadapter-testsupport": "^1.65.0",
+    "@vscode/debugprotocol": "^1.65.0",
     "@vscode/test-electron": "^2.3.8",
     "@vscode/vsce": "^2.23.0",
     "esbuild": "^0.19.11",

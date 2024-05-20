@@ -9,6 +9,7 @@ initialiseWebViewTelemetry()
 import { Model, findModel } from 'jsbeeb/models'
 import {
   ClientCommand,
+  DebugInstructionType,
   HostCommand,
   HostMessage,
 } from '../types/shared/messages'
@@ -73,7 +74,7 @@ window.addEventListener(
   false,
 )
 
-// Handle messages received from the host extensiond
+// Handle messages received from the host extension
 window.addEventListener('message', (event) => {
   const message = event.data as HostMessage // The JSON data our extension sent
   switch (message.command) {
@@ -99,6 +100,27 @@ window.addEventListener('message', (event) => {
     case HostCommand.DiscImageChanges:
       //TODO: Listener logic here, in case we need to do something with modified disc images
       break
+    case HostCommand.DebugCommand: {
+      console.log('BeebVSC: Debug command received', message)
+      const instructiontype = message.instruction.instruction
+      if (instructiontype === DebugInstructionType.Pause) {
+        emulatorView.suspend()
+        notifyHost({ command: ClientCommand.Stopped, reason: 'stopOnPause' })
+      } else if (instructiontype === DebugInstructionType.Continue) {
+        emulatorView.resume()
+      }
+      break
+    }
+    case HostCommand.DebugRequest: {
+      if (message.request === 'pc') {
+        const pc = emulatorView.GetPC()
+        notifyHost({
+          command: ClientCommand.EmulatorInfo,
+          info: { id: message.id, type: 'pc', value: pc },
+        })
+      }
+      break
+    }
   }
 })
 

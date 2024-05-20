@@ -10,6 +10,8 @@ export const enum ClientCommand {
   PageLoaded = 'pageLoaded',
   Info = 'info',
   Error = 'error',
+  Stopped = 'stopped',
+  EmulatorInfo = 'emulatorInfo',
 }
 
 export interface ClientMessageBase extends MessageBase {
@@ -33,11 +35,27 @@ export interface ClientMessageError extends ClientMessageBase {
   text: string
 }
 
+export interface ClientMessageStopped extends ClientMessageBase {
+  command: ClientCommand.Stopped
+  reason: string // TODO _ make this an enum
+}
+
+export interface ClientMessageEmulatorInfo extends ClientMessageBase {
+  command: ClientCommand.EmulatorInfo
+  info: {
+    id: number
+    type: string
+    value: number
+  }
+}
+
 export type ClientMessage =
   | ClientMessageEmulatorReady
   | ClientMessagePageLoaded
   | ClientMessageInfo
   | ClientMessageError
+  | ClientMessageStopped
+  | ClientMessageEmulatorInfo
 
 /**
  * Messages from host to client
@@ -53,6 +71,20 @@ export type DiscImageOptions = {
   shouldAutoBoot?: boolean
 }
 
+export const enum DebugInstructionType {
+  SetBreakpoint = 'setbreakpoint',
+  Step = 'step',
+  Continue = 'continue',
+  Pause = 'pause',
+  ClearBreakpoint = 'clearbreakpoint',
+  // TODO - expand to include other debug commands
+}
+
+export type DebugInstruction = {
+  address?: number
+  instruction: DebugInstructionType
+}
+
 export const NO_DISC: DiscImageFile = { url: '', name: '-- no disc --' }
 
 export const enum HostCommand {
@@ -60,6 +92,8 @@ export const enum HostCommand {
   ViewFocus = 'viewFocus',
   DiscImages = 'discImages',
   DiscImageChanges = 'discImageChanges',
+  DebugCommand = 'debugCommand',
+  DebugRequest = 'debugRequest',
 }
 
 export interface HostMessageBase extends MessageBase {
@@ -92,8 +126,21 @@ export interface HostMessageViewFocus extends HostMessageBase {
   }
 }
 
+export interface HostMessageDebugCommand extends HostMessageBase {
+  command: HostCommand.DebugCommand
+  instruction: DebugInstruction
+}
+
+export interface HostMessageDebugRequest extends HostMessageBase {
+  command: HostCommand.DebugRequest
+  id: number
+  request: string
+}
+
 export type HostMessage =
   | HostMessageDiscImages
   | HostMessageDiscImageChanges
   | HostMessageLoadDisc
   | HostMessageViewFocus
+  | HostMessageDebugCommand
+  | HostMessageDebugRequest

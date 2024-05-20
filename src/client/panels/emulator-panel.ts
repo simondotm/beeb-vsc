@@ -188,6 +188,10 @@ export class EmulatorPanel {
     )
   }
 
+  GetWebview(): vscode.Webview {
+    return this.panel.webview
+  }
+
   /**
    * Instruct client to load the given disc image file
    * @param discImageOptions - boot options

@@ -18,7 +18,14 @@
 
 import * as path from 'path'
 import * as fs from 'fs'
-import { workspace, ExtensionContext, window, commands, Uri } from 'vscode'
+import {
+  workspace,
+  ExtensionContext,
+  window,
+  commands,
+  Uri,
+  debug,
+} from 'vscode'
 import {
   LanguageClient,
   LanguageClientOptions,
@@ -28,6 +35,7 @@ import {
 import { EmulatorPanel } from './panels/emulator-panel'
 import { FeatureFlags, isFeatureEnabled } from '../types/shared/config'
 import { initialiseExtensionTelemetry } from './utils/extension-telemetry'
+import { InlineDebugAdapterFactory } from './debugger/debugger'
 
 let client: LanguageClient
 
@@ -209,6 +217,35 @@ export function activate(context: ExtensionContext) {
           EmulatorPanel.show(context, contextSelection, allSelections)
         },
       ),
+    )
+
+    // Debug the current file
+    context.subscriptions.push(
+      commands.registerCommand(
+        'extension.jsbeebdebugger.debug',
+        (contextSelection: Uri | undefined, allSelections: Uri[]) => {
+          EmulatorPanel.show(context, contextSelection, allSelections)
+          // Start debugger session
+          // Configuration must match the details in package.json?
+          debug.startDebugging(undefined, {
+            name: 'Debug with JSBeeb',
+            type: 'jsbeebdebugger',
+            request: 'launch',
+            program: contextSelection?.fsPath,
+            stopOnEntry: true,
+          })
+        },
+      ),
+    )
+
+    // TODO: register a configuration provider if needed (fixes up configuration settings)
+    // TODO: register a dynamic configuration provider if needed
+
+    // Register the debug adapter factory
+    // This will allow the extension to provide a custom debug adapter for the debugger
+    const factory = new InlineDebugAdapterFactory()
+    context.subscriptions.push(
+      debug.registerDebugAdapterDescriptorFactory('jsbeebdebugger', factory),
     )
   }
 

@@ -155,6 +155,10 @@ export class EmulatorView {
     this._emulatorUpdate$.next(emulator)
   }
 
+  GetPC(): number {
+    return this.emulator?.cpu.pc ?? 0
+  }
+
   toggleFullscreen() {
     const isFullScreen = !this._fullscreen$.value
     this._fullscreen$.next(isFullScreen)
@@ -198,6 +202,6 @@ export class EmulatorView {
 
   resume() {
     // dont auto resume, make user do this
-    // this.emulator?.resume()
+    this.emulator?.resume()
   }
 }
