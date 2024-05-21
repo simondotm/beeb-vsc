@@ -45,7 +45,7 @@ export interface ClientMessageEmulatorInfo extends ClientMessageBase {
   info: {
     id: number
     type: string
-    value: number
+    values: Array<{ name: string; value: string | number }>
   }
 }
 

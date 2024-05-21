@@ -9,10 +9,10 @@ import {
   window,
 } from 'vscode'
 import {
-  Handles,
   InitializedEvent,
   LoggingDebugSession,
   Scope,
+  StackFrame,
   StoppedEvent,
   Thread,
   Variable,
@@ -28,6 +28,7 @@ import {
   HostMessageDebugCommand,
   HostMessageDebugRequest,
 } from '../../types/shared/messages'
+import { Subject } from 'await-notify'
 
 export class InlineDebugAdapterFactory
   implements DebugAdapterDescriptorFactory {
@@ -38,16 +39,23 @@ export class InlineDebugAdapterFactory
   }
 }
 
+// No need for multiple threads, so we can use a hardcoded ID for the default thread
+const THREAD_ID = 1
+const STACKFRAME = 1
+const enum VARTYPE {
+  Register = 10000,
+  Flag = 10001,
+  Stack = 10002,
+}
+
 // export class JSBeebDebugSession implements DebugAdapter {
 export class JSBeebDebugSession extends LoggingDebugSession {
-  // No need for multiple threads, so we can use a hardcoded ID for the default thread
-  private THREAD_ID = 1
   private _reportProgress: boolean = false
   private _useInvalidatedEvent: boolean = false
   private requestId: number = 0
   private pendingRequests: Map<number, (response: any) => void> = new Map()
   private webview = EmulatorPanel.instance?.GetWebview()
-  private _variableHandles = new Handles<'locals' | 'globals'>() // | RuntimeVariable>()
+  private _configurationDone = new Subject()
 
   public constructor() {
     super()
@@ -74,24 +82,22 @@ export class JSBeebDebugSession extends LoggingDebugSession {
     if (message.command === ClientCommand.Stopped) {
       switch (message.reason) {
         case 'stopOnEntry':
-          this.sendEvent(new StoppedEvent('entry', this.THREAD_ID))
+          this.sendEvent(new StoppedEvent('entry', THREAD_ID))
           break
         case 'stopOnPause':
-          this.sendEvent(new StoppedEvent('pause', this.THREAD_ID))
+          this.sendEvent(new StoppedEvent('pause', THREAD_ID))
           break
         case 'stopOnStep':
-          this.sendEvent(new StoppedEvent('step', this.THREAD_ID))
+          this.sendEvent(new StoppedEvent('step', THREAD_ID))
           break
         case 'stopOnBreakpoint':
-          this.sendEvent(new StoppedEvent('breakpoint', this.THREAD_ID))
+          this.sendEvent(new StoppedEvent('breakpoint', THREAD_ID))
           break
         case 'stopOnDataBreakpoint':
-          this.sendEvent(new StoppedEvent('data breakpoint', this.THREAD_ID))
+          this.sendEvent(new StoppedEvent('data breakpoint', THREAD_ID))
           break
         case 'stopOnInstructionBreakpoint':
-          this.sendEvent(
-            new StoppedEvent('instruction breakpoint', this.THREAD_ID),
-          )
+          this.sendEvent(new StoppedEvent('instruction breakpoint', THREAD_ID))
           break
       }
     } else if (message.command === ClientCommand.EmulatorInfo) {
@@ -127,12 +133,15 @@ export class JSBeebDebugSession extends LoggingDebugSession {
     response: DebugProtocol.ScopesResponse,
     args: DebugProtocol.ScopesArguments,
   ): void {
-    response.body = {
-      scopes: [
-        new Scope('Locals', this._variableHandles.create('locals'), false),
-        new Scope('Globals', this._variableHandles.create('globals'), true),
-      ],
+    if (args !== null && STACKFRAME === args.frameId) {
+      response.body = { scopes: [] }
+      response.body.scopes.push(new Scope('Registers', VARTYPE.Register, false))
+      response.body.scopes[0].presentationHint = 'registers'
+      response.body.scopes.push(new Scope('Flags', VARTYPE.Flag, false))
+      response.body.scopes.push(new Scope('Stack', VARTYPE.Stack, false))
+      // TODO - symbols, stats, crtc, etc.
     }
+
     this.sendResponse(response)
   }
 
@@ -221,22 +230,27 @@ export class JSBeebDebugSession extends LoggingDebugSession {
   ): void {
     console.log('configurationDoneRequest called')
     super.configurationDoneRequest(response, args, request)
+    // notify the launchRequest that configuration has finished
+    this._configurationDone.notify()
   }
 
-  protected launchRequest(
+  protected async launchRequest(
     response: DebugProtocol.LaunchResponse,
     args: DebugProtocol.LaunchRequestArguments,
     request?: DebugProtocol.Request | undefined,
-  ): void {
+  ): Promise<void> {
     console.log('launchRequest called')
-    super.launchRequest(response, args, request)
+    // wait 1 second until configuration has finished (and configurationDoneRequest has been called)
+    await this._configurationDone.wait(1000)
+    // TODO - move launch of emulator to here and add attach option?
+    this.sendResponse(response)
   }
 
   protected threadsRequest(response: DebugProtocol.ThreadsResponse): void {
     // runtime supports no threads so just return a default thread.
     response.body = {
       threads: [
-        new Thread(this.THREAD_ID, 'thread 1'),
+        new Thread(THREAD_ID, 'thread 1'),
         // new Thread(this.THREAD_ID + 1, 'thread 2'),
       ],
     }
@@ -271,37 +285,72 @@ export class JSBeebDebugSession extends LoggingDebugSession {
     this.sendResponse(response)
   }
 
+  protected stepInRequest(
+    response: DebugProtocol.StepInResponse,
+    args: DebugProtocol.StepInArguments,
+    request?: DebugProtocol.Request | undefined,
+  ): void {
+    console.log('stepInRequest called')
+    const message: HostMessageDebugCommand = {
+      command: HostCommand.DebugCommand,
+      instruction: { instruction: DebugInstructionType.Step },
+    }
+    EmulatorPanel.instance?.notifyClient(message)
+    this.sendResponse(response)
+  }
+
   protected async variablesRequest(
     response: DebugProtocol.VariablesResponse,
     args: DebugProtocol.VariablesArguments,
     request?: DebugProtocol.Request | undefined,
   ): Promise<void> {
-    const v = this._variableHandles.get(args.variablesReference) // TODO - handle locals and globals and more???
-    const vs: Variable[] = []
-    // const message = {
-    //   request: 'pc',
-    // }
-    const message: HostMessageDebugRequest = {
-      command: HostCommand.DebugRequest,
-      id: 0, // Will be added in sendRequest
-      request: 'pc',
+    const variables: Variable[] = []
+    if (args.filter === undefined || args.filter === 'named') {
+      if (args.variablesReference === VARTYPE.Register) {
+        const message: HostMessageDebugRequest = {
+          command: HostCommand.DebugRequest,
+          id: 0, // Will be added in sendRequest
+          request: 'registers',
+        }
+        const webviewResponse = (await this.getFromEmulator(
+          message,
+        )) as ClientMessageEmulatorInfo
+        variables.push(...this.formatRegisters(webviewResponse.info.values))
+      }
     }
-    const webviewResponse = (await this.getFromEmulator(
-      message,
-    )) as ClientMessageEmulatorInfo
-    //   command: ClientCommand.EmulatorInfo,
-    //   info: { id: message.id, type: 'pc', value: pc },
-    vs.push(new Variable('PC', '$' + webviewResponse.info.value.toString(16)))
-    vs.push(new Variable('A', '0')) // TODO - get from emulator
-    response.body = { variables: vs }
+    response.body = { variables: variables }
     this.sendResponse(response)
+  }
+
+  private formatRegisters(
+    registers: Array<{ name: string; value: string | number }>,
+  ): Variable[] {
+    const vars: Variable[] = []
+    for (const { name, value } of registers) {
+      if (['PC', 'S', 'A', 'X', 'Y'].includes(name)) {
+        vars.push(
+          new Variable(
+            name,
+            `$${value.toString(16).toUpperCase().padStart(2, '0')}`,
+          ),
+        ) // TODO - include decimal and binary?
+      } else if (name === 'P') {
+        vars.push(new Variable(name, `${value}`))
+      }
+    }
+    return vars
   }
 
   protected stackTraceRequest(
     response: DebugProtocol.StackTraceResponse,
     args: DebugProtocol.StackTraceArguments,
   ): void {
-    const stackframe = { id: 1, name: 'all', line: 0, column: 0 }
+    const stackframe: StackFrame = {
+      id: STACKFRAME,
+      name: 'main',
+      line: 0,
+      column: 0,
+    }
     response.body = {
       stackFrames: [stackframe],
       totalFrames: 1,

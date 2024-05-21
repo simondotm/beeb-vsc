@@ -159,6 +159,22 @@ export class EmulatorView {
     return this.emulator?.cpu.pc ?? 0
   }
 
+  GetRegisters(): Array<{ name: string; value: string | number }> {
+    // create empty map
+    const registers = []
+    // add registers
+    if (this.emulator !== undefined) {
+      const cpu = this.emulator.cpu
+      registers.push({ name: 'A', value: cpu.a ?? 0 })
+      registers.push({ name: 'X', value: cpu.x ?? 0 })
+      registers.push({ name: 'Y', value: cpu.y ?? 0 })
+      registers.push({ name: 'S', value: cpu.s ?? 0 })
+      registers.push({ name: 'P', value: cpu.p.debugString() ?? '' })
+      registers.push({ name: 'PC', value: cpu.pc ?? 0 })
+    }
+    return registers
+  }
+
   toggleFullscreen() {
     const isFullScreen = !this._fullscreen$.value
     this._fullscreen$.next(isFullScreen)
@@ -203,5 +219,9 @@ export class EmulatorView {
   resume() {
     // dont auto resume, make user do this
     this.emulator?.resume()
+  }
+
+  step() {
+    this.emulator?.dbgr.step()
   }
 }

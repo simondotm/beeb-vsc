@@ -40,6 +40,10 @@ declare module 'jsbeeb/6502' {
     nmi: boolean
     pc: number
     p: Flags
+    a: number
+    x: number
+    y: number
+    s: number
 
     video: Video
     sysvia: SysVia

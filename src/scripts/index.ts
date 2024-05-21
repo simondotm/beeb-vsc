@@ -108,15 +108,22 @@ window.addEventListener('message', (event) => {
         notifyHost({ command: ClientCommand.Stopped, reason: 'stopOnPause' })
       } else if (instructiontype === DebugInstructionType.Continue) {
         emulatorView.resume()
+      } else if (instructiontype === DebugInstructionType.Step) {
+        emulatorView.step()
+        notifyHost({ command: ClientCommand.Stopped, reason: 'stopOnStep' })
       }
       break
     }
     case HostCommand.DebugRequest: {
-      if (message.request === 'pc') {
-        const pc = emulatorView.GetPC()
+      if (message.request === 'registers') {
+        const registers = emulatorView.GetRegisters()
         notifyHost({
           command: ClientCommand.EmulatorInfo,
-          info: { id: message.id, type: 'pc', value: pc },
+          info: {
+            id: message.id,
+            type: 'registers',
+            values: registers,
+          },
         })
       }
       break
