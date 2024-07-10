@@ -111,6 +111,12 @@ window.addEventListener('message', (event) => {
       } else if (instructiontype === DebugInstructionType.Step) {
         emulatorView.step()
         notifyHost({ command: ClientCommand.Stopped, reason: 'stopOnStep' })
+      } else if (instructiontype === DebugInstructionType.StepOver) {
+        emulatorView.stepOver()
+        notifyHost({ command: ClientCommand.Stopped, reason: 'stopOnStep' })
+      } else if (instructiontype === DebugInstructionType.StepOut) {
+        emulatorView.stepOut()
+        notifyHost({ command: ClientCommand.Stopped, reason: 'stopOnStep' })
       }
       break
     }

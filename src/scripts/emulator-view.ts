@@ -224,4 +224,12 @@ export class EmulatorView {
   step() {
     this.emulator?.dbgr.step()
   }
+
+  stepOver() {
+    this.emulator?.dbgr.stepOver()
+  }
+
+  stepOut() {
+    this.emulator?.dbgr.stepOut()
+  }
 }

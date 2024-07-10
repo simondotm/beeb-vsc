@@ -7,6 +7,10 @@ import {
   DebugAdapterDescriptor,
   DebugAdapterInlineImplementation,
   window,
+  DebugConfigurationProvider,
+  DebugConfiguration,
+  WorkspaceFolder,
+  CancellationToken,
 } from 'vscode'
 import {
   InitializedEvent,
@@ -39,9 +43,35 @@ export class InlineDebugAdapterFactory
   }
 }
 
+export class JSBeebConfigurationProvider implements DebugConfigurationProvider {
+  resolveDebugConfiguration(
+    _folder: WorkspaceFolder | undefined,
+    _config: DebugConfiguration,
+    _token?: CancellationToken,
+  ): ProviderResult<DebugConfiguration> {
+    return {
+      type: 'jsbeebdebugger',
+      name: 'Launch',
+      request: 'launch',
+      diskImage: '',
+      stopOnEntry: true,
+      enableLogging: false,
+      cwd: _folder?.uri.fsPath,
+    }
+  }
+}
+
+interface JSBeebLaunchRequestArguments
+  extends DebugProtocol.LaunchRequestArguments {
+  diskImage: string
+  stopOnEntry?: boolean
+  enableLogging?: boolean
+  cwd: string
+}
+
 // No need for multiple threads, so we can use a hardcoded ID for the default thread
 const THREAD_ID = 1
-const STACKFRAME = 1
+const STACKFRAME = 0
 const enum VARTYPE {
   Register = 10000,
   Flag = 10001,
@@ -56,6 +86,7 @@ export class JSBeebDebugSession extends LoggingDebugSession {
   private pendingRequests: Map<number, (response: any) => void> = new Map()
   private webview = EmulatorPanel.instance?.GetWebview()
   private _configurationDone = new Subject()
+  private cwd: string | undefined
 
   public constructor() {
     super()
@@ -77,7 +108,7 @@ export class JSBeebDebugSession extends LoggingDebugSession {
     }
   }
 
-  // Standalon messages from the emulator to the debug adapter
+  // Standalone messages from the emulator to the debug adapter
   private handleEmulatorMessage(message: ClientMessage) {
     if (message.command === ClientCommand.Stopped) {
       switch (message.reason) {
@@ -129,22 +160,6 @@ export class JSBeebDebugSession extends LoggingDebugSession {
     })
   }
 
-  protected scopesRequest(
-    response: DebugProtocol.ScopesResponse,
-    args: DebugProtocol.ScopesArguments,
-  ): void {
-    if (args !== null && STACKFRAME === args.frameId) {
-      response.body = { scopes: [] }
-      response.body.scopes.push(new Scope('Registers', VARTYPE.Register, false))
-      response.body.scopes[0].presentationHint = 'registers'
-      response.body.scopes.push(new Scope('Flags', VARTYPE.Flag, false))
-      response.body.scopes.push(new Scope('Stack', VARTYPE.Stack, false))
-      // TODO - symbols, stats, crtc, etc.
-    }
-
-    this.sendResponse(response)
-  }
-
   /**
    * The 'initialize' request is the first request called by the frontend
    * to interrogate the features the debug adapter provides.
@@ -167,7 +182,7 @@ export class JSBeebDebugSession extends LoggingDebugSession {
     response.body.supportsConfigurationDoneRequest = true
 
     // make VS Code use 'evaluate' when hovering over source
-    response.body.supportsEvaluateForHovers = true
+    response.body.supportsEvaluateForHovers = false
 
     // make VS Code show a 'step back' button
     response.body.supportsStepBack = false
@@ -176,17 +191,17 @@ export class JSBeebDebugSession extends LoggingDebugSession {
     response.body.supportsDataBreakpoints = true
 
     // make VS Code support completion in REPL
-    response.body.supportsCompletionsRequest = true
+    response.body.supportsCompletionsRequest = false
     response.body.completionTriggerCharacters = ['.', '[']
 
     // make VS Code send cancel request
-    response.body.supportsCancelRequest = true
+    response.body.supportsCancelRequest = false
 
     // make VS Code send the breakpointLocations request
     response.body.supportsBreakpointLocationsRequest = true
 
     // make VS Code provide "Step in Target" functionality
-    response.body.supportsStepInTargetsRequest = true
+    response.body.supportsStepInTargetsRequest = false
 
     // the adapter defines two exceptions filters, one with support for conditions.
     response.body.supportsExceptionFilterOptions = false
@@ -203,17 +218,17 @@ export class JSBeebDebugSession extends LoggingDebugSession {
 
     // make VS Code send disassemble request
     response.body.supportsDisassembleRequest = true
-    response.body.supportsSteppingGranularity = true
+    response.body.supportsSteppingGranularity = false
     response.body.supportsInstructionBreakpoints = true
 
     // make VS Code able to read and write variable memory
     response.body.supportsReadMemoryRequest = true
     response.body.supportsWriteMemoryRequest = false
 
-    response.body.supportSuspendDebuggee = true
-    response.body.supportTerminateDebuggee = true
-    response.body.supportsFunctionBreakpoints = true
-    response.body.supportsDelayedStackTraceLoading = true
+    response.body.supportSuspendDebuggee = false
+    response.body.supportTerminateDebuggee = false
+    response.body.supportsFunctionBreakpoints = false
+    response.body.supportsDelayedStackTraceLoading = false
 
     this.sendResponse(response)
 
@@ -236,10 +251,14 @@ export class JSBeebDebugSession extends LoggingDebugSession {
 
   protected async launchRequest(
     response: DebugProtocol.LaunchResponse,
-    args: DebugProtocol.LaunchRequestArguments,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    args: JSBeebLaunchRequestArguments,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     request?: DebugProtocol.Request | undefined,
   ): Promise<void> {
     console.log('launchRequest called')
+
+    this.cwd = args.cwd
     // wait 1 second until configuration has finished (and configurationDoneRequest has been called)
     await this._configurationDone.wait(1000)
     // TODO - move launch of emulator to here and add attach option?
@@ -258,7 +277,9 @@ export class JSBeebDebugSession extends LoggingDebugSession {
   }
   protected pauseRequest(
     response: DebugProtocol.PauseResponse,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     args: DebugProtocol.PauseArguments,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     request?: DebugProtocol.Request | undefined,
   ): void {
     console.log('pauseRequest called')
@@ -272,7 +293,9 @@ export class JSBeebDebugSession extends LoggingDebugSession {
 
   protected continueRequest(
     response: DebugProtocol.ContinueResponse,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     args: DebugProtocol.ContinueArguments,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     request?: DebugProtocol.Request | undefined,
   ): void {
     console.log('continueRequest called')
@@ -287,7 +310,9 @@ export class JSBeebDebugSession extends LoggingDebugSession {
 
   protected stepInRequest(
     response: DebugProtocol.StepInResponse,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     args: DebugProtocol.StepInArguments,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     request?: DebugProtocol.Request | undefined,
   ): void {
     console.log('stepInRequest called')
@@ -299,27 +324,82 @@ export class JSBeebDebugSession extends LoggingDebugSession {
     this.sendResponse(response)
   }
 
+  protected nextRequest(
+    response: DebugProtocol.NextResponse,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    args: DebugProtocol.NextArguments,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    request?: DebugProtocol.Request | undefined,
+  ): void {
+    console.log('nextRequest called')
+    const message: HostMessageDebugCommand = {
+      command: HostCommand.DebugCommand,
+      instruction: { instruction: DebugInstructionType.StepOver },
+    }
+    EmulatorPanel.instance?.notifyClient(message)
+    this.sendResponse(response)
+  }
+
+  protected stepOutRequest(
+    response: DebugProtocol.StepOutResponse,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    args: DebugProtocol.StepOutArguments,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    request?: DebugProtocol.Request | undefined,
+  ): void {
+    console.log('stepOutRequest called')
+    const message: HostMessageDebugCommand = {
+      command: HostCommand.DebugCommand,
+      instruction: { instruction: DebugInstructionType.StepOut },
+    }
+    EmulatorPanel.instance?.notifyClient(message)
+    this.sendResponse(response)
+  }
+
+  protected scopesRequest(
+    response: DebugProtocol.ScopesResponse,
+    args: DebugProtocol.ScopesArguments,
+  ): void {
+    response.body = { scopes: [] }
+    console.log(args)
+    if (args !== null && args.frameId === STACKFRAME) {
+      response.body.scopes.push(new Scope('Registers', VARTYPE.Register, false))
+      response.body.scopes[0].presentationHint = 'registers'
+      response.body.scopes.push(new Scope('Flags', VARTYPE.Flag, false))
+      // TODO - symbols, stats, crtc, etc.?
+    }
+    console.log(response)
+    this.sendResponse(response)
+  }
+
   protected async variablesRequest(
     response: DebugProtocol.VariablesResponse,
     args: DebugProtocol.VariablesArguments,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     request?: DebugProtocol.Request | undefined,
   ): Promise<void> {
+    console.log(args)
     const variables: Variable[] = []
     if (args.filter === undefined || args.filter === 'named') {
       if (args.variablesReference === VARTYPE.Register) {
-        const message: HostMessageDebugRequest = {
-          command: HostCommand.DebugRequest,
-          id: 0, // Will be added in sendRequest
-          request: 'registers',
-        }
-        const webviewResponse = (await this.getFromEmulator(
-          message,
-        )) as ClientMessageEmulatorInfo
-        variables.push(...this.formatRegisters(webviewResponse.info.values))
+        const registers = await this.getRegisters()
+        variables.push(...registers)
       }
     }
     response.body = { variables: variables }
     this.sendResponse(response)
+  }
+
+  private async getRegisters(): Promise<Variable[]> {
+    const message: HostMessageDebugRequest = {
+      command: HostCommand.DebugRequest,
+      id: 0, // Will be added in sendRequest
+      request: 'registers',
+    }
+    const webviewResponse = (await this.getFromEmulator(
+      message,
+    )) as ClientMessageEmulatorInfo
+    return this.formatRegisters(webviewResponse.info.values)
   }
 
   private formatRegisters(
@@ -341,20 +421,28 @@ export class JSBeebDebugSession extends LoggingDebugSession {
     return vars
   }
 
-  protected stackTraceRequest(
+  protected async stackTraceRequest(
     response: DebugProtocol.StackTraceResponse,
     args: DebugProtocol.StackTraceArguments,
-  ): void {
-    const stackframe: StackFrame = {
-      id: STACKFRAME,
-      name: 'main',
-      line: 0,
-      column: 0,
+  ): Promise<void> {
+    const levels = args.levels || 0
+    const registers = await this.getRegisters()
+    console.log(args)
+    const startFrame = args.startFrame || 0
+    if (args.threadId === THREAD_ID && startFrame === STACKFRAME) {
+      const stackframe = new StackFrame(STACKFRAME, 'main')
+      const filename = 'main'
+      stackframe.source = {
+        name: filename,
+        path: this.cwd ?? '' + filename,
+      }
+
+      response.body = {
+        stackFrames: [stackframe],
+        totalFrames: 1,
+      }
+      this.sendResponse(response)
     }
-    response.body = {
-      stackFrames: [stackframe],
-      totalFrames: 1,
-    }
-    this.sendResponse(response)
+    console.log(response)
   }
 }

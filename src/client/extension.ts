@@ -35,7 +35,10 @@ import {
 import { EmulatorPanel } from './panels/emulator-panel'
 import { FeatureFlags, isFeatureEnabled } from '../types/shared/config'
 import { initialiseExtensionTelemetry } from './utils/extension-telemetry'
-import { InlineDebugAdapterFactory } from './debugger/debugger'
+import {
+  InlineDebugAdapterFactory,
+  JSBeebConfigurationProvider,
+} from './debugger/debugger'
 
 let client: LanguageClient
 
@@ -219,6 +222,16 @@ export function activate(context: ExtensionContext) {
       ),
     )
 
+    // Register the custom command
+    context.subscriptions.push(
+      commands.registerCommand('extension.createSourceMap', async () => {
+        const response = await client.sendRequest('custom/requestSourceMap', {
+          text: 'Hello, server!',
+        })
+        window.showInformationMessage(`Response from server: ${response}`)
+      }),
+    )
+
     // Debug the current file
     context.subscriptions.push(
       commands.registerCommand(
@@ -231,14 +244,21 @@ export function activate(context: ExtensionContext) {
             name: 'Debug with JSBeeb',
             type: 'jsbeebdebugger',
             request: 'launch',
-            program: contextSelection?.fsPath,
+            diskImage: contextSelection?.fsPath,
+            enableLogging: false,
             stopOnEntry: true,
+            cwd: workspace.workspaceFolders![0].uri.fsPath,
           })
         },
       ),
     )
 
-    // TODO: register a configuration provider if needed (fixes up configuration settings)
+    // register a configuration provider for 'jsbeebdebugger' debug type
+    const provider = new JSBeebConfigurationProvider()
+    context.subscriptions.push(
+      debug.registerDebugConfigurationProvider('jsbeebdebugger', provider),
+    )
+
     // TODO: register a dynamic configuration provider if needed
 
     // Register the debug adapter factory

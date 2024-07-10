@@ -77,6 +77,8 @@ export const enum DebugInstructionType {
   Continue = 'continue',
   Pause = 'pause',
   ClearBreakpoint = 'clearbreakpoint',
+  StepOver = 'stepover',
+  StepOut = 'stepout',
   // TODO - expand to include other debug commands
 }
 

@@ -8,6 +8,7 @@ import {
   ConfigurationItem,
   DocumentLink,
   Files,
+  RequestType,
 } from 'vscode-languageserver/node'
 import { TextDocument } from 'vscode-languageserver-textdocument'
 import { CompletionProvider, SignatureProvider } from './completions'
@@ -27,6 +28,11 @@ const connection = createConnection(ProposedFeatures.all)
 const trees: Map<string, AST[]> = new Map<string, AST[]>()
 const links: Map<string, DocumentLink[]> = new Map<string, DocumentLink[]>()
 // GlobalData and ObjectCode objects are static and will be set up when called in ParseDocument
+
+// Define the custom request type for requesting a source map
+const SourceMapRequestType = new RequestType<{ text: string }, string, void>(
+  'custom/requestSourceMap',
+)
 
 connection.onInitialize((params: InitializeParams) => {
   const workspaceFolders = params.workspaceFolders
@@ -253,6 +259,14 @@ connection.onDidChangeWatchedFiles((_change) => {
     })
   })
   console.log('Settings.json update event received.')
+})
+
+// Handle the custom request
+connection.onRequest(SourceMapRequestType, (params) => {
+  console.log(`Received custom request with text: ${params.text}`)
+  // Implement your custom logic here
+  const response = `Server received: ${params.text}`
+  return response
 })
 
 // Setup completions handling

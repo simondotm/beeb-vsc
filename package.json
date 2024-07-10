@@ -129,6 +129,10 @@
       {
         "command": "extension.jsbeebdebugger.debug",
         "title": "BeebVSC: Debug"
+      },
+      {
+        "command": "extension.createSourceMap",
+        "title": "BeebVSC: Create source map"
       }
     ],
     "menus": {
@@ -203,20 +207,19 @@
         "runtime": "node",
         "configurationAttributes": {
           "launch": {
-            "required": "program",
+            "required": [
+              "diskImage",
+              "cwd"
+            ],
             "properties": {
-              "program": {
+              "diskImage": {
                 "type": "string",
-                "description": "Path to the program to debug"
-              }
-            }
-          },
-          "attach": {
-            "required": "program",
-            "properties": {
-              "program": {
+                "description": "Path to the disk image to debug"
+              },
+              "cwd": {
                 "type": "string",
-                "description": "Path to the program to debug"
+                "description": "Current working directory",
+                "default": "${workspaceFolder}"
               }
             }
           }
