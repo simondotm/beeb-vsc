@@ -413,7 +413,7 @@ export class JSBeebDebugSession extends LoggingDebugSession {
             name,
             `$${value.toString(16).toUpperCase().padStart(2, '0')}`,
           ),
-        ) // TODO - include decimal and binary?
+        ) // TODO - include decimal and binary formats?
       } else if (name === 'P') {
         vars.push(new Variable(name, `${value}`))
       }

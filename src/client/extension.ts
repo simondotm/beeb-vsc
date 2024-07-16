@@ -225,8 +225,15 @@ export function activate(context: ExtensionContext) {
     // Register the custom command
     context.subscriptions.push(
       commands.registerCommand('extension.createSourceMap', async () => {
+        // get file name of currently displayed file
+        const editor = window.activeTextEditor
+        if (!editor) {
+          window.showInformationMessage('No active file selected')
+          return
+        }
+        const fileName = editor.document.uri.fsPath
         const response = await client.sendRequest('custom/requestSourceMap', {
-          text: 'Hello, server!',
+          text: fileName,
         })
         window.showInformationMessage(`Response from server: ${response}`)
       }),

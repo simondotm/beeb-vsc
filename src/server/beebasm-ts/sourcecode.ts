@@ -35,7 +35,7 @@ import {
 } from 'vscode-languageserver'
 import { integer } from 'vscode-languageserver'
 import { AST } from '../ast'
-import path = require('path')
+import { SourceMap } from './objectcode'
 
 const MAX_FOR_LEVELS = 256
 const MAX_IF_LEVELS = 256
@@ -73,6 +73,7 @@ export class SourceCode {
   private _currentMacro: Macro | null
   private _contents: string
   private _lineNumber: number
+  private _lineOffset: number
   private _parent: SourceCode | null
   private _lineStartPointer: number
   private _lines: string[]
@@ -81,8 +82,10 @@ export class SourceCode {
   private _symbolTable: SymbolTable
   private _diagnostics: Map<string, Diagnostic[]>
   private _uri: string
+  private _uriRef: number
   private _trees: Map<string, AST[]>
   private _documentLinks: Map<string, DocumentLink[]>
+  private _sourceMap: SourceMap | null
 
   constructor(
     contents: string,
@@ -92,6 +95,7 @@ export class SourceCode {
     uri: string,
     trees: Map<string, AST[]>,
     doclinks: Map<string, DocumentLink[]>,
+    callPoint: SourceMap | null = null,
   ) {
     this._forStackPtr = 0
     this._initialForStackPtr = 0
@@ -99,7 +103,8 @@ export class SourceCode {
     this._initialIfStackPtr = 0
     this._currentMacro = null
     this._contents = contents
-    this._lineNumber = lineNumber
+    this._lineNumber = 0
+    this._lineOffset = lineNumber
     this._parent = parent
     this._lineStartPointer = 0
     this._lines = contents.split(/\r\n|\n/g)
@@ -117,6 +122,8 @@ export class SourceCode {
     }
     this._symbolTable = SymbolTable.Instance // Added for debugging
     this._uri = uri
+    this._uriRef = this.cyrb53(this._uri)
+    this._sourceMap = callPoint
   }
 
   Process() {
@@ -240,6 +247,10 @@ export class SourceCode {
     return line
   }
 
+  GetLineOffset(): number {
+    return this._lineOffset
+  }
+
   AddDocumentLink(link: DocumentLink): void {
     this._documentLinks.get(this._uri)!.push(link)
   }
@@ -275,9 +286,40 @@ export class SourceCode {
     }
   }
 
+  GetSourceMap(): SourceMap | null {
+    return this._sourceMap
+  }
+
   GetURI(): string {
     const uri = this._uri
     return uri
+  }
+
+  GetURIRef(): number {
+    return this._uriRef
+  }
+
+  /*
+    cyrb53 (c) 2018 bryc (github.com/bryc)
+    License: Public domain (or MIT if needed). Attribution appreciated.
+    A fast and simple 53-bit string hash function with decent collision resistance.
+    Largely inspired by MurmurHash2/3, but with a focus on speed/simplicity.
+    https://stackoverflow.com/a/52171480
+  */
+  cyrb53(str: string, seed = 0): number {
+    let h1 = 0xdeadbeef ^ seed,
+      h2 = 0x41c6ce57 ^ seed
+    for (let i = 0, ch; i < str.length; i++) {
+      ch = str.charCodeAt(i)
+      h1 = Math.imul(h1 ^ ch, 2654435761)
+      h2 = Math.imul(h2 ^ ch, 1597334677)
+    }
+    h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507)
+    h1 ^= Math.imul(h2 ^ (h2 >>> 13), 3266489909)
+    h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507)
+    h2 ^= Math.imul(h1 ^ (h1 >>> 13), 3266489909)
+
+    return 4294967296 * (2097151 & h2) + (h1 >>> 0)
   }
 
   ShouldOutputAsm(): boolean {
@@ -583,6 +625,7 @@ export class MacroInstance extends SourceCode {
     uri: string,
     trees: Map<string, AST[]>,
     links: Map<string, DocumentLink[]>,
+    callPoint: SourceMap,
   ) {
     super(
       macro.GetBody(),
@@ -592,6 +635,7 @@ export class MacroInstance extends SourceCode {
       uri,
       trees,
       links,
+      callPoint,
     )
     this._macro = macro
     this.CopyForStack(sourceCode)

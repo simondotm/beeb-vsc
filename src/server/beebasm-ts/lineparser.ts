@@ -27,7 +27,7 @@ import { SourceCode, MacroInstance } from './sourcecode'
 import { SourceFile } from './sourcefile'
 import { SymbolTable } from './symboltable'
 import { GlobalData } from './globaldata'
-import { ObjectCode } from './objectcode'
+import { ObjectCode, SourceMap } from './objectcode'
 import { MacroTable } from './macro'
 import * as AsmException from './asmexception'
 import { strftime } from '../strftime-master/strftime'
@@ -158,6 +158,7 @@ export class LineParser {
   private _sourceCode: SourceCode
   public _line: string
   public _column: integer = 0
+  private _statementStartColumn: integer = 0
   private _lineno: integer
   private _gaTokenTable: Token[]
   private static _gaOpcodeTable: OpcodeData[]
@@ -1681,6 +1682,7 @@ export class LineParser {
     while (this.AdvanceAndCheckEndOfLine()) {
       processedSomething = true
       const oldColumn: integer = this._column
+      this._statementStartColumn = this._column
 
       // Priority: check if it's symbol assignment and let it take priority over keywords
       // This means symbols can begin with reserved words, e.g. PLAyer, but in the case of
@@ -1918,6 +1920,12 @@ export class LineParser {
             )
           }
 
+          const callingPoint: SourceMap = {
+            file: this._sourceCode.GetURIRef(),
+            line: this._lineno + 1 + this._sourceCode.GetLineOffset(),
+            column: this._statementStartColumn,
+            parent: this._sourceCode.GetSourceMap(),
+          }
           const macroInstance = new MacroInstance(
             macro,
             this._sourceCode,
@@ -1925,6 +1933,7 @@ export class LineParser {
             this._sourceCode.GetURI(),
             this._sourceCode.GetTrees(),
             this._sourceCode.GetDocumentLinks(),
+            callingPoint,
           )
           macroInstance.Process()
 
@@ -3361,8 +3370,14 @@ export class LineParser {
     registerPosition: integer,
   ): void {
     const opcode = this.GetOpcode(instructionIndex, mode)
+    const sourcemap: SourceMap = {
+      file: this._sourceCode.GetURIRef(),
+      line: this._lineno + 1 + this._sourceCode.GetLineOffset(),
+      column: this._statementStartColumn,
+      parent: this._sourceCode.GetSourceMap(),
+    }
     try {
-      ObjectCode.Instance.Assemble1(opcode)
+      ObjectCode.Instance.Assemble1(opcode, sourcemap)
     } catch (e) {
       if (e instanceof AsmException.AssembleError) {
         e.SetColumn(this._column)
@@ -3389,8 +3404,14 @@ export class LineParser {
     registerPosition: integer,
   ): void {
     const opcode = this.GetOpcode(instructionIndex, mode)
+    const sourcemap: SourceMap = {
+      file: this._sourceCode.GetURIRef(),
+      line: this._lineno + 1 + this._sourceCode.GetLineOffset(),
+      column: this._statementStartColumn,
+      parent: this._sourceCode.GetSourceMap(),
+    }
     try {
-      ObjectCode.Instance.Assemble2(opcode, value)
+      ObjectCode.Instance.Assemble2(opcode, value, sourcemap)
     } catch (e) {
       if (e instanceof AsmException.AssembleError) {
         e.SetString(this._line)
@@ -3426,8 +3447,14 @@ export class LineParser {
     registerPosition: integer,
   ): void {
     const opcode = this.GetOpcode(instructionIndex, mode)
+    const sourcemap: SourceMap = {
+      file: this._sourceCode.GetURIRef(),
+      line: this._lineno + 1 + this._sourceCode.GetLineOffset(),
+      column: this._statementStartColumn,
+      parent: this._sourceCode.GetSourceMap(),
+    }
     try {
-      ObjectCode.Instance.Assemble3(opcode, value)
+      ObjectCode.Instance.Assemble3(opcode, value, sourcemap)
     } catch (e) {
       if (e instanceof AsmException.AssembleError) {
         e.SetString(this._line)
@@ -3747,6 +3774,12 @@ export class LineParser {
     }
 
     const contents = FileHandler.Instance.GetDocumentText(fspath)
+    const callingPoint = {
+      file: this._sourceCode.GetURIRef(),
+      line: this._lineno,
+      column: this._column,
+      parent: this._sourceCode.GetSourceMap(),
+    }
     const input = new SourceFile(
       contents,
       this._sourceCode,
@@ -3754,6 +3787,7 @@ export class LineParser {
       fspath,
       this._sourceCode.GetTrees(),
       this._sourceCode.GetDocumentLinks(),
+      callingPoint,
     )
     input.Process()
 
