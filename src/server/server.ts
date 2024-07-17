@@ -14,7 +14,8 @@ import { TextDocument } from 'vscode-languageserver-textdocument'
 import { CompletionProvider, SignatureProvider } from './completions'
 import { SymbolTable } from './beebasm-ts/symboltable'
 import { GlobalData } from './beebasm-ts/globaldata'
-import { ObjectCode, SourceMap } from './beebasm-ts/objectcode'
+import { ObjectCode } from './beebasm-ts/objectcode'
+import { SourceMapFile } from '../types/shared/debugsource'
 import { SourceFile } from './beebasm-ts/sourcefile'
 import { RenameProvider, SymbolProvider } from './symbolhandler'
 import { MacroTable } from './beebasm-ts/macro'
@@ -266,18 +267,17 @@ connection.onDidChangeWatchedFiles((_change) => {
 // Handle the source map request
 connection.onRequest(SourceMapRequestType, async (params) => {
   console.log(`Received source map request for file: ${params.text}`)
-  await SaveSourceMap(params.text)
-  // TODO - get the source map for the requested file
-  const response = 'Source map saved'
+  const result = await SaveSourceMap(params.text)
+  const response = `Source map saved: ${result}`
   return response
 })
 
-async function SaveSourceMap(activeFile: string): Promise<void> {
+async function SaveSourceMap(activeFile: string): Promise<string | null> {
   const uri = URItoVSCodeURI(activeFile)
   const root = FileHandler.Instance.GetTargetFileName(uri)
   if (root === undefined) {
     console.log(`No root found for ${uri}`)
-    return
+    return null
   }
   const currentDir = URItoVSCodeURI(process.cwd())
   const relative = path.relative(currentDir, root)
@@ -285,17 +285,27 @@ async function SaveSourceMap(activeFile: string): Promise<void> {
 
   const sourceMap = ObjectCode.Instance.GetSourceMap()
 
-  // make list of index, value where value !== null
-  const sourceMapArray: [number, SourceMap][] = []
+  const output: SourceMapFile = {
+    sources: {},
+    addresses: {},
+  }
+
   sourceMap.forEach((value, index) => {
     if (value !== null) {
-      sourceMapArray.push([index, value])
+      output.addresses[index] = value
     }
   })
+  output.sources = FileHandler.Instance.GetURIRefs()
 
-  const sourceMapString = JSON.stringify(sourceMapArray)
+  const sourceMapString = JSON.stringify(output, null, 2)
 
-  writeFileSync(mapFile, sourceMapString)
+  try {
+    writeFileSync(mapFile, sourceMapString)
+  } catch (error) {
+    console.log(`Error writing source map file ${mapFile}: ${error}`)
+    return null
+  }
+  return mapFile
 }
 
 // Setup completions handling

@@ -235,7 +235,7 @@ export function activate(context: ExtensionContext) {
         const response = await client.sendRequest('custom/requestSourceMap', {
           text: fileName,
         })
-        window.showInformationMessage(`Response from server: ${response}`)
+        window.showInformationMessage(`${response}`)
       }),
     )
 

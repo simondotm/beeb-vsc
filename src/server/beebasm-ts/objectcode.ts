@@ -24,6 +24,7 @@ import { integer } from 'vscode-languageserver'
 import { SymbolTable } from './symboltable'
 import * as AsmException from './asmexception'
 import { GlobalData } from './globaldata'
+import { SourceMap } from '../../types/shared/debugsource'
 
 enum FLAGS {
   // This memory location has been used so don't assemble over it
@@ -34,14 +35,6 @@ enum FLAGS {
   CHECK = 1 << 2,
   // Suppress the opcode check (set by CLEAR)
   DONT_CHECK = 1 << 3,
-}
-
-// Type to store sourcemap info
-export type SourceMap = {
-  file: number
-  line: number
-  column: number
-  parent: SourceMap | null
 }
 
 export class ObjectCode {

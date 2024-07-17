@@ -24,7 +24,7 @@
 
 import { AST } from '../ast'
 import { FileHandler } from '../filehandler'
-import { SourceMap } from './objectcode'
+import { SourceMap } from '../../types/shared/debugsource'
 import { SourceCode } from './sourcecode'
 import { Diagnostic, DocumentLink, URI } from 'vscode-languageserver'
 

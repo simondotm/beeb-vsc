@@ -217,7 +217,7 @@ export class JSBeebDebugSession extends LoggingDebugSession {
     response.body.supportsSetExpression = false
 
     // make VS Code send disassemble request
-    response.body.supportsDisassembleRequest = true
+    response.body.supportsDisassembleRequest = false // Do we want this? We're starting with assembly but useful for self-modifying code?
     response.body.supportsSteppingGranularity = false
     response.body.supportsInstructionBreakpoints = true
 
