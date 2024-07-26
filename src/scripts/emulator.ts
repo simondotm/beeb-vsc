@@ -13,6 +13,7 @@ import {
   ClientCommand,
   DiscImageFile,
   DiscImageOptions,
+  StoppedReason,
 } from '../types/shared/messages'
 import { CustomAudioHandler } from './custom-audio-handler'
 import {
@@ -144,7 +145,13 @@ export class Emulator {
     this.cpu.execute = function (numCyclesToRun: number) {
       this.halted = false
       this.targetCycles += numCyclesToRun
-      return this.executeInternalFast()
+      // Any tracing or debugging means we need to run the potentially slower version: the debug read or
+      // debug write might change tracing or other debugging while we're running.
+      if (this._debugInstruction || this._debugRead || this._debugWrite) {
+        return this.executeInternal()
+      } else {
+        return this.executeInternalFast()
+      }
     }
 
     this.lastFrameTime = 0
@@ -211,7 +218,7 @@ export class Emulator {
       try {
         const fdc = this.cpu.fdc
         const discData = await utils.loadData(discImageFile.url)
-        const discImage = new BaseDisc(fdc, 'disc', discData, () => {})
+        const discImage = new BaseDisc(fdc, 'disc', discData, () => { })
         this.cpu.fdc.loadDisc(0, discImage)
         // notifyHost({
         //   command: ClientCommand.Info,
@@ -323,7 +330,11 @@ export class Emulator {
         cycles = Math.min(cycles, MaxCyclesPerFrame)
         try {
           if (!this.cpu.execute(cycles)) {
-            this._emulatorRunning$.next(false) // TODO: breakpoint
+            this._emulatorRunning$.next(false)
+            notifyHost({
+              command: ClientCommand.Stopped,
+              reason: StoppedReason.Breakpoint,
+            })
           }
         } catch (e) {
           this._emulatorRunning$.next(false)

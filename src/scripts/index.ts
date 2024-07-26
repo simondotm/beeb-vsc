@@ -12,6 +12,7 @@ import {
   DebugInstructionType,
   HostCommand,
   HostMessage,
+  StoppedReason,
 } from '../types/shared/messages'
 
 import { initialiseVSCode, notifyHost } from './vscode'
@@ -105,18 +106,30 @@ window.addEventListener('message', (event) => {
       const instructiontype = message.instruction.instruction
       if (instructiontype === DebugInstructionType.Pause) {
         emulatorView.suspend()
-        notifyHost({ command: ClientCommand.Stopped, reason: 'stopOnPause' })
+        notifyHost({
+          command: ClientCommand.Stopped,
+          reason: StoppedReason.Pause,
+        })
       } else if (instructiontype === DebugInstructionType.Continue) {
         emulatorView.resume()
       } else if (instructiontype === DebugInstructionType.Step) {
         emulatorView.step()
-        notifyHost({ command: ClientCommand.Stopped, reason: 'stopOnStep' })
+        notifyHost({
+          command: ClientCommand.Stopped,
+          reason: StoppedReason.Step,
+        })
       } else if (instructiontype === DebugInstructionType.StepOver) {
         emulatorView.stepOver()
-        notifyHost({ command: ClientCommand.Stopped, reason: 'stopOnStep' })
+        notifyHost({
+          command: ClientCommand.Stopped,
+          reason: StoppedReason.Step,
+        })
       } else if (instructiontype === DebugInstructionType.StepOut) {
         emulatorView.stepOut()
-        notifyHost({ command: ClientCommand.Stopped, reason: 'stopOnStep' })
+        notifyHost({
+          command: ClientCommand.Stopped,
+          reason: StoppedReason.Step,
+        })
       }
       break
     }
@@ -131,6 +144,12 @@ window.addEventListener('message', (event) => {
             values: registers,
           },
         })
+      }
+      break
+    }
+    case HostCommand.SetBreakpoints: {
+      if (message.breakpoints) {
+        emulatorView.SetBreakpoints(message.breakpoints)
       }
       break
     }

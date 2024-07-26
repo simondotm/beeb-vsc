@@ -247,7 +247,7 @@ export function activate(context: ExtensionContext) {
           EmulatorPanel.show(context, contextSelection, allSelections)
           // Start debugger session
           // Configuration must match the details in package.json?
-          debug.startDebugging(undefined, {
+          debug.startDebugging(workspace.workspaceFolders![0], {
             name: 'Debug with JSBeeb',
             type: 'jsbeebdebugger',
             request: 'launch',
@@ -833,7 +833,7 @@ function GetSAVECommands(ASMFilename: string): string[] {
   const lines = textFile.split('\n')
 
   // TODO: Exclude commented out lines
-  const saveCommandRegex = /(^|:)\s*(SAVE\s+)((["'])([^\4]+)\4).*$/im
+  const saveCommandRegex = /(^|:)\s*(SAVE\s+)((["'])((?:(?!\4).)*)\4).*$/im
   for (let i = 0; i < lines.length; i++) {
     const match = saveCommandRegex.exec(lines[i])
     if (match !== null && match.length > 5) {

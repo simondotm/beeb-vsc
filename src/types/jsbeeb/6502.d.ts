@@ -61,6 +61,10 @@ declare module 'jsbeeb/6502' {
     debugRead: DebugHook
     debugWrite: DebugHook
 
+    _debugInstruction: any
+    _debugRead: any
+    _debugWrite: any
+
     constructor(
       model: Model,
       dbgr: Debugger,

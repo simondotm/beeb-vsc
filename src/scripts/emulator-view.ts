@@ -232,4 +232,10 @@ export class EmulatorView {
   stepOut() {
     this.emulator?.dbgr.stepOut()
   }
+
+  SetBreakpoints(addresses: number[]) {
+    for (const address of addresses) {
+      this.emulator?.dbgr.toggleBreakpoint(address)
+    }
+  }
 }

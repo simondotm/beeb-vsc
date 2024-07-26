@@ -130,7 +130,7 @@ export class FileHandler {
     // const refs: SourceFileMap[] = []
     const sourceFileMap: SourceFileMap = {}
     this.includedToParentMap.forEach((_value, key) => {
-      sourceFileMap[key] = cyrb53(key)
+      sourceFileMap[cyrb53(key)] = key
     })
     return sourceFileMap
   }

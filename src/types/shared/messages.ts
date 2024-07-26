@@ -14,6 +14,16 @@ export const enum ClientCommand {
   EmulatorInfo = 'emulatorInfo',
 }
 
+export const enum StoppedReason {
+  Entry = 'entry',
+  Breakpoint = 'breakpoint',
+  Step = 'step',
+  Pause = 'pause',
+  Error = 'error',
+  DataBreakpoint = 'dataBreakpoint',
+  InstructionBreakpoint = 'instructionBreakpoint',
+}
+
 export interface ClientMessageBase extends MessageBase {
   command: ClientCommand
 }
@@ -37,7 +47,7 @@ export interface ClientMessageError extends ClientMessageBase {
 
 export interface ClientMessageStopped extends ClientMessageBase {
   command: ClientCommand.Stopped
-  reason: string // TODO _ make this an enum
+  reason: StoppedReason
 }
 
 export interface ClientMessageEmulatorInfo extends ClientMessageBase {
@@ -96,6 +106,7 @@ export const enum HostCommand {
   DiscImageChanges = 'discImageChanges',
   DebugCommand = 'debugCommand',
   DebugRequest = 'debugRequest',
+  SetBreakpoints = 'setBreakpoints',
 }
 
 export interface HostMessageBase extends MessageBase {
@@ -139,6 +150,11 @@ export interface HostMessageDebugRequest extends HostMessageBase {
   request: string
 }
 
+export interface HostMessageSetBreakpoints extends HostMessageBase {
+  command: HostCommand.SetBreakpoints
+  breakpoints: number[]
+}
+
 export type HostMessage =
   | HostMessageDiscImages
   | HostMessageDiscImageChanges
@@ -146,3 +162,4 @@ export type HostMessage =
   | HostMessageViewFocus
   | HostMessageDebugCommand
   | HostMessageDebugRequest
+  | HostMessageSetBreakpoints

@@ -13,9 +13,11 @@ import {
   CancellationToken,
 } from 'vscode'
 import {
+  Breakpoint,
   InitializedEvent,
   LoggingDebugSession,
   Scope,
+  Source,
   StackFrame,
   StoppedEvent,
   Thread,
@@ -31,8 +33,18 @@ import {
   HostCommand,
   HostMessageDebugCommand,
   HostMessageDebugRequest,
+  HostMessageSetBreakpoints,
+  StoppedReason,
 } from '../../types/shared/messages'
 import { Subject } from 'await-notify'
+import {
+  SourceFileMap,
+  SourceMap,
+  SourceMapFile,
+} from '../../types/shared/debugsource'
+import { URItoVSCodeURI } from '../../server/filehandler'
+import * as fs from 'fs'
+import path from 'path'
 
 export class InlineDebugAdapterFactory
   implements DebugAdapterDescriptorFactory {
@@ -56,7 +68,7 @@ export class JSBeebConfigurationProvider implements DebugConfigurationProvider {
       diskImage: '',
       stopOnEntry: true,
       enableLogging: false,
-      cwd: _folder?.uri.fsPath,
+      cwd: _folder?.uri.fsPath ?? _config.cwd,
     }
   }
 }
@@ -74,19 +86,34 @@ const THREAD_ID = 1
 const STACKFRAME = 0
 const enum VARTYPE {
   Register = 10000,
-  Flag = 10001,
-  Stack = 10002,
+  StatusRegister = 10001,
+  System = 10002,
 }
+
+const flagsNames = [
+  'Negative',
+  'Overflow',
+  'Unused',
+  'Break',
+  'Decimal',
+  'Interrupt disable',
+  'Zero',
+  'Carry',
+]
 
 // export class JSBeebDebugSession implements DebugAdapter {
 export class JSBeebDebugSession extends LoggingDebugSession {
   private _reportProgress: boolean = false
   private _useInvalidatedEvent: boolean = false
   private requestId: number = 0
-  private pendingRequests: Map<number, (response: any) => void> = new Map()
+  private pendingRequests: Map<number, (response: unknown) => void> = new Map()
   private webview = EmulatorPanel.instance?.GetWebview()
   private _configurationDone = new Subject()
-  private cwd: string | undefined
+  private cwd: string = ''
+  private addressesMap: SourceMap[] = new Array(0x10000)
+  private sourceFileMap: SourceFileMap = {}
+  private fileLineToAddressMap: Map<number, Map<number, number>> = new Map()
+  private currentPC: number = -1
 
   public constructor() {
     super()
@@ -112,22 +139,22 @@ export class JSBeebDebugSession extends LoggingDebugSession {
   private handleEmulatorMessage(message: ClientMessage) {
     if (message.command === ClientCommand.Stopped) {
       switch (message.reason) {
-        case 'stopOnEntry':
+        case StoppedReason.Entry:
           this.sendEvent(new StoppedEvent('entry', THREAD_ID))
           break
-        case 'stopOnPause':
+        case StoppedReason.Pause:
           this.sendEvent(new StoppedEvent('pause', THREAD_ID))
           break
-        case 'stopOnStep':
+        case StoppedReason.Step:
           this.sendEvent(new StoppedEvent('step', THREAD_ID))
           break
-        case 'stopOnBreakpoint':
+        case StoppedReason.Breakpoint:
           this.sendEvent(new StoppedEvent('breakpoint', THREAD_ID))
           break
-        case 'stopOnDataBreakpoint':
+        case StoppedReason.DataBreakpoint:
           this.sendEvent(new StoppedEvent('data breakpoint', THREAD_ID))
           break
-        case 'stopOnInstructionBreakpoint':
+        case StoppedReason.InstructionBreakpoint:
           this.sendEvent(new StoppedEvent('instruction breakpoint', THREAD_ID))
           break
       }
@@ -251,7 +278,6 @@ export class JSBeebDebugSession extends LoggingDebugSession {
 
   protected async launchRequest(
     response: DebugProtocol.LaunchResponse,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     args: JSBeebLaunchRequestArguments,
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     request?: DebugProtocol.Request | undefined,
@@ -259,9 +285,120 @@ export class JSBeebDebugSession extends LoggingDebugSession {
     console.log('launchRequest called')
 
     this.cwd = args.cwd
+    // load sourcemap
+    this.loadSourceMap()
+
     // wait 1 second until configuration has finished (and configurationDoneRequest has been called)
     await this._configurationDone.wait(1000)
     // TODO - move launch of emulator to here and add attach option?
+    this.sendResponse(response)
+  }
+
+  private loadSourceMap(): void {
+    // TODO: Which file will be loaded?
+    // Option 1) Use settings.json to specify the file(s), then load first or all (but beware of overlappping addresses)
+    // Option 2) Load all .map files in the directory
+    // Option 3) Load a specific file (or files), e.g. main.map, specified in launch.json
+
+    // Option 3 is probably best (most standard) but can fall back to 1 or 2 if not specified
+    let sourceMap: SourceMapFile
+    try {
+      const files = fs
+        .readdirSync(this.cwd)
+        .filter((file) => file.endsWith('.map'))
+      if (files.length > 0) {
+        const mapFile = fs.readFileSync(path.join(this.cwd, files[0]), 'utf8')
+        sourceMap = JSON.parse(mapFile)
+        // transfer data out of address structure
+        for (const address in sourceMap.addresses) {
+          const map = sourceMap.addresses[address]
+          const addr = parseInt(address, 10)
+          this.addressesMap[addr] = map
+        }
+        // transfer data out of sources structure, one by one
+        for (const source in sourceMap.sources) {
+          const id = parseInt(source, 10)
+          this.sourceFileMap[id] = sourceMap.sources[source]
+        }
+        // Create map for each source file from line number to address
+        // (first address of line, may support multiple addresses in future for multi-statement lines)
+        for (const address in sourceMap.addresses) {
+          const map = sourceMap.addresses[address]
+          const source = map.file
+          const lineMap = this.fileLineToAddressMap.get(source)
+          if (lineMap) {
+            const line = map.line
+            // check not set yet
+            if (!lineMap.has(line)) {
+              lineMap.set(line, parseInt(address, 10))
+            }
+          } else {
+            this.fileLineToAddressMap.set(
+              source,
+              new Map([[map.line, parseInt(address, 10)]]),
+            )
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error loading source map:', error)
+      return
+    }
+  }
+
+  protected setBreakPointsRequest(
+    response: DebugProtocol.SetBreakpointsResponse,
+    args: DebugProtocol.SetBreakpointsArguments,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    request?: DebugProtocol.Request | undefined,
+  ): void {
+    console.log('setBreakPointsRequest called' + args.source.path)
+    // Map breakpoint args to addresses
+    if (args.source.path === undefined) {
+      this.sendResponse(response)
+      return
+    }
+    const sourceFile = URItoVSCodeURI(args.source.path)
+    // Get the source file ID
+    let sourceId = 0
+    for (const id in this.sourceFileMap) {
+      if (this.sourceFileMap[id] === sourceFile) {
+        sourceId = parseInt(id, 10)
+        break
+      }
+    }
+    if (sourceId === 0) {
+      // console.error('Source file not found in source map:', sourceFile)
+      this.sendResponse(response)
+      return
+    }
+    // Get addresses from lines using lineFile mapping
+    const breakpoints = args.breakpoints || []
+    const breakpointsResponse: Breakpoint[] = []
+    const breakpointAddresses: number[] = []
+    const lineMap = this.fileLineToAddressMap.get(sourceId)
+    if (lineMap) {
+      for (const breakpoint of breakpoints) {
+        const line = breakpoint.line
+        const address = lineMap.get(line)
+        if (address) {
+          breakpointAddresses.push(address)
+          breakpointsResponse.push(new Breakpoint(true, line))
+        }
+      }
+    }
+
+    // TODO - maintain internal list of breakpoints set by file, so can clear old ones when new ones set for that file
+    // Have to send list of changes because debugger takes 'toggle' approach to breakpoints
+    // Send breakpoints to emulator
+    const message: HostMessageSetBreakpoints = {
+      command: HostCommand.SetBreakpoints,
+      breakpoints: breakpointAddresses,
+    }
+    EmulatorPanel.instance?.notifyClient(message)
+
+    // Return breakpoints to frontend
+    response.body = { breakpoints: breakpointsResponse }
     this.sendResponse(response)
   }
 
@@ -365,7 +502,10 @@ export class JSBeebDebugSession extends LoggingDebugSession {
     if (args !== null && args.frameId === STACKFRAME) {
       response.body.scopes.push(new Scope('Registers', VARTYPE.Register, false))
       response.body.scopes[0].presentationHint = 'registers'
-      response.body.scopes.push(new Scope('Flags', VARTYPE.Flag, false))
+      response.body.scopes.push(
+        new Scope('Status Register', VARTYPE.StatusRegister, false),
+      )
+      response.body.scopes.push(new Scope('System', VARTYPE.System, false))
       // TODO - symbols, stats, crtc, etc.?
     }
     console.log(response)
@@ -381,16 +521,22 @@ export class JSBeebDebugSession extends LoggingDebugSession {
     console.log(args)
     const variables: Variable[] = []
     if (args.filter === undefined || args.filter === 'named') {
+      const internals = await this.getInternals()
       if (args.variablesReference === VARTYPE.Register) {
-        const registers = await this.getRegisters()
+        const registers = internals.filter((reg) =>
+          ['PC', 'S', 'A', 'X', 'Y', 'P'].includes(reg.name),
+        )
         variables.push(...registers)
+      } else if (args.variablesReference === VARTYPE.StatusRegister) {
+        const status = internals.filter((reg) => flagsNames.includes(reg.name))
+        variables.push(...status)
       }
     }
     response.body = { variables: variables }
     this.sendResponse(response)
   }
 
-  private async getRegisters(): Promise<Variable[]> {
+  private async getInternals(): Promise<Variable[]> {
     const message: HostMessageDebugRequest = {
       command: HostCommand.DebugRequest,
       id: 0, // Will be added in sendRequest
@@ -399,10 +545,10 @@ export class JSBeebDebugSession extends LoggingDebugSession {
     const webviewResponse = (await this.getFromEmulator(
       message,
     )) as ClientMessageEmulatorInfo
-    return this.formatRegisters(webviewResponse.info.values)
+    return this.formatInternals(webviewResponse.info.values)
   }
 
-  private formatRegisters(
+  private formatInternals(
     registers: Array<{ name: string; value: string | number }>,
   ): Variable[] {
     const vars: Variable[] = []
@@ -416,6 +562,16 @@ export class JSBeebDebugSession extends LoggingDebugSession {
         ) // TODO - include decimal and binary formats?
       } else if (name === 'P') {
         vars.push(new Variable(name, `${value}`))
+        // split status register string into individual flags
+        const flags = value.toString().split('')
+        for (let i = 0; i < flags.length; i++) {
+          vars.push(
+            new Variable(
+              flagsNames[i],
+              (flags[i] === flags[i].toUpperCase()).toString(),
+            ),
+          )
+        }
       }
     }
     return vars
@@ -425,17 +581,31 @@ export class JSBeebDebugSession extends LoggingDebugSession {
     response: DebugProtocol.StackTraceResponse,
     args: DebugProtocol.StackTraceArguments,
   ): Promise<void> {
-    const levels = args.levels || 0
-    const registers = await this.getRegisters()
+    // const levels = args.levels || 0
     console.log(args)
     const startFrame = args.startFrame || 0
-    if (args.threadId === THREAD_ID && startFrame === STACKFRAME) {
-      const stackframe = new StackFrame(STACKFRAME, 'main')
-      const filename = 'main'
-      stackframe.source = {
-        name: filename,
-        path: this.cwd ?? '' + filename,
+    // Get PC from emulator
+    const registers = await this.getInternals()
+    const pc = registers.find((reg) => reg.name === 'PC')
+    if (args.threadId === THREAD_ID && startFrame === STACKFRAME && pc) {
+      const pcAddress = parseInt(pc.value.replace('$', '').toString(), 16)
+      const file = this.addressesMap[pcAddress]?.file ?? -1
+      if (file === -1) {
+        response.body = { stackFrames: [], totalFrames: 0 }
+        this.sendResponse(response)
+        return
       }
+      const line = this.addressesMap[pcAddress]?.line ?? 0
+      const filepath = this.sourceFileMap[file]
+      const filename = path.basename(filepath)
+      const source: Source = {
+        name: path.basename(filepath),
+        path: filepath,
+        sourceReference: 0,
+      }
+      const stackframe = new StackFrame(STACKFRAME, filename, source, line, 0)
+      // TODO - have generic default stack frame if the file is not found
+      // TODO - build up stack frames using parent field of addresses
 
       response.body = {
         stackFrames: [stackframe],

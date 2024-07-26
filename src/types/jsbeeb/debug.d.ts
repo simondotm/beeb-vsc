@@ -7,5 +7,6 @@ declare module 'jsbeeb/web/debug' {
     stepOver(): void
     stepOut(): void
     enable(e: boolean): void
+    toggleBreakpoint(address: number): void
   }
 }

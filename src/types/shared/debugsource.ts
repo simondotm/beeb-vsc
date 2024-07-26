@@ -9,7 +9,7 @@ export type SourceMap = {
 }
 
 export type SourceFileMap = {
-  [key: string]: number
+  [key: number]: string
 }
 
 export type SourceAddressMap = {
