@@ -2,6 +2,13 @@
 
 See [Releases on Github](https://github.com/simondotm/beeb-vsc/releases) for full release history.
 
+### 0.2.4
+- Minor quality of life fixes
+  - Opcodes and register names included in autocomplete
+  - Don't show signature helper when in comments
+  - Label names take priority over keyworks for syntax highlighting
+  - Limit reporting 'second pass consistency' error to first point where it occurs
+
 ### 0.2.3
 - Add functionality around macros (references, symbol highlighting etc.)
 - Change default paths in settings.json to be relative so projects are portable
