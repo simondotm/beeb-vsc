@@ -287,6 +287,7 @@ async function SaveSourceMap(activeFile: string): Promise<string | null> {
 
   const output: SourceMapFile = {
     sources: {},
+    labels: {},
     addresses: {},
   }
 
@@ -296,6 +297,7 @@ async function SaveSourceMap(activeFile: string): Promise<string | null> {
     }
   })
   output.sources = FileHandler.Instance.GetURIRefs()
+  output.labels = SymbolTable.Instance.GetAllLabels()
 
   const sourceMapString = JSON.stringify(output, null, 2)
 

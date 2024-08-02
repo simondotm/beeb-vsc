@@ -16,7 +16,12 @@ export type SourceAddressMap = {
   [address: number]: SourceMap
 }
 
+export type LabelMap = {
+  [label: string]: number
+}
+
 export type SourceMapFile = {
   sources: SourceFileMap
+  labels: LabelMap
   addresses: SourceAddressMap
 }

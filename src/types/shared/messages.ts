@@ -12,6 +12,7 @@ export const enum ClientCommand {
   Error = 'error',
   Stopped = 'stopped',
   EmulatorInfo = 'emulatorInfo',
+  EmulatorMemory = 'emulatorMemory',
 }
 
 export const enum StoppedReason {
@@ -59,6 +60,14 @@ export interface ClientMessageEmulatorInfo extends ClientMessageBase {
   }
 }
 
+export interface ClientMessageEmulatorMemory extends ClientMessageBase {
+  command: ClientCommand.EmulatorMemory
+  info: {
+    id: number
+    values: Uint8Array
+  }
+}
+
 export type ClientMessage =
   | ClientMessageEmulatorReady
   | ClientMessagePageLoaded
@@ -66,6 +75,7 @@ export type ClientMessage =
   | ClientMessageError
   | ClientMessageStopped
   | ClientMessageEmulatorInfo
+  | ClientMessageEmulatorMemory
 
 /**
  * Messages from host to client

@@ -29,6 +29,7 @@ import {
   ClientCommand,
   ClientMessage,
   ClientMessageEmulatorInfo,
+  ClientMessageEmulatorMemory,
   DebugInstructionType,
   HostCommand,
   HostMessageDebugCommand,
@@ -38,6 +39,7 @@ import {
 } from '../../types/shared/messages'
 import { Subject } from 'await-notify'
 import {
+  LabelMap,
   SourceFileMap,
   SourceMap,
   SourceMapFile,
@@ -112,8 +114,11 @@ export class JSBeebDebugSession extends LoggingDebugSession {
   private cwd: string = ''
   private addressesMap: SourceMap[] = new Array(0x10000)
   private sourceFileMap: SourceFileMap = {}
+  private labelMap: LabelMap = {}
   private fileLineToAddressMap: Map<number, Map<number, number>> = new Map()
   private currentPC: number = -1
+  private internals: Variable[] = []
+  private memory: Uint8Array = new Uint8Array(0x10000)
 
   public constructor() {
     super()
@@ -130,6 +135,8 @@ export class JSBeebDebugSession extends LoggingDebugSession {
     }
     if (message.command === ClientCommand.EmulatorInfo) {
       this.handleEmulatorResponse(message as ClientMessageEmulatorInfo)
+    } else if (message.command === ClientCommand.EmulatorMemory) {
+      this.handleEmulatorResponse(message as ClientMessageEmulatorMemory)
     } else {
       this.handleEmulatorMessage(message as ClientMessage)
     }
@@ -166,7 +173,9 @@ export class JSBeebDebugSession extends LoggingDebugSession {
   }
 
   // Responses from the emulator to requests from this debug adapter
-  private handleEmulatorResponse(response: ClientMessageEmulatorInfo) {
+  private handleEmulatorResponse(
+    response: ClientMessageEmulatorInfo | ClientMessageEmulatorMemory,
+  ) {
     const id = response.info.id
     if (this.pendingRequests.has(id)) {
       const resolve = this.pendingRequests.get(id)
@@ -320,6 +329,9 @@ export class JSBeebDebugSession extends LoggingDebugSession {
           const id = parseInt(source, 10)
           this.sourceFileMap[id] = sourceMap.sources[source]
         }
+        // transfer data out of labels structure
+        this.labelMap = sourceMap.labels
+
         // Create map for each source file from line number to address
         // (first address of line, may support multiple addresses in future for multi-statement lines)
         for (const address in sourceMap.addresses) {
@@ -405,10 +417,7 @@ export class JSBeebDebugSession extends LoggingDebugSession {
   protected threadsRequest(response: DebugProtocol.ThreadsResponse): void {
     // runtime supports no threads so just return a default thread.
     response.body = {
-      threads: [
-        new Thread(THREAD_ID, 'thread 1'),
-        // new Thread(this.THREAD_ID + 1, 'thread 2'),
-      ],
+      threads: [new Thread(THREAD_ID, 'thread 1')],
     }
     this.sendResponse(response)
   }
@@ -498,15 +507,17 @@ export class JSBeebDebugSession extends LoggingDebugSession {
     args: DebugProtocol.ScopesArguments,
   ): void {
     response.body = { scopes: [] }
+    console.log(new Date().getTime() + ' scopesRequest called')
     console.log(args)
-    if (args !== null && args.frameId === STACKFRAME) {
+    // if (args !== null && args.frameId === STACKFRAME) { // STACKFRAME not used as a concept, no locals in assembled code?
+    if (args !== null) {
       response.body.scopes.push(new Scope('Registers', VARTYPE.Register, false))
       response.body.scopes[0].presentationHint = 'registers'
       response.body.scopes.push(
         new Scope('Status Register', VARTYPE.StatusRegister, false),
       )
       response.body.scopes.push(new Scope('System', VARTYPE.System, false))
-      // TODO - symbols, stats, crtc, etc.?
+      // TODO - symbols, crtc, etc.?
     }
     console.log(response)
     this.sendResponse(response)
@@ -519,17 +530,24 @@ export class JSBeebDebugSession extends LoggingDebugSession {
     request?: DebugProtocol.Request | undefined,
   ): Promise<void> {
     console.log(args)
+    console.log(new Date().getTime() + ' variablesRequest called')
     const variables: Variable[] = []
     if (args.filter === undefined || args.filter === 'named') {
-      const internals = await this.getInternals()
       if (args.variablesReference === VARTYPE.Register) {
-        const registers = internals.filter((reg) =>
+        const registers = this.internals.filter((reg) =>
           ['PC', 'S', 'A', 'X', 'Y', 'P'].includes(reg.name),
         )
         variables.push(...registers)
       } else if (args.variablesReference === VARTYPE.StatusRegister) {
-        const status = internals.filter((reg) => flagsNames.includes(reg.name))
+        const status = this.internals.filter((reg) =>
+          flagsNames.includes(reg.name),
+        )
         variables.push(...status)
+      } else if (args.variablesReference === VARTYPE.System) {
+        const system = this.internals.filter((reg) =>
+          ['Cycles', 'Next op'].includes(reg.name),
+        )
+        variables.push(...system)
       }
     }
     response.body = { variables: variables }
@@ -546,6 +564,18 @@ export class JSBeebDebugSession extends LoggingDebugSession {
       message,
     )) as ClientMessageEmulatorInfo
     return this.formatInternals(webviewResponse.info.values)
+  }
+
+  private async getMemory(): Promise<Uint8Array> {
+    const message: HostMessageDebugRequest = {
+      command: HostCommand.DebugRequest,
+      id: 0, // Will be added in sendRequest
+      request: 'memory',
+    }
+    const webviewResponse = (await this.getFromEmulator(
+      message,
+    )) as ClientMessageEmulatorMemory
+    return webviewResponse.info.values
   }
 
   private formatInternals(
@@ -572,6 +602,8 @@ export class JSBeebDebugSession extends LoggingDebugSession {
             ),
           )
         }
+      } else if (name === 'Cycles' || name === 'Next op') {
+        vars.push(new Variable(name, `${value}`))
       }
     }
     return vars
@@ -582,37 +614,70 @@ export class JSBeebDebugSession extends LoggingDebugSession {
     args: DebugProtocol.StackTraceArguments,
   ): Promise<void> {
     // const levels = args.levels || 0
-    console.log(args)
+    // log time of call
+    console.log(new Date().getTime() + ' stackTraceRequest called')
+    // console.log(args)
     const startFrame = args.startFrame || 0
-    // Get PC from emulator
-    const registers = await this.getInternals()
-    const pc = registers.find((reg) => reg.name === 'PC')
+    let frameId = STACKFRAME
+    // Get information from emulator
+    this.internals = await this.getInternals()
+    this.memory = await this.getMemory()
+    const pc = this.internals.find((reg) => reg.name === 'PC')
     if (args.threadId === THREAD_ID && startFrame === STACKFRAME && pc) {
       const pcAddress = parseInt(pc.value.replace('$', '').toString(), 16)
-      const file = this.addressesMap[pcAddress]?.file ?? -1
-      if (file === -1) {
-        response.body = { stackFrames: [], totalFrames: 0 }
+      response.body = { stackFrames: [], totalFrames: 0 }
+      if (this.addressesMap[pcAddress] === undefined) {
         this.sendResponse(response)
         return
       }
-      const line = this.addressesMap[pcAddress]?.line ?? 0
-      const filepath = this.sourceFileMap[file]
-      const filename = path.basename(filepath)
-      const source: Source = {
-        name: path.basename(filepath),
-        path: filepath,
-        sourceReference: 0,
-      }
-      const stackframe = new StackFrame(STACKFRAME, filename, source, line, 0)
-      // TODO - have generic default stack frame if the file is not found
-      // TODO - build up stack frames using parent field of addresses
-
-      response.body = {
-        stackFrames: [stackframe],
-        totalFrames: 1,
+      let current: SourceMap | null = this.addressesMap[pcAddress]
+      while (current !== null) {
+        const file = current.file
+        const line = current.line
+        const filepath = this.sourceFileMap[file]
+        const filename = path.basename(filepath)
+        const source: Source = {
+          name: path.basename(filepath),
+          path: filepath,
+          sourceReference: 0,
+        }
+        const stackframe = new StackFrame(frameId, filename, source, line, 0)
+        response.body.stackFrames.push(stackframe)
+        response.body.totalFrames!++
+        frameId++
+        current = current.parent
       }
       this.sendResponse(response)
     }
-    console.log(response)
+    // console.log(response)
+  }
+
+  protected async evaluateRequest(
+    response: DebugProtocol.EvaluateResponse,
+    args: DebugProtocol.EvaluateArguments,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    request?: DebugProtocol.Request,
+  ): Promise<void> {
+    console.log(args)
+    if (args.context === 'watch') {
+      const label = args.expression
+      // search for label in labels list after adding '.' prefix
+      if (this.labelMap['.' + label] === undefined) {
+        response.success = false
+        this.sendErrorResponse(response, 0)
+        return
+      }
+      const address = this.labelMap['.' + label]
+      // retrieve value at address from emulator
+      const value = this.memory[address]
+      // TODO - add support for 16-bit values and other formatting options
+
+      response.body = {
+        result: `${value}`,
+        variablesReference: 0,
+      }
+
+      this.sendResponse(response)
+    }
   }
 }

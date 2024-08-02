@@ -135,13 +135,22 @@ window.addEventListener('message', (event) => {
     }
     case HostCommand.DebugRequest: {
       if (message.request === 'registers') {
-        const registers = emulatorView.GetRegisters()
+        const registers = emulatorView.GetInternals()
         notifyHost({
           command: ClientCommand.EmulatorInfo,
           info: {
             id: message.id,
             type: 'registers',
             values: registers,
+          },
+        })
+      } else if (message.request === 'memory') {
+        const memory = emulatorView.GetMemory()
+        notifyHost({
+          command: ClientCommand.EmulatorMemory,
+          info: {
+            id: message.id,
+            values: memory,
           },
         })
       }
