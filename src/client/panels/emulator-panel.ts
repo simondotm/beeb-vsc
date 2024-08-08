@@ -138,7 +138,7 @@ export class EmulatorPanel {
     })
   }
 
-  private dispose() {
+  dispose() {
     EmulatorPanel.instance = undefined
 
     if (this.watcher) {

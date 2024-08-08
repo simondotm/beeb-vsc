@@ -3,6 +3,7 @@ import { TextDocument } from 'vscode-languageserver-textdocument'
 import { readFileSync, statSync } from 'fs'
 import { URI } from 'vscode-uri'
 import { SourceFileMap } from '../types/shared/debugsource'
+import path from 'path'
 
 // The TextDocuments collection is the files managed by vscode
 // For any included files, we manage with the _textDocuments map
@@ -128,9 +129,11 @@ export class FileHandler {
 
   public GetURIRefs(): SourceFileMap {
     // const refs: SourceFileMap[] = []
+    const currentDir = URItoVSCodeURI(process.cwd())
     const sourceFileMap: SourceFileMap = {}
     this.includedToParentMap.forEach((_value, key) => {
-      sourceFileMap[cyrb53(key)] = key
+      const relative = path.relative(currentDir, key)
+      sourceFileMap[cyrb53(key)] = relative // Keeping full path to generate key (consistent with sourcecode.ts)
     })
     return sourceFileMap
   }

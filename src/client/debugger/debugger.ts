@@ -20,6 +20,7 @@ import {
   Source,
   StackFrame,
   StoppedEvent,
+  TerminatedEvent,
   Thread,
   Variable,
 } from '@vscode/debugadapter'
@@ -44,7 +45,6 @@ import {
   SourceMap,
   SourceMapFile,
 } from '../../types/shared/debugsource'
-import { URItoVSCodeURI } from '../../server/filehandler'
 import * as fs from 'fs'
 import path from 'path'
 
@@ -105,24 +105,24 @@ const flagsNames = [
 
 // export class JSBeebDebugSession implements DebugAdapter {
 export class JSBeebDebugSession extends LoggingDebugSession {
-  private _reportProgress: boolean = false
-  private _useInvalidatedEvent: boolean = false
   private requestId: number = 0
   private pendingRequests: Map<number, (response: unknown) => void> = new Map()
   private webview = EmulatorPanel.instance?.GetWebview()
-  private _configurationDone = new Subject()
+  private configurationDone = new Subject()
+  private emulatorReady = new Subject()
+  private emulatorReadyForBreakpoints = false
+  private pendingBreakpoints: number[] = []
+  private fileBreakpoints: Map<string, Uint16Array> = new Map()
   private cwd: string = ''
   private addressesMap: SourceMap[] = new Array(0x10000)
   private sourceFileMap: SourceFileMap = {}
   private labelMap: LabelMap = {}
   private fileLineToAddressMap: Map<number, Map<number, number>> = new Map()
-  private currentPC: number = -1
   private internals: Variable[] = []
   private memory: Uint8Array = new Uint8Array(0x10000)
 
   public constructor() {
     super()
-    console.log('JSBeebDebugSession constructor called')
     // The runtime is the jsbeeb instance in the webview, we tell it to start, step, stop, etc.
     if (this.webview) {
       this.webview.onDidReceiveMessage(this.handleMessageFromWebview.bind(this))
@@ -169,6 +169,12 @@ export class JSBeebDebugSession extends LoggingDebugSession {
       window.showInformationMessage(
         'EmulatorInfo event received' + message.info,
       )
+    } else if (message.command === ClientCommand.EmulatorReady) {
+      this.emulatorReadyForBreakpoints = true
+      console.log(
+        `${new Date().toLocaleTimeString()} EmulatorReady event received`,
+      )
+      this.emulatorReady.notify()
     }
   }
 
@@ -196,21 +202,13 @@ export class JSBeebDebugSession extends LoggingDebugSession {
     })
   }
 
-  /**
-   * The 'initialize' request is the first request called by the frontend
-   * to interrogate the features the debug adapter provides.
-   */
+  // The 'initialize' request is the first request called by the frontend
+  // to interrogate the features the debug adapter provides.
   protected initializeRequest(
     response: DebugProtocol.InitializeResponse,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     args: DebugProtocol.InitializeRequestArguments,
   ): void {
-    if (args.supportsProgressReporting) {
-      this._reportProgress = true
-    }
-    if (args.supportsInvalidatedEvent) {
-      this._useInvalidatedEvent = true
-    }
-
     // build and return the capabilities of this debug adapter:
     response.body = response.body || {}
 
@@ -220,51 +218,21 @@ export class JSBeebDebugSession extends LoggingDebugSession {
     // make VS Code use 'evaluate' when hovering over source
     response.body.supportsEvaluateForHovers = false
 
-    // make VS Code show a 'step back' button
-    response.body.supportsStepBack = false
-
     // make VS Code support data breakpoints
     response.body.supportsDataBreakpoints = true
-
-    // make VS Code support completion in REPL
-    response.body.supportsCompletionsRequest = false
-    response.body.completionTriggerCharacters = ['.', '[']
-
-    // make VS Code send cancel request
-    response.body.supportsCancelRequest = false
 
     // make VS Code send the breakpointLocations request
     response.body.supportsBreakpointLocationsRequest = true
 
-    // make VS Code provide "Step in Target" functionality
-    response.body.supportsStepInTargetsRequest = false
-
-    // the adapter defines two exceptions filters, one with support for conditions.
-    response.body.supportsExceptionFilterOptions = false
-    response.body.exceptionBreakpointFilters = []
-
-    // make VS Code send exceptionInfo request
-    response.body.supportsExceptionInfoRequest = false
-
-    // make VS Code send setVariable request
-    response.body.supportsSetVariable = false
-
-    // make VS Code send setExpression request
-    response.body.supportsSetExpression = false
+    // shut down emulator panel when debug session ends
+    response.body.supportsTerminateRequest = true
+    response.body.supportsRestartRequest = false // What process would we use? User can just reboot the emulated machine already
 
     // make VS Code send disassemble request
     response.body.supportsDisassembleRequest = false // Do we want this? We're starting with assembly but useful for self-modifying code?
+    response.body.supportsInstructionBreakpoints = false // Generally set from dissasembly but assembly basically the same
+
     response.body.supportsSteppingGranularity = false
-    response.body.supportsInstructionBreakpoints = true
-
-    // make VS Code able to read and write variable memory
-    response.body.supportsReadMemoryRequest = true
-    response.body.supportsWriteMemoryRequest = false
-
-    response.body.supportSuspendDebuggee = false
-    response.body.supportTerminateDebuggee = false
-    response.body.supportsFunctionBreakpoints = false
-    response.body.supportsDelayedStackTraceLoading = false
 
     this.sendResponse(response)
 
@@ -279,10 +247,12 @@ export class JSBeebDebugSession extends LoggingDebugSession {
     args: DebugProtocol.ConfigurationDoneArguments,
     request?: DebugProtocol.Request | undefined,
   ): void {
-    console.log('configurationDoneRequest called')
+    console.log(
+      `${new Date().toLocaleTimeString()} configurationDoneRequest called`,
+    )
     super.configurationDoneRequest(response, args, request)
     // notify the launchRequest that configuration has finished
-    this._configurationDone.notify()
+    this.configurationDone.notify()
   }
 
   protected async launchRequest(
@@ -297,11 +267,23 @@ export class JSBeebDebugSession extends LoggingDebugSession {
     // load sourcemap
     this.loadSourceMap()
 
-    // wait 1 second until configuration has finished (and configurationDoneRequest has been called)
-    await this._configurationDone.wait(1000)
-    // TODO - move launch of emulator to here and add attach option?
+    // Wait up to 5 seconds until configuration has finished
+    // (and configurationDoneRequest has been called)
+    // At the same time, wait for ClientCommand.EmulatorReady message to be received
+    await Promise.all([
+      this.configurationDone.wait(5000),
+      this.emulatorReady.wait(5000),
+    ])
+    // Send any breakpoints that have been received before the emulator was ready
+    if (this.pendingBreakpoints.length > 0) {
+      this.sendBreakpointsToEmulator(this.pendingBreakpoints)
+      this.pendingBreakpoints = []
+    }
+
     this.sendResponse(response)
   }
+
+  // TODO - add attach request option? What would be the workflow?
 
   private loadSourceMap(): void {
     // TODO: Which file will be loaded?
@@ -358,29 +340,32 @@ export class JSBeebDebugSession extends LoggingDebugSession {
     }
   }
 
+  // Map breakpoint args to addresses
   protected setBreakPointsRequest(
     response: DebugProtocol.SetBreakpointsResponse,
     args: DebugProtocol.SetBreakpointsArguments,
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     request?: DebugProtocol.Request | undefined,
   ): void {
-    console.log('setBreakPointsRequest called' + args.source.path)
-    // Map breakpoint args to addresses
-    if (args.source.path === undefined) {
+    const sourceFile = args.source.path
+    console.log(
+      `${new Date().toLocaleTimeString()} setBreakPointsRequest ${sourceFile}`,
+    )
+    if (sourceFile === undefined) {
       this.sendResponse(response)
       return
     }
-    const sourceFile = URItoVSCodeURI(args.source.path)
+    const relative = path.relative(this.cwd, sourceFile)
     // Get the source file ID
     let sourceId = 0
     for (const id in this.sourceFileMap) {
-      if (this.sourceFileMap[id] === sourceFile) {
+      if (this.sourceFileMap[id] === relative) {
         sourceId = parseInt(id, 10)
         break
       }
     }
     if (sourceId === 0) {
-      // console.error('Source file not found in source map:', sourceFile)
+      console.error('Source file not found in source map: ' + sourceFile)
       this.sendResponse(response)
       return
     }
@@ -399,19 +384,50 @@ export class JSBeebDebugSession extends LoggingDebugSession {
         }
       }
     }
+    const existingBreakpoints = this.fileBreakpoints.get(sourceFile)
+    this.fileBreakpoints.set(sourceFile, new Uint16Array(breakpointAddresses))
 
-    // TODO - maintain internal list of breakpoints set by file, so can clear old ones when new ones set for that file
-    // Have to send list of changes because debugger takes 'toggle' approach to breakpoints
-    // Send breakpoints to emulator
+    // If emulator is ready, send to emulator, otherwise store for later
+    if (!this.emulatorReadyForBreakpoints) {
+      this.pendingBreakpoints.push(...breakpointAddresses)
+    } else {
+      // this.sendBreakpointsToEmulator(breakpointAddresses)
+      // Now we need to compare the breakpoints set in the emulator with the ones we have
+      // so that we just send the changed ones to the emulator
+      // The return value is still the full list of breakpoints verified
+      if (existingBreakpoints) {
+        const changedBreakpoints: number[] = []
+        // first add all the breakpoints that are in the new list but not the existing one
+        for (let i = 0; i < breakpointAddresses.length; i++) {
+          if (existingBreakpoints.includes(breakpointAddresses[i])) {
+            changedBreakpoints.push(breakpointAddresses[i])
+          }
+        }
+        // then all the breakpoints that are in the existing list but not the new one
+        for (let i = 0; i < existingBreakpoints.length; i++) {
+          if (!breakpointAddresses.includes(existingBreakpoints[i])) {
+            changedBreakpoints.push(existingBreakpoints[i])
+          }
+        }
+        this.sendBreakpointsToEmulator(changedBreakpoints)
+        console.log('ready changed breakpoints: ' + changedBreakpoints)
+      } else {
+        this.sendBreakpointsToEmulator(breakpointAddresses)
+        console.log('ready all breakpoints: ' + breakpointAddresses)
+      }
+    }
+    // Return breakpoints to frontend
+    response.body = { breakpoints: breakpointsResponse }
+    this.sendResponse(response)
+  }
+
+  private sendBreakpointsToEmulator(breakpointAddresses: number[]): void {
     const message: HostMessageSetBreakpoints = {
       command: HostCommand.SetBreakpoints,
       breakpoints: breakpointAddresses,
     }
     EmulatorPanel.instance?.notifyClient(message)
-
-    // Return breakpoints to frontend
-    response.body = { breakpoints: breakpointsResponse }
-    this.sendResponse(response)
+    console.log(message)
   }
 
   protected threadsRequest(response: DebugProtocol.ThreadsResponse): void {
@@ -421,6 +437,7 @@ export class JSBeebDebugSession extends LoggingDebugSession {
     }
     this.sendResponse(response)
   }
+
   protected pauseRequest(
     response: DebugProtocol.PauseResponse,
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -502,12 +519,25 @@ export class JSBeebDebugSession extends LoggingDebugSession {
     this.sendResponse(response)
   }
 
+  protected terminateRequest(
+    response: DebugProtocol.TerminateResponse,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    args: DebugProtocol.TerminateArguments,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    request?: DebugProtocol.Request | undefined,
+  ): void {
+    console.log(`${new Date().toLocaleTimeString()} terminateRequest called`)
+    EmulatorPanel.instance?.dispose()
+    this.sendEvent(new TerminatedEvent())
+    this.sendResponse(response)
+  }
+
   protected scopesRequest(
     response: DebugProtocol.ScopesResponse,
     args: DebugProtocol.ScopesArguments,
   ): void {
     response.body = { scopes: [] }
-    console.log(new Date().getTime() + ' scopesRequest called')
+    console.log(`${new Date().toLocaleTimeString()} scopesRequest called`)
     console.log(args)
     // if (args !== null && args.frameId === STACKFRAME) { // STACKFRAME not used as a concept, no locals in assembled code?
     if (args !== null) {
@@ -519,7 +549,7 @@ export class JSBeebDebugSession extends LoggingDebugSession {
       response.body.scopes.push(new Scope('System', VARTYPE.System, false))
       // TODO - symbols, crtc, etc.?
     }
-    console.log(response)
+    // console.log(response)
     this.sendResponse(response)
   }
 
@@ -530,7 +560,7 @@ export class JSBeebDebugSession extends LoggingDebugSession {
     request?: DebugProtocol.Request | undefined,
   ): Promise<void> {
     console.log(args)
-    console.log(new Date().getTime() + ' variablesRequest called')
+    console.log(`${new Date().toLocaleTimeString()} variablesRequest called`)
     const variables: Variable[] = []
     if (args.filter === undefined || args.filter === 'named') {
       if (args.variablesReference === VARTYPE.Register) {
@@ -615,7 +645,7 @@ export class JSBeebDebugSession extends LoggingDebugSession {
   ): Promise<void> {
     // const levels = args.levels || 0
     // log time of call
-    console.log(new Date().getTime() + ' stackTraceRequest called')
+    console.log(`${new Date().toLocaleTimeString()} stackTraceRequest called`)
     // console.log(args)
     const startFrame = args.startFrame || 0
     let frameId = STACKFRAME
@@ -634,10 +664,10 @@ export class JSBeebDebugSession extends LoggingDebugSession {
       while (current !== null) {
         const file = current.file
         const line = current.line
-        const filepath = this.sourceFileMap[file]
-        const filename = path.basename(filepath)
+        const filename = this.sourceFileMap[file]
+        const filepath = path.join(this.cwd, filename)
         const source: Source = {
-          name: path.basename(filepath),
+          name: filename,
           path: filepath,
           sourceReference: 0,
         }
