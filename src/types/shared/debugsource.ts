@@ -23,5 +23,6 @@ export type LabelMap = {
 export type SourceMapFile = {
   sources: SourceFileMap
   labels: LabelMap
+  symbols: LabelMap
   addresses: SourceAddressMap
 }

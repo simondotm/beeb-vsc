@@ -36,7 +36,7 @@ import { EmulatorPanel } from './panels/emulator-panel'
 import { FeatureFlags, isFeatureEnabled } from '../types/shared/config'
 import { initialiseExtensionTelemetry } from './utils/extension-telemetry'
 import {
-  InlineDebugAdapterFactory,
+  jsbeebDebugAdapterFactory,
   JSBeebConfigurationProvider,
 } from './debugger/debugger'
 
@@ -217,7 +217,11 @@ export function activate(context: ExtensionContext) {
       commands.registerCommand(
         'extension.emulator.start',
         (contextSelection: Uri | undefined, allSelections: Uri[]) => {
-          EmulatorPanel.show(context, contextSelection, allSelections)
+          EmulatorPanel.show(
+            context.extensionPath,
+            contextSelection,
+            allSelections,
+          )
         },
       ),
     )
@@ -244,17 +248,18 @@ export function activate(context: ExtensionContext) {
       commands.registerCommand(
         'extension.jsbeebdebugger.debug',
         (contextSelection: Uri | undefined, allSelections: Uri[]) => {
-          EmulatorPanel.show(context, contextSelection, allSelections)
+          EmulatorPanel.show(
+            context.extensionPath,
+            contextSelection,
+            allSelections,
+          )
           // Start debugger session
-          // Configuration must match the details in package.json?
           debug.startDebugging(workspace.workspaceFolders![0], {
             name: 'Debug with JSBeeb',
             type: 'jsbeebdebugger',
             request: 'launch',
             diskImage: contextSelection?.fsPath,
-            enableLogging: false,
-            stopOnEntry: true,
-            cwd: workspace.workspaceFolders![0].uri.fsPath,
+            sourceMapFiles: [],
           })
         },
       ),
@@ -266,11 +271,9 @@ export function activate(context: ExtensionContext) {
       debug.registerDebugConfigurationProvider('jsbeebdebugger', provider),
     )
 
-    // TODO: register a dynamic configuration provider if needed
-
     // Register the debug adapter factory
     // This will allow the extension to provide a custom debug adapter for the debugger
-    const factory = new InlineDebugAdapterFactory()
+    const factory = new jsbeebDebugAdapterFactory(context.extensionPath)
     context.subscriptions.push(
       debug.registerDebugAdapterDescriptorFactory('jsbeebdebugger', factory),
     )

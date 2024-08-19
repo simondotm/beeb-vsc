@@ -1,64 +1,61 @@
 import { join } from 'path'
-import { ExtensionContext, Uri, Webview } from 'vscode'
+import { Uri, Webview } from 'vscode'
 
 /**
  * Generate Uri for a file local to the extension workspace
- * @param context
+ * @param extensionPath
  * @param path
  * @returns Uri
  */
-export function localUri(context: ExtensionContext, path: string[]) {
-  return Uri.file(join(context.extensionPath, ...path))
+export function localUri(extensionPath: string, path: string[]) {
+  return Uri.file(join(extensionPath, ...path))
 }
 
 /**
  * Generate Uri/Url to a file local to the extension workspace for use in the webview
- * @param context
+ * @param extensionPath
  * @param webview
  * @param path
  * @returns
  */
 export function webviewUri(
-  context: ExtensionContext,
+  extensionPath: string,
   webview: Webview,
   path: string[],
 ) {
-  return webview.asWebviewUri(localUri(context, path))
+  return webview.asWebviewUri(localUri(extensionPath, path))
 }
 
 /**
  * Generate a Uri for a `dist/webview/...' script asset
- * @param context
+ * @param extensionPath
  * @param assets
  * @returns
  */
-export function scriptUri(context: ExtensionContext, assets: string[]) {
-  return localUri(context, ['dist', 'webview', ...assets])
+export function scriptUri(extensionPath: string, assets: string[]) {
+  return localUri(extensionPath, ['dist', 'webview', ...assets])
 }
 
 /**
  * Generate a Uri/Url for a `dist/webview/...' script asset for use in the webview
- * @param context
+ * @param extensionPath
  * @param webview
  * @param folders
  * @returns
  */
 export function scriptUrl(
-  context: ExtensionContext,
+  extensionPath: string,
   webview: Webview,
   folders: string[],
 ) {
-  return webview.asWebviewUri(scriptUri(context, folders))
+  return webview.asWebviewUri(scriptUri(extensionPath, folders))
 }
 
-export function getJsBeebResources(
-  context: ExtensionContext,
-  webview: Webview,
-) {
+export function getJsBeebResources(extensionPath: string, webview: Webview) {
   function getResources(filenames: string[]) {
     const resources: Record<string, string> = {}
     for (const filename of filenames) {
-      resources[filename] = scriptUrl(context, webview, [
+      resources[filename] = scriptUrl(extensionPath, webview, [
         'jsbeeb',
         ...filename.split('/'),
       ]).toString()

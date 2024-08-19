@@ -11,6 +11,7 @@ import {
   DebugConfiguration,
   WorkspaceFolder,
   CancellationToken,
+  Uri,
 } from 'vscode'
 import {
   Breakpoint,
@@ -48,38 +49,64 @@ import {
 import * as fs from 'fs'
 import path from 'path'
 
-export class InlineDebugAdapterFactory
+export class jsbeebDebugAdapterFactory
   implements DebugAdapterDescriptorFactory {
+  private extensionPath: string
+  constructor(extensionPath: string) {
+    this.extensionPath = extensionPath
+  }
+
   createDebugAdapterDescriptor(
     _session: DebugSession,
   ): ProviderResult<DebugAdapterDescriptor> {
-    return new DebugAdapterInlineImplementation(new JSBeebDebugSession())
+    return new DebugAdapterInlineImplementation(
+      new JSBeebDebugSession(this.extensionPath),
+    )
   }
 }
 
 export class JSBeebConfigurationProvider implements DebugConfigurationProvider {
   resolveDebugConfiguration(
-    _folder: WorkspaceFolder | undefined,
-    _config: DebugConfiguration,
+    folder: WorkspaceFolder | undefined,
+    config: DebugConfiguration,
     _token?: CancellationToken,
   ): ProviderResult<DebugConfiguration> {
-    return {
-      type: 'jsbeebdebugger',
-      name: 'Launch',
-      request: 'launch',
-      diskImage: '',
-      stopOnEntry: true,
-      enableLogging: false,
-      cwd: _folder?.uri.fsPath ?? _config.cwd,
+    const updatedConfig: ProviderResult<DebugConfiguration> = {
+      ...config,
     }
+    // if no disk image specified, use first .ssd file in the directory
+    if (updatedConfig.diskImage === undefined) {
+      if (folder) {
+        const files = fs
+          .readdirSync(folder.uri.fsPath)
+          .filter((file) => file.endsWith('.ssd'))
+        if (files.length > 0) {
+          updatedConfig.diskImage = files[0]
+        }
+      }
+    }
+    // if no source map files specified, add all the .map files in the directory
+    if (
+      updatedConfig.sourceMapFiles === undefined ||
+      updatedConfig.sourceMapFiles.length === 0
+    ) {
+      updatedConfig.sourceMapFiles = []
+      if (folder) {
+        const files = fs
+          .readdirSync(folder.uri.fsPath)
+          .filter((file) => file.endsWith('.map'))
+        updatedConfig.sourceMapFiles.push(...files)
+      }
+    }
+    updatedConfig.cwd = folder?.uri.fsPath ?? ''
+    return updatedConfig
   }
 }
 
 interface JSBeebLaunchRequestArguments
   extends DebugProtocol.LaunchRequestArguments {
   diskImage: string
-  stopOnEntry?: boolean
-  enableLogging?: boolean
+  sourceMapFiles: Array<string>
   cwd: string
 }
 
@@ -103,6 +130,12 @@ const flagsNames = [
   'Carry',
 ]
 
+const enum displayFormat {
+  hex = 'hex',
+  binary = 'binary',
+  decimal = 'decimal',
+}
+
 // export class JSBeebDebugSession implements DebugAdapter {
 export class JSBeebDebugSession extends LoggingDebugSession {
   private requestId: number = 0
@@ -114,15 +147,19 @@ export class JSBeebDebugSession extends LoggingDebugSession {
   private pendingBreakpoints: number[] = []
   private fileBreakpoints: Map<string, Uint16Array> = new Map()
   private cwd: string = ''
+  private extensionPath: string
+  private sourceMapFiles: string[] = []
   private addressesMap: SourceMap[] = new Array(0x10000)
   private sourceFileMap: SourceFileMap = {}
   private labelMap: LabelMap = {}
+  private symbolMap: LabelMap = {}
   private fileLineToAddressMap: Map<number, Map<number, number>> = new Map()
   private internals: Variable[] = []
   private memory: Uint8Array = new Uint8Array(0x10000)
 
-  public constructor() {
+  public constructor(extensionPath: string) {
     super()
+    this.extensionPath = extensionPath
     // The runtime is the jsbeeb instance in the webview, we tell it to start, step, stop, etc.
     if (this.webview) {
       this.webview.onDidReceiveMessage(this.handleMessageFromWebview.bind(this))
@@ -262,11 +299,20 @@ export class JSBeebDebugSession extends LoggingDebugSession {
     request?: DebugProtocol.Request | undefined,
   ): Promise<void> {
     console.log('launchRequest called')
-
     this.cwd = args.cwd
+    this.sourceMapFiles = args.sourceMapFiles
     // load sourcemap
     this.loadSourceMap()
-
+    const needToBind = EmulatorPanel.instance === undefined
+    EmulatorPanel.show(this.extensionPath, Uri.file(args.diskImage), [])
+    if (needToBind) {
+      this.webview = EmulatorPanel.instance?.GetWebview()
+      if (this.webview) {
+        this.webview.onDidReceiveMessage(
+          this.handleMessageFromWebview.bind(this),
+        )
+      }
+    }
     // Wait up to 5 seconds until configuration has finished
     // (and configurationDoneRequest has been called)
     // At the same time, wait for ClientCommand.EmulatorReady message to be received
@@ -277,6 +323,7 @@ export class JSBeebDebugSession extends LoggingDebugSession {
     // Send any breakpoints that have been received before the emulator was ready
     if (this.pendingBreakpoints.length > 0) {
       this.sendBreakpointsToEmulator(this.pendingBreakpoints)
+      console.log('sending pending breakpoints: ' + this.pendingBreakpoints)
       this.pendingBreakpoints = []
     }
 
@@ -286,19 +333,17 @@ export class JSBeebDebugSession extends LoggingDebugSession {
   // TODO - add attach request option? What would be the workflow?
 
   private loadSourceMap(): void {
-    // TODO: Which file will be loaded?
-    // Option 1) Use settings.json to specify the file(s), then load first or all (but beware of overlappping addresses)
-    // Option 2) Load all .map files in the directory
-    // Option 3) Load a specific file (or files), e.g. main.map, specified in launch.json
-
-    // Option 3 is probably best (most standard) but can fall back to 1 or 2 if not specified
+    // Load a specific file (or files), e.g. main.6502.map, specified in launch.json
+    // (or added by the debug configuration provider if not specified)
     let sourceMap: SourceMapFile
     try {
-      const files = fs
-        .readdirSync(this.cwd)
-        .filter((file) => file.endsWith('.map'))
-      if (files.length > 0) {
-        const mapFile = fs.readFileSync(path.join(this.cwd, files[0]), 'utf8')
+      const files = this.sourceMapFiles
+      for (let i = 0; i < files.length; i++) {
+        // check if full path or relative to workspace
+        if (!fs.existsSync(files[i])) {
+          files[i] = path.join(this.cwd, files[i])
+        }
+        const mapFile = fs.readFileSync(files[i], 'utf8')
         sourceMap = JSON.parse(mapFile)
         // transfer data out of address structure
         for (const address in sourceMap.addresses) {
@@ -311,8 +356,9 @@ export class JSBeebDebugSession extends LoggingDebugSession {
           const id = parseInt(source, 10)
           this.sourceFileMap[id] = sourceMap.sources[source]
         }
-        // transfer data out of labels structure
-        this.labelMap = sourceMap.labels
+        // transfer data for labels and symbols
+        this.labelMap = sourceMap.labels ?? {}
+        this.symbolMap = sourceMap.symbols ?? {}
 
         // Create map for each source file from line number to address
         // (first address of line, may support multiple addresses in future for multi-statement lines)
@@ -399,7 +445,7 @@ export class JSBeebDebugSession extends LoggingDebugSession {
         const changedBreakpoints: number[] = []
         // first add all the breakpoints that are in the new list but not the existing one
         for (let i = 0; i < breakpointAddresses.length; i++) {
-          if (existingBreakpoints.includes(breakpointAddresses[i])) {
+          if (!existingBreakpoints.includes(breakpointAddresses[i])) {
             changedBreakpoints.push(breakpointAddresses[i])
           }
         }
@@ -410,10 +456,10 @@ export class JSBeebDebugSession extends LoggingDebugSession {
           }
         }
         this.sendBreakpointsToEmulator(changedBreakpoints)
-        console.log('ready changed breakpoints: ' + changedBreakpoints)
+        console.log('toggling changed breakpoints: ' + changedBreakpoints)
       } else {
         this.sendBreakpointsToEmulator(breakpointAddresses)
-        console.log('ready all breakpoints: ' + breakpointAddresses)
+        console.log('setting all breakpoints: ' + breakpointAddresses)
       }
     }
     // Return breakpoints to frontend
@@ -427,7 +473,7 @@ export class JSBeebDebugSession extends LoggingDebugSession {
       breakpoints: breakpointAddresses,
     }
     EmulatorPanel.instance?.notifyClient(message)
-    console.log(message)
+    // console.log(message)
   }
 
   protected threadsRequest(response: DebugProtocol.ThreadsResponse): void {
@@ -657,7 +703,10 @@ export class JSBeebDebugSession extends LoggingDebugSession {
       const pcAddress = parseInt(pc.value.replace('$', '').toString(), 16)
       response.body = { stackFrames: [], totalFrames: 0 }
       if (this.addressesMap[pcAddress] === undefined) {
-        this.sendResponse(response)
+        const stackframe = new StackFrame(frameId, 'Outside of program memory')
+        response.body.stackFrames.push(stackframe)
+        response.body.totalFrames!++
+        this.sendResponse(response) // TODO - better to return default file if in ROM space? So variables still get shown
         return
       }
       let current: SourceMap | null = this.addressesMap[pcAddress]
@@ -689,21 +738,102 @@ export class JSBeebDebugSession extends LoggingDebugSession {
     request?: DebugProtocol.Request,
   ): Promise<void> {
     console.log(args)
+    const validExp = /([$&%.]|\.\*|\.\^)?([a-z][a-z0-9_]*)(\.[wd])?/gi
     if (args.context === 'watch') {
-      const label = args.expression
-      // search for label in labels list after adding '.' prefix
-      if (this.labelMap['.' + label] === undefined) {
-        response.success = false
-        this.sendErrorResponse(response, 0)
+      const match = validExp.exec(args.expression)
+      if (match === null) {
+        this.sendErrorResponse(response, 0, '')
         return
       }
-      const address = this.labelMap['.' + label]
+      const formatPrefix = match[1] ?? ''
+      let label = match[2]
+      const sizeSuffix = match[3] ?? 'b'
+      let format: displayFormat
+      switch (formatPrefix) {
+        case '&':
+        case '$':
+          format = displayFormat.hex
+          break
+        case '%':
+          format = displayFormat.binary
+          break
+        case '.':
+        case '.*':
+        case '.^':
+          format = displayFormat.decimal
+          break
+        default:
+          format = displayFormat.decimal
+          break
+      }
+      let bytes: number
+      switch (sizeSuffix) {
+        case '.w':
+          bytes = 2
+          break
+        case '.d':
+          bytes = 4
+          break
+        default:
+          bytes = 1
+          break
+      }
+      // TODO - consider adding ".s" suffix for strings
+      // TODO - maybe signed/unsigned variants? Big/little endian?
+
+      // search for label in labels list after removing prefix if necessary
+      if (label.startsWith('.')) {
+        label = label.slice(1)
+      }
+      if (label.startsWith('*') || label.startsWith('^')) {
+        label = label.slice(1)
+      }
+      if (
+        this.labelMap['.' + label] === undefined &&
+        this.symbolMap[label] === undefined
+      ) {
+        this.sendErrorResponse(response, 0, '')
+        return
+      }
+      // check if symbol is an integer between 0 and 0xFFFF
+      if (this.symbolMap[label] !== undefined) {
+        const address = this.symbolMap[label]
+        if (address < 0 || address > 0xffff || address % 1 !== 0) {
+          this.sendErrorResponse(response, 0, '')
+          return
+        }
+      }
+
+      let address: number
+      if (this.labelMap['.' + label] !== undefined) {
+        address = this.labelMap['.' + label]
+      } else {
+        address = this.symbolMap[label]
+      }
       // retrieve value at address from emulator
-      const value = this.memory[address]
-      // TODO - add support for 16-bit values and other formatting options
+      let value = this.memory[address]
+      if (bytes > 1) {
+        value = this.memory[address] + (this.memory[address + 1] << 8)
+        if (bytes === 4) {
+          value +=
+            (this.memory[address + 2] << 16) + (this.memory[address + 3] << 24)
+        }
+      }
+
+      let displayValue: string
+      if (format === displayFormat.hex) {
+        displayValue = `$${value
+          .toString(16)
+          .toUpperCase()
+          .padStart(2 * bytes, '0')}`
+      } else if (format === displayFormat.binary) {
+        displayValue = `%${value.toString(2).padStart(8 * bytes, '0')}`
+      } else {
+        displayValue = `${value}`
+      }
 
       response.body = {
-        result: `${value}`,
+        result: displayValue,
         variablesReference: 0,
       }
 

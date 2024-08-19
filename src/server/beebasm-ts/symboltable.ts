@@ -324,4 +324,20 @@ export class SymbolTable {
 
     return labels
   }
+
+  GetAllSymbols(): LabelMap {
+    const symbols: LabelMap = {}
+    // Only interested in user defined symbols with numeric values
+    // Since these might represent memory locations
+    // Could further filter for non-integer values, negative values, etc.
+    for (const [name, symbolData] of this._map.entries()) {
+      if (!symbolData.IsLabel() && symbolData.GetLocation() !== noLocation) {
+        if (typeof symbolData.GetValue() === 'number') {
+          symbols[name] = symbolData.GetValue() as number
+        }
+      }
+    }
+
+    return symbols
+  }
 }

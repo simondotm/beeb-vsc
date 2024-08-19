@@ -199,7 +199,7 @@
     "debuggers": [
       {
         "type": "jsbeebdebugger",
-        "label": "Debug in built-in emulator",
+        "label": "Debug in built-in jsbeeb emulator",
         "languages": [
           "beebasm"
         ],
@@ -209,21 +209,45 @@
           "launch": {
             "required": [
               "diskImage",
-              "cwd"
+              "sourceMapFiles"
             ],
             "properties": {
               "diskImage": {
                 "type": "string",
-                "description": "Path to the disk image to debug"
+                "description": "Disk image to debug"
               },
-              "cwd": {
-                "type": "string",
-                "description": "Current working directory",
-                "default": "${workspaceFolder}"
+              "sourceMapFiles": {
+                "type": "array",
+                "description": "Source map files",
+                "items": {
+                  "type": "string"
+                }
               }
             }
           }
-        }
+        },
+        "initialConfigurations": [
+          {
+            "type": "jsbeebdebugger",
+            "request": "launch",
+            "name": "Debug in built-in jsbeeb emulator",
+            "diskImage": "${workspaceFolder}/disk.ssd",
+            "sourceMapFiles": []
+          }
+        ],
+        "configurationSnippets": [
+          {
+            "label": "Debug in built-in jsbeeb emulator",
+            "description": "Debug in built-in jsbeeb emulator",
+            "body": {
+              "type": "jsbeebdebugger",
+              "request": "launch",
+              "name": "Debug in built-in jsbeeb emulator",
+              "diskImage": "${workspaceFolder}/disk.ssd",
+              "sourceMapFiles": []
+            }
+          }
+        ]
       }
     ]
   },

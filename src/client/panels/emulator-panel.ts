@@ -19,15 +19,15 @@ export class EmulatorPanel {
   static instance: EmulatorPanel | undefined
 
   private readonly panel: vscode.WebviewPanel
-  private readonly context: vscode.ExtensionContext
+  private readonly extensionPath: string
   private disposables: vscode.Disposable[] = []
 
   private discImageFile: DiscImageFile = NO_DISC
 
   private watcher: vscode.FileSystemWatcher | undefined
 
-  private constructor(context: vscode.ExtensionContext) {
-    this.context = context
+  private constructor(extensionPath: string) {
+    this.extensionPath = extensionPath
 
     this.panel = vscode.window.createWebviewPanel(
       'emulator',
@@ -42,24 +42,24 @@ export class EmulatorPanel {
           //contextSelection,
           vscode.workspace.workspaceFolders
             ? vscode.workspace.workspaceFolders[0].uri
-            : context.extensionUri,
-          scriptUri(context, []),
-          scriptUri(context, ['images']),
-          scriptUri(context, ['jsbeeb']),
-          scriptUri(context, ['jsbeeb', 'roms']),
-          scriptUri(context, ['jsbeeb', 'sounds']),
+            : scriptUri(extensionPath, []),
+          scriptUri(extensionPath, []),
+          scriptUri(extensionPath, ['images']),
+          scriptUri(extensionPath, ['jsbeeb']),
+          scriptUri(extensionPath, ['jsbeeb', 'roms']),
+          scriptUri(extensionPath, ['jsbeeb', 'sounds']),
         ],
       },
     )
     this.panel.iconPath = {
       dark: vscode.Uri.joinPath(
-        context.extensionUri,
+        scriptUri(extensionPath, []),
         'assets',
         'icons',
         'owl-dark.png',
       ),
       light: vscode.Uri.joinPath(
-        context.extensionUri,
+        scriptUri(extensionPath, []),
         'assets',
         'icons',
         'owl-light.png',
@@ -242,13 +242,13 @@ export class EmulatorPanel {
   }
 
   static show(
-    context: vscode.ExtensionContext,
+    extensionPath: string,
     contextSelection?: vscode.Uri,
     _allSelections?: vscode.Uri[],
   ) {
     if (!EmulatorPanel.instance) {
       // create a new emulator panel webview
-      EmulatorPanel.instance = new EmulatorPanel(context)
+      EmulatorPanel.instance = new EmulatorPanel(extensionPath)
       EmulatorPanel.instance.setDiscImageFromContextSelection(contextSelection)
       // we dont loadDisc here because the client side emulator needs to signal when it is ready within the new webview
     } else {
@@ -265,7 +265,7 @@ export class EmulatorPanel {
 
   private getWebviewContent() {
     const webview = this.panel.webview
-    const context = this.context
+    const context = this.extensionPath
     const JSBEEB_RESOURCES = getJsBeebResources(context, webview)
     const mainScriptUrl = scriptUrl(context, webview, ['main.js']).toString()
     if (isDev()) {
@@ -349,7 +349,7 @@ export class EmulatorPanel {
     return `
       <div id="emulator" class="emulator-container">
         <canvas id="screen" width="720px" height="576px" tabindex="1"></canvas>
-        <img id="testcard" src="${scriptUrl(this.context, this.panel.webview, ['images', 'test-card.webp'])}" hidden>
+        <img id="testcard" src="${scriptUrl(this.extensionPath, this.panel.webview, ['images', 'test-card.webp'])}" hidden>
       </div>
 		`
   }
@@ -368,19 +368,19 @@ export class EmulatorPanel {
   }
 
   getLedHtml() {
-    const redLedOn = scriptUrl(this.context, this.panel.webview, [
+    const redLedOn = scriptUrl(this.extensionPath, this.panel.webview, [
       'images',
       'red-led-on.svg',
     ])
-    const redLedOff = scriptUrl(this.context, this.panel.webview, [
+    const redLedOff = scriptUrl(this.extensionPath, this.panel.webview, [
       'images',
       'red-led-off.svg',
     ])
-    const greenLedOn = scriptUrl(this.context, this.panel.webview, [
+    const greenLedOn = scriptUrl(this.extensionPath, this.panel.webview, [
       'images',
       'green-led-on.svg',
     ])
-    const greenLedOff = scriptUrl(this.context, this.panel.webview, [
+    const greenLedOff = scriptUrl(this.extensionPath, this.panel.webview, [
       'images',
       'green-led-off.svg',
     ])

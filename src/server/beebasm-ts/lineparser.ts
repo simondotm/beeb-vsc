@@ -3777,7 +3777,7 @@ export class LineParser {
     const contents = FileHandler.Instance.GetDocumentText(fspath)
     const callingPoint = {
       file: this._sourceCode.GetURIRef(),
-      line: this._lineno,
+      line: this._lineno + 1,
       column: this._column,
       parent: this._sourceCode.GetSourceMap(),
     }
