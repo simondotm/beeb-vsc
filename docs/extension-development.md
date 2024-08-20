@@ -9,7 +9,7 @@ To get the tests to show up, you may need to go to the command palette and selec
 
 The project includes an adapted version of BeebAsm version 1.10 to perform the code analysis, helping to identify potential compile issues as you type. It was converted to TypeScript, changed to capture all errors instead of exiting on the first error and enhanced with the ability to capture information about the code that drives functionality such as code completion and reference finding. This remains under the GPL and is in a separate folder /server/src/beebasm-ts.
 
-Also incuded is the [JavaScript port of strftime() by T. H. Doan](https://thdoan.github.io/strftime/) for implementing the `TIME$` functionality.
+Also included is the [JavaScript port of strftime() by T. H. Doan](https://thdoan.github.io/strftime/) for implementing the `TIME$` functionality.
 
 Contributions, suggestions or bug reports to this extension are welcome, via the [Beeb-VSC](https://github.com/simondotm/beeb-vsc) GitHub repository
 
