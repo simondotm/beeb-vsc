@@ -8,12 +8,14 @@ import {
   ConfigurationItem,
   DocumentLink,
   Files,
+  RequestType,
 } from 'vscode-languageserver/node'
 import { TextDocument } from 'vscode-languageserver-textdocument'
 import { CompletionProvider, SignatureProvider } from './completions'
 import { SymbolTable } from './beebasm-ts/symboltable'
 import { GlobalData } from './beebasm-ts/globaldata'
 import { ObjectCode } from './beebasm-ts/objectcode'
+import { SourceMapFile } from '../types/shared/debugsource'
 import { SourceFile } from './beebasm-ts/sourcefile'
 import { RenameProvider, SymbolProvider } from './symbolhandler'
 import { MacroTable } from './beebasm-ts/macro'
@@ -22,11 +24,17 @@ import { HoverProvider } from './hoverprovider'
 import { AST } from './ast'
 import { SemanticTokensProvider } from './semantictokenprovider'
 import * as path from 'path'
+import { writeFileSync } from 'fs'
 
 const connection = createConnection(ProposedFeatures.all)
 const trees: Map<string, AST[]> = new Map<string, AST[]>()
 const links: Map<string, DocumentLink[]> = new Map<string, DocumentLink[]>()
 // GlobalData and ObjectCode objects are static and will be set up when called in ParseDocument
+
+// Define the custom request type for requesting a source map
+const SourceMapRequestType = new RequestType<{ text: string }, string, void>(
+  'custom/requestSourceMap',
+)
 
 connection.onInitialize((params: InitializeParams) => {
   const workspaceFolders = params.workspaceFolders
@@ -217,6 +225,7 @@ async function ParseDocument(
       sourceFilePath,
       trees,
       links,
+      null,
     )
     input.Process()
   }
@@ -254,6 +263,54 @@ connection.onDidChangeWatchedFiles((_change) => {
   })
   console.log('Settings.json update event received.')
 })
+
+// Handle the source map request
+connection.onRequest(SourceMapRequestType, async (params) => {
+  console.log(`Received source map request for file: ${params.text}`)
+  const result = await SaveSourceMap(params.text)
+  const response = `Source map saved: ${result}`
+  return response
+})
+
+async function SaveSourceMap(activeFile: string): Promise<string | null> {
+  const uri = URItoVSCodeURI(activeFile)
+  const root = FileHandler.Instance.GetTargetFileName(uri)
+  if (root === undefined) {
+    console.log(`No root found for ${uri}`)
+    return null
+  }
+  const currentDir = URItoVSCodeURI(process.cwd())
+  const relative = path.relative(currentDir, root)
+  const mapFile = relative + '.map'
+
+  const sourceMap = ObjectCode.Instance.GetSourceMap()
+
+  const output: SourceMapFile = {
+    sources: {},
+    labels: {},
+    symbols: {},
+    addresses: {},
+  }
+
+  sourceMap.forEach((value, index) => {
+    if (value !== null) {
+      output.addresses[index] = value
+    }
+  })
+  output.sources = FileHandler.Instance.GetURIRefs()
+  output.labels = SymbolTable.Instance.GetAllLabels()
+  output.symbols = SymbolTable.Instance.GetAllSymbols()
+
+  const sourceMapString = JSON.stringify(output, null, 2)
+
+  try {
+    writeFileSync(mapFile, sourceMapString)
+  } catch (error) {
+    console.log(`Error writing source map file ${mapFile}: ${error}`)
+    return null
+  }
+  return mapFile
+}
 
 // Setup completions handling
 const completionHandler = new CompletionProvider()

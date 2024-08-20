@@ -9,8 +9,10 @@ initialiseWebViewTelemetry()
 import { Model, findModel } from 'jsbeeb/models'
 import {
   ClientCommand,
+  DebugInstructionType,
   HostCommand,
   HostMessage,
+  StoppedReason,
 } from '../types/shared/messages'
 
 import { initialiseVSCode, notifyHost } from './vscode'
@@ -73,7 +75,7 @@ window.addEventListener(
   false,
 )
 
-// Handle messages received from the host extensiond
+// Handle messages received from the host extension
 window.addEventListener('message', (event) => {
   const message = event.data as HostMessage // The JSON data our extension sent
   switch (message.command) {
@@ -99,6 +101,67 @@ window.addEventListener('message', (event) => {
     case HostCommand.DiscImageChanges:
       //TODO: Listener logic here, in case we need to do something with modified disc images
       break
+    case HostCommand.DebugCommand: {
+      console.log('BeebVSC: Debug command received', message)
+      const instructiontype = message.instruction.instruction
+      if (instructiontype === DebugInstructionType.Pause) {
+        emulatorView.suspend()
+        notifyHost({
+          command: ClientCommand.Stopped,
+          reason: StoppedReason.Pause,
+        })
+      } else if (instructiontype === DebugInstructionType.Continue) {
+        emulatorView.resume()
+      } else if (instructiontype === DebugInstructionType.Step) {
+        emulatorView.step()
+        notifyHost({
+          command: ClientCommand.Stopped,
+          reason: StoppedReason.Step,
+        })
+      } else if (instructiontype === DebugInstructionType.StepOver) {
+        emulatorView.stepOver()
+        notifyHost({
+          command: ClientCommand.Stopped,
+          reason: StoppedReason.Step,
+        })
+      } else if (instructiontype === DebugInstructionType.StepOut) {
+        emulatorView.stepOut()
+        notifyHost({
+          command: ClientCommand.Stopped,
+          reason: StoppedReason.Step,
+        })
+      }
+      break
+    }
+    case HostCommand.DebugRequest: {
+      if (message.request === 'registers') {
+        const registers = emulatorView.GetInternals()
+        notifyHost({
+          command: ClientCommand.EmulatorInfo,
+          info: {
+            id: message.id,
+            type: 'registers',
+            values: registers,
+          },
+        })
+      } else if (message.request === 'memory') {
+        const memory = emulatorView.GetMemory()
+        notifyHost({
+          command: ClientCommand.EmulatorMemory,
+          info: {
+            id: message.id,
+            values: memory,
+          },
+        })
+      }
+      break
+    }
+    case HostCommand.SetBreakpoints: {
+      if (message.breakpoints) {
+        emulatorView.SetBreakpoints(message.breakpoints)
+      }
+      break
+    }
   }
 })
 

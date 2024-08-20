@@ -35,7 +35,8 @@ import {
 } from 'vscode-languageserver'
 import { integer } from 'vscode-languageserver'
 import { AST } from '../ast'
-import path = require('path')
+import { SourceMap } from '../../types/shared/debugsource'
+import { cyrb53 } from '../filehandler'
 
 const MAX_FOR_LEVELS = 256
 const MAX_IF_LEVELS = 256
@@ -73,6 +74,7 @@ export class SourceCode {
   private _currentMacro: Macro | null
   private _contents: string
   private _lineNumber: number
+  private _lineOffset: number
   private _parent: SourceCode | null
   private _lineStartPointer: number
   private _lines: string[]
@@ -81,8 +83,10 @@ export class SourceCode {
   private _symbolTable: SymbolTable
   private _diagnostics: Map<string, Diagnostic[]>
   private _uri: string
+  private _uriRef: number
   private _trees: Map<string, AST[]>
   private _documentLinks: Map<string, DocumentLink[]>
+  private _sourceMap: SourceMap | null
 
   constructor(
     contents: string,
@@ -92,6 +96,7 @@ export class SourceCode {
     uri: string,
     trees: Map<string, AST[]>,
     doclinks: Map<string, DocumentLink[]>,
+    callPoint: SourceMap | null = null,
   ) {
     this._forStackPtr = 0
     this._initialForStackPtr = 0
@@ -99,7 +104,8 @@ export class SourceCode {
     this._initialIfStackPtr = 0
     this._currentMacro = null
     this._contents = contents
-    this._lineNumber = lineNumber
+    this._lineNumber = 0
+    this._lineOffset = lineNumber
     this._parent = parent
     this._lineStartPointer = 0
     this._lines = contents.split(/\r\n|\n/g)
@@ -117,6 +123,8 @@ export class SourceCode {
     }
     this._symbolTable = SymbolTable.Instance // Added for debugging
     this._uri = uri
+    this._uriRef = cyrb53(this._uri)
+    this._sourceMap = callPoint
   }
 
   Process() {
@@ -240,6 +248,10 @@ export class SourceCode {
     return line
   }
 
+  GetLineOffset(): number {
+    return this._lineOffset
+  }
+
   AddDocumentLink(link: DocumentLink): void {
     this._documentLinks.get(this._uri)!.push(link)
   }
@@ -275,9 +287,17 @@ export class SourceCode {
     }
   }
 
+  GetSourceMap(): SourceMap | null {
+    return this._sourceMap
+  }
+
   GetURI(): string {
     const uri = this._uri
     return uri
+  }
+
+  GetURIRef(): number {
+    return this._uriRef
   }
 
   ShouldOutputAsm(): boolean {
@@ -583,6 +603,7 @@ export class MacroInstance extends SourceCode {
     uri: string,
     trees: Map<string, AST[]>,
     links: Map<string, DocumentLink[]>,
+    callPoint: SourceMap,
   ) {
     super(
       macro.GetBody(),
@@ -592,6 +613,7 @@ export class MacroInstance extends SourceCode {
       uri,
       trees,
       links,
+      callPoint,
     )
     this._macro = macro
     this.CopyForStack(sourceCode)

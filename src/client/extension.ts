@@ -18,7 +18,14 @@
 
 import * as path from 'path'
 import * as fs from 'fs'
-import { workspace, ExtensionContext, window, commands, Uri } from 'vscode'
+import {
+  workspace,
+  ExtensionContext,
+  window,
+  commands,
+  Uri,
+  debug,
+} from 'vscode'
 import {
   LanguageClient,
   LanguageClientOptions,
@@ -28,6 +35,10 @@ import {
 import { EmulatorPanel } from './panels/emulator-panel'
 import { FeatureFlags, isFeatureEnabled } from '../types/shared/config'
 import { initialiseExtensionTelemetry } from './utils/extension-telemetry'
+import {
+  jsbeebDebugAdapterFactory,
+  JSBeebConfigurationProvider,
+} from './debugger/debugger'
 
 let client: LanguageClient
 
@@ -206,9 +217,65 @@ export function activate(context: ExtensionContext) {
       commands.registerCommand(
         'extension.emulator.start',
         (contextSelection: Uri | undefined, allSelections: Uri[]) => {
-          EmulatorPanel.show(context, contextSelection, allSelections)
+          EmulatorPanel.show(
+            context.extensionPath,
+            contextSelection,
+            allSelections,
+          )
         },
       ),
+    )
+
+    // Register the custom command
+    context.subscriptions.push(
+      commands.registerCommand('extension.createSourceMap', async () => {
+        // get file name of currently displayed file
+        const editor = window.activeTextEditor
+        if (!editor) {
+          window.showInformationMessage('No active file selected')
+          return
+        }
+        const fileName = editor.document.uri.fsPath
+        const response = await client.sendRequest('custom/requestSourceMap', {
+          text: fileName,
+        })
+        window.showInformationMessage(`${response}`)
+      }),
+    )
+
+    // Debug the current file
+    context.subscriptions.push(
+      commands.registerCommand(
+        'extension.jsbeebdebugger.debug',
+        (contextSelection: Uri | undefined, allSelections: Uri[]) => {
+          EmulatorPanel.show(
+            context.extensionPath,
+            contextSelection,
+            allSelections,
+          )
+          // Start debugger session
+          debug.startDebugging(workspace.workspaceFolders![0], {
+            name: 'Debug with JSBeeb',
+            type: 'jsbeebdebugger',
+            request: 'launch',
+            diskImage: contextSelection?.fsPath,
+            sourceMapFiles: [],
+          })
+        },
+      ),
+    )
+
+    // register a configuration provider for 'jsbeebdebugger' debug type
+    const provider = new JSBeebConfigurationProvider()
+    context.subscriptions.push(
+      debug.registerDebugConfigurationProvider('jsbeebdebugger', provider),
+    )
+
+    // Register the debug adapter factory
+    // This will allow the extension to provide a custom debug adapter for the debugger
+    const factory = new jsbeebDebugAdapterFactory(context.extensionPath)
+    context.subscriptions.push(
+      debug.registerDebugAdapterDescriptorFactory('jsbeebdebugger', factory),
     )
   }
 
@@ -769,7 +836,7 @@ function GetSAVECommands(ASMFilename: string): string[] {
   const lines = textFile.split('\n')
 
   // TODO: Exclude commented out lines
-  const saveCommandRegex = /(^|:)\s*(SAVE\s+)((["'])([^\4]+)\4).*$/im
+  const saveCommandRegex = /(^|:)\s*(SAVE\s+)((["'])((?:(?!\4).)*)\4).*$/im
   for (let i = 0; i < lines.length; i++) {
     const match = saveCommandRegex.exec(lines[i])
     if (match !== null && match.length > 5) {

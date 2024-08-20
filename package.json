@@ -22,7 +22,8 @@
     "url": "https://ko-fi.com/simondotm"
   },
   "categories": [
-    "Programming Languages"
+    "Programming Languages",
+    "Debuggers"
   ],
   "keywords": [
     "6502",
@@ -55,6 +56,9 @@
     }
   ],
   "main": "./dist/main.js",
+  "activationEvents": [
+    "onDebugResolve:jsbeebdebugger"
+  ],
   "contributes": {
     "languages": [
       {
@@ -121,6 +125,14 @@
       {
         "command": "extension.emulator.option2",
         "title": "BeebVSC: Emulator option2"
+      },
+      {
+        "command": "extension.jsbeebdebugger.debug",
+        "title": "BeebVSC: Debug"
+      },
+      {
+        "command": "extension.createSourceMap",
+        "title": "BeebVSC: Create source map"
       }
     ],
     "menus": {
@@ -128,6 +140,11 @@
         {
           "when": "(resourceExtname == .ssd || resourceExtname == .dsd) && extension.feature.emulator",
           "command": "extension.emulator.start",
+          "group": "YourGroup@1"
+        },
+        {
+          "when": "(resourceExtname == .ssd || resourceExtname == .dsd) && extension.feature.emulator",
+          "command": "extension.jsbeebdebugger.debug",
           "group": "YourGroup@1"
         }
       ],
@@ -173,6 +190,65 @@
         "key": "Ctrl+Shift+R",
         "mac": "Ctrl+Shift+R"
       }
+    ],
+    "breakpoints": [
+      {
+        "language": "beebasm"
+      }
+    ],
+    "debuggers": [
+      {
+        "type": "jsbeebdebugger",
+        "label": "Debug in built-in jsbeeb emulator",
+        "languages": [
+          "beebasm"
+        ],
+        "program": "./dist/main.js",
+        "runtime": "node",
+        "configurationAttributes": {
+          "launch": {
+            "required": [
+              "diskImage",
+              "sourceMapFiles"
+            ],
+            "properties": {
+              "diskImage": {
+                "type": "string",
+                "description": "Disk image to debug"
+              },
+              "sourceMapFiles": {
+                "type": "array",
+                "description": "Source map files",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "initialConfigurations": [
+          {
+            "type": "jsbeebdebugger",
+            "request": "launch",
+            "name": "Debug in built-in jsbeeb emulator",
+            "diskImage": "${workspaceFolder}/disk.ssd",
+            "sourceMapFiles": []
+          }
+        ],
+        "configurationSnippets": [
+          {
+            "label": "Debug in built-in jsbeeb emulator",
+            "description": "Debug in built-in jsbeeb emulator",
+            "body": {
+              "type": "jsbeebdebugger",
+              "request": "launch",
+              "name": "Debug in built-in jsbeeb emulator",
+              "diskImage": "${workspaceFolder}/disk.ssd",
+              "sourceMapFiles": []
+            }
+          }
+        ]
+      }
     ]
   },
   "scripts": {
@@ -202,6 +278,9 @@
     "@types/vscode-webview": "^1.57.5",
     "@typescript-eslint/eslint-plugin": "^6.21.0",
     "@typescript-eslint/parser": "^6.21.0",
+    "@vscode/debugadapter": "^1.65.0",
+    "@vscode/debugadapter-testsupport": "^1.65.0",
+    "@vscode/debugprotocol": "^1.65.0",
     "@vscode/test-electron": "^2.3.8",
     "@vscode/vsce": "^2.23.0",
     "esbuild": "^0.19.11",
@@ -225,6 +304,7 @@
     "@vscode/codicons": "^0.0.35",
     "@vscode/extension-telemetry": "^0.9.3",
     "@vscode/webview-ui-toolkit": "^1.4.0",
+    "await-notify": "^1.0.1",
     "jsbeeb": "git+https://github.com/mattgodbolt/jsbeeb.git#bea43f5bf060f666a65d50d91afb4f4e6613aa78",
     "resize-observer-polyfill": "^1.5.1",
     "rxjs": "^7.8.1",
