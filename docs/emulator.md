@@ -40,3 +40,9 @@ The emulator supports the following models:
 ![Screenshot](./images/emulator-model.png?raw=true)
 
 > _Please note that this is an early beta version of the integrated emulator, and not all model specifications may work correctly yet._
+
+
+## Debugging
+The extension uses a debug adaptor to communicate with JSBeeb and request it to pause, resume, step, set breakpoints or provide register and memory values used for displaying watches.
+
+![Debugger](./images/debug-mode.png?raw=true)

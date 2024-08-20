@@ -7,6 +7,7 @@ declare module 'jsbeeb/6502' {
   import type { Video } from 'jsbeeb/video'
   import type { SysVia } from 'jsbeeb/via'
   import type { Fdc } from 'jsbeeb/fdc'
+  import type { Disassemble6502 } from 'jsbeeb/6502.opcodes'
 
   export class Flags {
     c: boolean
@@ -40,6 +41,10 @@ declare module 'jsbeeb/6502' {
     nmi: boolean
     pc: number
     p: Flags
+    a: number
+    x: number
+    y: number
+    s: number
 
     video: Video
     sysvia: SysVia
@@ -56,6 +61,14 @@ declare module 'jsbeeb/6502' {
     debugInstruction: DebugHook
     debugRead: DebugHook
     debugWrite: DebugHook
+
+    _debugInstruction: any
+    _debugRead: any
+    _debugWrite: any
+
+    ramRomOs: Uint8Array //[4587520] // Not sure benefits to know the size
+
+    disassembler: Disassemble6502
 
     constructor(
       model: Model,

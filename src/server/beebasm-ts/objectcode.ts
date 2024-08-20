@@ -24,6 +24,7 @@ import { integer } from 'vscode-languageserver'
 import { SymbolTable } from './symboltable'
 import * as AsmException from './asmexception'
 import { GlobalData } from './globaldata'
+import { SourceMap } from '../../types/shared/debugsource'
 
 enum FLAGS {
   // This memory location has been used so don't assemble over it
@@ -42,6 +43,7 @@ export class ObjectCode {
   private _CPU = 0
   private _aMemory: number[] = new Array(0x10000)
   private _aFlags: number[] = new Array(0x10000)
+  private _aSourceMap: SourceMap[] = new Array(0x10000)
   private _aMapChar: integer[] = new Array(96)
   // After one consistency error, all subsequent code will probably be wrong, so just raise once
   // or we'll get a lot of errors and potentially cause severe slowdown
@@ -62,6 +64,7 @@ export class ObjectCode {
     this._aMemory.fill(0)
     this._aFlags.fill(0)
     this._aMapChar.fill(0)
+    this._aSourceMap = new Array(0x10000)
     this._hadConsistencyError = false
     this._hadSecondPassError = false
   }
@@ -200,7 +203,7 @@ export class ObjectCode {
     }
   }
 
-  Assemble1(opcode: number): void {
+  Assemble1(opcode: number, sourcemap: SourceMap): void {
     if (this._PC > 0xffff) {
       throw new AsmException.AssembleError_OutOfMemory()
     }
@@ -222,11 +225,12 @@ export class ObjectCode {
       throw new AsmException.AssembleError_Overlap()
     }
     this._aFlags[this._PC] |= FLAGS.USED | FLAGS.CHECK
+    this._aSourceMap[this._PC] = sourcemap
     this._aMemory[this._PC++] = opcode
     SymbolTable.Instance.ChangeSymbol('P%', this._PC)
   }
 
-  Assemble2(opcode: number, val: number): void {
+  Assemble2(opcode: number, val: number, sourcemap: SourceMap): void {
     if (this._PC > 0xfffe) {
       throw new AsmException.AssembleError_OutOfMemory()
     }
@@ -248,13 +252,14 @@ export class ObjectCode {
       throw new AsmException.AssembleError_Overlap()
     }
     this._aFlags[this._PC] |= FLAGS.USED | FLAGS.CHECK
+    this._aSourceMap[this._PC] = sourcemap
     this._aMemory[this._PC++] = opcode
     this._aFlags[this._PC] |= FLAGS.USED
     this._aMemory[this._PC++] = val
     SymbolTable.Instance.ChangeSymbol('P%', this._PC)
   }
 
-  Assemble3(opcode: number, addr: number): void {
+  Assemble3(opcode: number, addr: number, sourcemap: SourceMap): void {
     if (this._PC > 0xfffd) {
       throw new AsmException.AssembleError_OutOfMemory()
     }
@@ -284,11 +289,16 @@ export class ObjectCode {
       throw new AsmException.AssembleError_Overlap()
     }
     this._aFlags[this._PC] |= FLAGS.USED | FLAGS.CHECK
+    this._aSourceMap[this._PC] = sourcemap
     this._aMemory[this._PC++] = opcode
     this._aFlags[this._PC] |= FLAGS.USED
     this._aMemory[this._PC++] = addr & 0xff
     this._aFlags[this._PC] |= FLAGS.USED
     this._aMemory[this._PC++] = (addr & 0xff00) >> 8
     SymbolTable.Instance.ChangeSymbol('P%', this._PC)
+  }
+
+  public GetSourceMap(): SourceMap[] {
+    return this._aSourceMap
   }
 }

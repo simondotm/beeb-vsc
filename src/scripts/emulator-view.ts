@@ -155,6 +155,35 @@ export class EmulatorView {
     this._emulatorUpdate$.next(emulator)
   }
 
+  GetPC(): number {
+    return this.emulator?.cpu.pc ?? 0
+  }
+
+  GetInternals(): Array<{ name: string; value: string | number }> {
+    // create empty map
+    const registers = []
+    // add information
+    if (this.emulator !== undefined) {
+      const cpu = this.emulator.cpu
+      registers.push({ name: 'A', value: cpu.a ?? 0 })
+      registers.push({ name: 'X', value: cpu.x ?? 0 })
+      registers.push({ name: 'Y', value: cpu.y ?? 0 })
+      registers.push({ name: 'S', value: cpu.s ?? 0 })
+      registers.push({ name: 'P', value: cpu.p.debugString() ?? '' })
+      registers.push({ name: 'PC', value: cpu.pc ?? 0 })
+      registers.push({ name: 'Cycles', value: cpu.currentCycles ?? 0 })
+      registers.push({
+        name: 'Next op',
+        value: cpu.disassembler.disassemble(cpu.pc, true)[0],
+      })
+    }
+    return registers
+  }
+
+  GetMemory(): Uint8Array {
+    return this.emulator?.cpu.ramRomOs.subarray(0, 0x10000) || new Uint8Array(0)
+  }
+
   toggleFullscreen() {
     const isFullScreen = !this._fullscreen$.value
     this._fullscreen$.next(isFullScreen)
@@ -198,6 +227,24 @@ export class EmulatorView {
 
   resume() {
     // dont auto resume, make user do this
-    // this.emulator?.resume()
+    this.emulator?.resume()
+  }
+
+  step() {
+    this.emulator?.dbgr.step()
+  }
+
+  stepOver() {
+    this.emulator?.dbgr.stepOver()
+  }
+
+  stepOut() {
+    this.emulator?.dbgr.stepOut()
+  }
+
+  SetBreakpoints(addresses: number[]) {
+    for (const address of addresses) {
+      this.emulator?.dbgr.toggleBreakpoint(address)
+    }
   }
 }

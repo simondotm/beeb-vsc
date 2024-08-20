@@ -10,6 +10,19 @@ export const enum ClientCommand {
   PageLoaded = 'pageLoaded',
   Info = 'info',
   Error = 'error',
+  Stopped = 'stopped',
+  EmulatorInfo = 'emulatorInfo',
+  EmulatorMemory = 'emulatorMemory',
+}
+
+export const enum StoppedReason {
+  Entry = 'entry',
+  Breakpoint = 'breakpoint',
+  Step = 'step',
+  Pause = 'pause',
+  Error = 'error',
+  DataBreakpoint = 'dataBreakpoint',
+  InstructionBreakpoint = 'instructionBreakpoint',
 }
 
 export interface ClientMessageBase extends MessageBase {
@@ -33,11 +46,36 @@ export interface ClientMessageError extends ClientMessageBase {
   text: string
 }
 
+export interface ClientMessageStopped extends ClientMessageBase {
+  command: ClientCommand.Stopped
+  reason: StoppedReason
+}
+
+export interface ClientMessageEmulatorInfo extends ClientMessageBase {
+  command: ClientCommand.EmulatorInfo
+  info: {
+    id: number
+    type: string
+    values: Array<{ name: string; value: string | number }>
+  }
+}
+
+export interface ClientMessageEmulatorMemory extends ClientMessageBase {
+  command: ClientCommand.EmulatorMemory
+  info: {
+    id: number
+    values: Uint8Array
+  }
+}
+
 export type ClientMessage =
   | ClientMessageEmulatorReady
   | ClientMessagePageLoaded
   | ClientMessageInfo
   | ClientMessageError
+  | ClientMessageStopped
+  | ClientMessageEmulatorInfo
+  | ClientMessageEmulatorMemory
 
 /**
  * Messages from host to client
@@ -53,6 +91,22 @@ export type DiscImageOptions = {
   shouldAutoBoot?: boolean
 }
 
+export const enum DebugInstructionType {
+  SetBreakpoint = 'setbreakpoint',
+  Step = 'step',
+  Continue = 'continue',
+  Pause = 'pause',
+  ClearBreakpoint = 'clearbreakpoint',
+  StepOver = 'stepover',
+  StepOut = 'stepout',
+  // TODO - expand to include other debug commands
+}
+
+export type DebugInstruction = {
+  address?: number
+  instruction: DebugInstructionType
+}
+
 export const NO_DISC: DiscImageFile = { url: '', name: '-- no disc --' }
 
 export const enum HostCommand {
@@ -60,6 +114,9 @@ export const enum HostCommand {
   ViewFocus = 'viewFocus',
   DiscImages = 'discImages',
   DiscImageChanges = 'discImageChanges',
+  DebugCommand = 'debugCommand',
+  DebugRequest = 'debugRequest',
+  SetBreakpoints = 'setBreakpoints',
 }
 
 export interface HostMessageBase extends MessageBase {
@@ -92,8 +149,27 @@ export interface HostMessageViewFocus extends HostMessageBase {
   }
 }
 
+export interface HostMessageDebugCommand extends HostMessageBase {
+  command: HostCommand.DebugCommand
+  instruction: DebugInstruction
+}
+
+export interface HostMessageDebugRequest extends HostMessageBase {
+  command: HostCommand.DebugRequest
+  id: number
+  request: string
+}
+
+export interface HostMessageSetBreakpoints extends HostMessageBase {
+  command: HostCommand.SetBreakpoints
+  breakpoints: number[]
+}
+
 export type HostMessage =
   | HostMessageDiscImages
   | HostMessageDiscImageChanges
   | HostMessageLoadDisc
   | HostMessageViewFocus
+  | HostMessageDebugCommand
+  | HostMessageDebugRequest
+  | HostMessageSetBreakpoints

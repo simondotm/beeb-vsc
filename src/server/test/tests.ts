@@ -258,6 +258,30 @@ suite('LineParser', function () {
       testASTMacroCall()
     })
   })
+
+  suite('SourceMap', function () {
+    test('Test source map 1 byte', function () {
+      testSourceMapInfo1Byte()
+    })
+    test('Test source map 2 bytes', function () {
+      testSourceMapInfo2Byte()
+    })
+    test('Test source map 3 bytes', function () {
+      testSourceMapInfo3Byte()
+    })
+    test('Test multiple statements on line', function () {
+      testSourceMapInfoMultipleStatements()
+    })
+    test('Test inside of for loop', function () {
+      testSourcMapInfoForLoop()
+    })
+    test('Test inside macro call', function () {
+      testSourceMapInfoInsideMacro()
+    })
+    test('Test inside macro with preceding code', function () {
+      SourceMapInfoInsideMacroWithOffset()
+    })
+  })
 })
 
 const assignments = `
@@ -1195,4 +1219,98 @@ TEMP 1`
   input.Process()
   const tree = input.GetTrees().get('')![4]
   assert.equal(tree.children.length, 1)
+}
+
+function testSourceMapInfo1Byte() {
+  const code = `
+ORG &1900
+DEX`
+  Run2Passes(code)
+  const sourceMap = ObjectCode.Instance.GetSourceMap()
+  const info = sourceMap[0x1900]
+  // assert.equal(info?.file, 0) // Using hash function, could create index later if useful to interpret
+  assert.equal(info?.line, 3)
+  assert.equal(info?.column, 0)
+  assert.equal(info?.parent, null)
+}
+
+function testSourceMapInfo2Byte() {
+  const code = `
+ORG &1900
+LDA #1`
+  Run2Passes(code)
+  const sourceMap = ObjectCode.Instance.GetSourceMap()
+  const info = sourceMap[0x1900]
+  assert.equal(info?.line, 3)
+  assert.equal(info?.column, 0)
+  assert.equal(info?.parent, null)
+}
+
+function testSourceMapInfo3Byte() {
+  const code = `
+ORG &1900
+JSR &FFEE`
+  Run2Passes(code)
+  const sourceMap = ObjectCode.Instance.GetSourceMap()
+  const info = sourceMap[0x1900]
+  assert.equal(info?.line, 3)
+  assert.equal(info?.column, 0)
+  assert.equal(info?.parent, null)
+}
+
+function testSourceMapInfoMultipleStatements() {
+  const code = `
+ORG &1900
+LDA #10: STA &80`
+  Run2Passes(code)
+  const sourceMap = ObjectCode.Instance.GetSourceMap()
+  const info = sourceMap[0x1902]
+  assert.equal(info?.line, 3)
+  assert.equal(info?.column, 9)
+  assert.equal(info?.parent, null)
+}
+
+function testSourcMapInfoForLoop() {
+  const code = `
+ORG &1900
+FOR n, 0, 10
+LDA #n
+NEXT`
+  Run2Passes(code)
+  const sourceMap = ObjectCode.Instance.GetSourceMap()
+  let info = sourceMap[0x1900]
+  assert.equal(info?.line, 4)
+  info = sourceMap[0x1912]
+  assert.equal(info?.line, 4)
+}
+
+function testSourceMapInfoInsideMacro() {
+  const code = `
+MACRO TEMP n
+LDA #n
+ENDMACRO
+ORG &1900
+TEMP 1`
+  Run2Passes(code)
+  const sourceMap = ObjectCode.Instance.GetSourceMap()
+  const info = sourceMap[0x1900]
+  assert.equal(info?.line, 3)
+}
+
+// NB: For reverse source lookup, make sure store list of addresses for each line
+
+function SourceMapInfoInsideMacroWithOffset() {
+  const code = `
+ORG &00
+NOP
+NOP
+MACRO TEMP n
+LDA #n
+ENDMACRO
+ORG &1900
+TEMP 1`
+  Run2Passes(code)
+  const sourceMap = ObjectCode.Instance.GetSourceMap()
+  const info = sourceMap[0x1900]
+  assert.equal(info?.line, 6)
 }

@@ -12,7 +12,8 @@
 			],
 			"outFiles": [
 				"${workspaceRoot}/dist/main.js",
-				"${workspaceRoot}/dist/server.js"
+				"${workspaceRoot}/dist/server.js",
+				"${workspaceRoot}/dist/webview/main.js"
 			],
 			"sourceMaps": true,
 			"autoAttachChildProcesses": true,

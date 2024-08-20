@@ -23,6 +23,7 @@
 import { integer, Location } from 'vscode-languageserver'
 import { GlobalData } from './globaldata'
 import { ObjectCode } from './objectcode'
+import { LabelMap } from '../../types/shared/debugsource'
 
 // can't use Symbol as a type name because it's a reserved word
 export class SymbolData {
@@ -312,5 +313,31 @@ export class SymbolTable {
       this._labelScopes++
       this._labelStack.push(this._lastLabel!)
     }
+  }
+
+  GetAllLabels(): LabelMap {
+    const labels: LabelMap = {}
+
+    for (const label of this._labelList) {
+      labels[label._identifier] = label._addr
+    }
+
+    return labels
+  }
+
+  GetAllSymbols(): LabelMap {
+    const symbols: LabelMap = {}
+    // Only interested in user defined symbols with numeric values
+    // Since these might represent memory locations
+    // Could further filter for non-integer values, negative values, etc.
+    for (const [name, symbolData] of this._map.entries()) {
+      if (!symbolData.IsLabel() && symbolData.GetLocation() !== noLocation) {
+        if (typeof symbolData.GetValue() === 'number') {
+          symbols[name] = symbolData.GetValue() as number
+        }
+      }
+    }
+
+    return symbols
   }
 }
