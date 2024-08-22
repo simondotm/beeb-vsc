@@ -2,6 +2,11 @@
 
 See [Releases on Github](https://github.com/simondotm/beeb-vsc/releases) for full release history.
 
+### 0.3.0
+ - Add ability to output a source map file
+ - *Experimental* debug functionality via integrated JSBeeb emulator
+ - Bump braces version [@dependabot]
+
 ### 0.2.4
 - Minor quality of life fixes
   - Opcodes and register names included in autocomplete
