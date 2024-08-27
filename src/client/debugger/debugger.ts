@@ -271,6 +271,8 @@ export class JSBeebDebugSession extends LoggingDebugSession {
 
     response.body.supportsSteppingGranularity = false
 
+    response.body.supportsReadMemoryRequest = true
+
     this.sendResponse(response)
 
     // since this debug adapter can accept configuration requests like 'setBreakpoint' at any time,
@@ -624,6 +626,12 @@ export class JSBeebDebugSession extends LoggingDebugSession {
           ['Cycles', 'Next op'].includes(reg.name),
         )
         variables.push(...system)
+        const memory: DebugProtocol.Variable = new Variable(
+          'Memory',
+          'Click icon to view',
+        )
+        memory.memoryReference = 'memory'
+        variables.push(memory)
       }
     }
     response.body = { variables: variables }
@@ -683,6 +691,27 @@ export class JSBeebDebugSession extends LoggingDebugSession {
       }
     }
     return vars
+  }
+
+  protected async readMemoryRequest(
+    response: DebugProtocol.ReadMemoryResponse,
+    args: DebugProtocol.ReadMemoryArguments,
+  ): Promise<void> {
+    console.log(`${new Date().toLocaleTimeString()} readMemoryRequest called`)
+    const ref = args.memoryReference
+    // const length = args.count
+    if (ref === 'memory') {
+      response.body = {
+        address: '0',
+        data: this.convertMemoryToBase64(this.memory),
+      }
+      this.sendResponse(response)
+    }
+    this.sendResponse(response)
+  }
+
+  private convertMemoryToBase64(memory: Uint8Array): string {
+    return Buffer.from(memory).toString('base64')
   }
 
   protected async stackTraceRequest(
