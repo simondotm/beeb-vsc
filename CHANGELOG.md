@@ -2,6 +2,12 @@
 
 See [Releases on Github](https://github.com/simondotm/beeb-vsc/releases) for full release history.
 
+### 0.3.1
+ - Add memory view for debugger (under Variables-->System-->Memory, click icon to view)
+ - Allow watches to be set based on addresses e.g. `($2000)` or `$($80).w`
+ - Format watch as string of fixed length e.g. `message.s10` for string of length 10 at label 'message'
+ - Bump webpack version [@dependabot]
+
 ### 0.3.0
  - Add ability to output a source map file
  - *Experimental* debug functionality via integrated JSBeeb emulator
