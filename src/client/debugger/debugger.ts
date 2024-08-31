@@ -792,7 +792,8 @@ export class JSBeebDebugSession extends LoggingDebugSession {
     console.log(
       `${new Date().toLocaleTimeString()} evaluateRequest '${args.expression}'`,
     )
-    const validExp = /([$&%.]|\.\*|\.\^)?([a-z][a-z0-9_]*)(\.[wd]|\.s[0-9]+)?/gi
+    const validExp =
+      /([$&%.]|\.\*|\.\^)?([a-z][a-z0-9_]*|\([$&][0-9a-f]+\)|\([0-9]+\))(\.[wd]|\.s[0-9]+)?/gi
     if (args.context === 'watch') {
       const match = validExp.exec(args.expression)
       if (match === null) {
@@ -801,7 +802,7 @@ export class JSBeebDebugSession extends LoggingDebugSession {
       }
       const formatPrefix = match[1] ?? ''
       let label = match[2]
-      const sizeSuffix = (match[3] ?? 'b').toLowerCase()
+      const sizeSuffix = (match[3] ?? '.b').toLowerCase()
       let format: displayFormat
       switch (formatPrefix) {
         case '&':
@@ -828,7 +829,7 @@ export class JSBeebDebugSession extends LoggingDebugSession {
         case '.d':
           bytes = 4
           break
-        case 'b':
+        case '.b':
           bytes = 1
           break
         default:
@@ -846,7 +847,8 @@ export class JSBeebDebugSession extends LoggingDebugSession {
       }
       if (
         this.labelMap['.' + label] === undefined &&
-        this.symbolMap[label] === undefined
+        this.symbolMap[label] === undefined &&
+        !label.startsWith('(')
       ) {
         this.sendErrorResponse(response, 0, '')
         return
@@ -861,7 +863,13 @@ export class JSBeebDebugSession extends LoggingDebugSession {
       }
 
       let address: number
-      if (this.labelMap['.' + label] !== undefined) {
+      if (label.startsWith('(')) {
+        if (label.charAt(1) === '&' || label.charAt(1) === '$') {
+          address = parseInt(label.slice(2, -1), 16)
+        } else {
+          address = parseInt(label.slice(1, -1), 10)
+        }
+      } else if (this.labelMap['.' + label] !== undefined) {
         address = this.labelMap['.' + label]
       } else {
         address = this.symbolMap[label]
