@@ -22,6 +22,7 @@ import {
   StackFrame,
   StoppedEvent,
   TerminatedEvent,
+  MemoryEvent,
   Thread,
   Variable,
 } from '@vscode/debugadapter'
@@ -134,6 +135,7 @@ const enum displayFormat {
   hex = 'hex',
   binary = 'binary',
   decimal = 'decimal',
+  string = 'string',
 }
 
 // export class JSBeebDebugSession implements DebugAdapter {
@@ -270,6 +272,8 @@ export class JSBeebDebugSession extends LoggingDebugSession {
     response.body.supportsInstructionBreakpoints = false // Generally set from dissasembly but assembly basically the same
 
     response.body.supportsSteppingGranularity = false
+
+    response.body.supportsReadMemoryRequest = true
 
     this.sendResponse(response)
 
@@ -605,7 +609,7 @@ export class JSBeebDebugSession extends LoggingDebugSession {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     request?: DebugProtocol.Request | undefined,
   ): Promise<void> {
-    console.log(args)
+    // console.log(args)
     console.log(`${new Date().toLocaleTimeString()} variablesRequest called`)
     const variables: Variable[] = []
     if (args.filter === undefined || args.filter === 'named') {
@@ -624,6 +628,12 @@ export class JSBeebDebugSession extends LoggingDebugSession {
           ['Cycles', 'Next op'].includes(reg.name),
         )
         variables.push(...system)
+        const memory: DebugProtocol.Variable = new Variable(
+          'Memory',
+          'Click icon to view',
+        )
+        memory.memoryReference = 'memory'
+        variables.push(memory)
       }
     }
     response.body = { variables: variables }
@@ -685,6 +695,46 @@ export class JSBeebDebugSession extends LoggingDebugSession {
     return vars
   }
 
+  protected async readMemoryRequest(
+    response: DebugProtocol.ReadMemoryResponse,
+    { memoryReference, offset = 0, count }: DebugProtocol.ReadMemoryArguments,
+  ): Promise<void> {
+    console.log(`${new Date().toLocaleTimeString()} readMemoryRequest called`)
+    // console.log({ memoryReference, offset, count })
+    if (memoryReference === 'memory' && count !== 0) {
+      if (offset > this.memory.length) {
+        response.body = {
+          address: offset.toString(),
+          unreadableBytes: count,
+          data: '',
+        }
+      } else {
+        const unreadableBytes = Math.max(offset + count - this.memory.length, 0)
+        response.body = {
+          address: offset.toString(),
+          unreadableBytes: unreadableBytes,
+          data: this.convertMemoryToBase64(offset, count - unreadableBytes),
+        }
+      }
+    } else {
+      response.body = {
+        address: offset.toString(),
+        unreadableBytes: 0,
+        data: '',
+      }
+    }
+    this.sendResponse(response)
+  }
+
+  private convertMemoryToBase64(offset: number, count: number): string {
+    if (count == 0) {
+      count = this.memory.length - offset
+    }
+    return Buffer.from(this.memory.slice(offset, offset + count)).toString(
+      'base64',
+    )
+  }
+
   protected async stackTraceRequest(
     response: DebugProtocol.StackTraceResponse,
     args: DebugProtocol.StackTraceArguments,
@@ -727,6 +777,8 @@ export class JSBeebDebugSession extends LoggingDebugSession {
         current = current.parent
       }
       this.sendResponse(response)
+      // Since we refreshed the memory, emit a MemoryEvent
+      this.sendEvent(new MemoryEvent('memory', 0, this.memory.length))
     }
     // console.log(response)
   }
@@ -737,8 +789,11 @@ export class JSBeebDebugSession extends LoggingDebugSession {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     request?: DebugProtocol.Request,
   ): Promise<void> {
-    console.log(args)
-    const validExp = /([$&%.]|\.\*|\.\^)?([a-z][a-z0-9_]*)(\.[wd])?/gi
+    console.log(
+      `${new Date().toLocaleTimeString()} evaluateRequest '${args.expression}'`,
+    )
+    const validExp =
+      /([$&%.]|\.\*|\.\^)?([a-z][a-z0-9_]*|\([$&][0-9a-f]+\)|\([0-9]+\))(\.[wd]|\.s[0-9]+)?/gi
     if (args.context === 'watch') {
       const match = validExp.exec(args.expression)
       if (match === null) {
@@ -747,7 +802,7 @@ export class JSBeebDebugSession extends LoggingDebugSession {
       }
       const formatPrefix = match[1] ?? ''
       let label = match[2]
-      const sizeSuffix = match[3] ?? 'b'
+      const sizeSuffix = (match[3] ?? '.b').toLowerCase()
       let format: displayFormat
       switch (formatPrefix) {
         case '&':
@@ -774,12 +829,14 @@ export class JSBeebDebugSession extends LoggingDebugSession {
         case '.d':
           bytes = 4
           break
-        default:
+        case '.b':
           bytes = 1
           break
+        default:
+          format = displayFormat.string
+          bytes = parseInt(sizeSuffix.slice(2), 10)
+          break
       }
-      // TODO - consider adding ".s" suffix for strings
-      // TODO - maybe signed/unsigned variants? Big/little endian?
 
       // search for label in labels list after removing prefix if necessary
       if (label.startsWith('.')) {
@@ -790,7 +847,8 @@ export class JSBeebDebugSession extends LoggingDebugSession {
       }
       if (
         this.labelMap['.' + label] === undefined &&
-        this.symbolMap[label] === undefined
+        this.symbolMap[label] === undefined &&
+        !label.startsWith('(')
       ) {
         this.sendErrorResponse(response, 0, '')
         return
@@ -805,7 +863,13 @@ export class JSBeebDebugSession extends LoggingDebugSession {
       }
 
       let address: number
-      if (this.labelMap['.' + label] !== undefined) {
+      if (label.startsWith('(')) {
+        if (label.charAt(1) === '&' || label.charAt(1) === '$') {
+          address = parseInt(label.slice(2, -1), 16)
+        } else {
+          address = parseInt(label.slice(1, -1), 10)
+        }
+      } else if (this.labelMap['.' + label] !== undefined) {
         address = this.labelMap['.' + label]
       } else {
         address = this.symbolMap[label]
@@ -828,6 +892,10 @@ export class JSBeebDebugSession extends LoggingDebugSession {
           .padStart(2 * bytes, '0')}`
       } else if (format === displayFormat.binary) {
         displayValue = `%${value.toString(2).padStart(8 * bytes, '0')}`
+      } else if (format === displayFormat.string) {
+        displayValue = String.fromCharCode(
+          ...this.memory.slice(address, address + bytes),
+        )
       } else {
         displayValue = `${value}`
       }
