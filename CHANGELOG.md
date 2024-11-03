@@ -2,6 +2,9 @@
 
 See [Releases on Github](https://github.com/simondotm/beeb-vsc/releases) for full release history.
 
+### 0.3.2
+ - Create new target command now finds all matching file extensions regardless of case e.g. main.ASM
+
 ### 0.3.1
  - Add memory view for debugger (under Variables-->System-->Memory, click icon to view)
  - Allow watches to be set based on addresses e.g. `($2000)` or `$($80).w`
