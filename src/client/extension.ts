@@ -562,7 +562,7 @@ function createTargetCommand(): void {
     recursive: true,
   })
   targetList = targetList.filter((file) =>
-    supportedFileTypes.includes(file.split('.').pop()!),
+    supportedFileTypes.includes(file.split('.').pop()!.toLowerCase()),
   )
   // check that files are really files not folders
   targetList = targetList.filter((file) =>
