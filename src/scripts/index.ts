@@ -27,6 +27,7 @@ let emulatorView: EmulatorView
 let emulatorInfoBar: EmulatorInfoBar | undefined
 let emulatorToolBar: EmulatorToolBar | undefined
 let emulatorLedBar: EmulatorLedBar | undefined
+let debugMode: boolean = false
 
 async function initialise() {
   sendTelemetryEvent('emulatorActivated')
@@ -89,10 +90,12 @@ window.addEventListener('message', (event) => {
       // We handle focus via window events at the moment
       // since these can arrive before the webview is ready
       // but we may want to do something with visibility or active state later
-      if (message.focus.visible) {
-        emulatorView.resume()
-      } else {
-        emulatorView.suspend()
+      if (!debugMode) {
+        if (message.focus.visible) {
+          emulatorView.resume()
+        } else {
+          emulatorView.suspend()
+        }
       }
       break
     case HostCommand.DiscImages:
@@ -102,7 +105,6 @@ window.addEventListener('message', (event) => {
       //TODO: Listener logic here, in case we need to do something with modified disc images
       break
     case HostCommand.DebugCommand: {
-      console.log('BeebVSC: Debug command received', message)
       const instructiontype = message.instruction.instruction
       if (instructiontype === DebugInstructionType.Pause) {
         emulatorView.suspend()
@@ -160,6 +162,10 @@ window.addEventListener('message', (event) => {
       if (message.breakpoints) {
         emulatorView.SetBreakpoints(message.breakpoints)
       }
+      break
+    }
+    case HostCommand.SetDebugMode: {
+      debugMode = true
       break
     }
   }

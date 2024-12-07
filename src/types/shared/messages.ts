@@ -117,6 +117,7 @@ export const enum HostCommand {
   DebugCommand = 'debugCommand',
   DebugRequest = 'debugRequest',
   SetBreakpoints = 'setBreakpoints',
+  SetDebugMode = 'setDebugMode',
 }
 
 export interface HostMessageBase extends MessageBase {
@@ -165,6 +166,10 @@ export interface HostMessageSetBreakpoints extends HostMessageBase {
   breakpoints: number[]
 }
 
+export interface HostMessageSetDebugMode extends HostMessageBase {
+  command: HostCommand.SetDebugMode
+}
+
 export type HostMessage =
   | HostMessageDiscImages
   | HostMessageDiscImageChanges
@@ -173,3 +178,4 @@ export type HostMessage =
   | HostMessageDebugCommand
   | HostMessageDebugRequest
   | HostMessageSetBreakpoints
+  | HostMessageSetDebugMode
