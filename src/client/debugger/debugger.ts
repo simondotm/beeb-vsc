@@ -38,6 +38,7 @@ import {
   HostMessageDebugCommand,
   HostMessageDebugRequest,
   HostMessageSetBreakpoints,
+  HostMessageSetDebugMode,
   StoppedReason,
 } from '../../types/shared/messages'
 import { Subject } from 'await-notify'
@@ -309,6 +310,10 @@ export class JSBeebDebugSession extends LoggingDebugSession {
     this.loadSourceMap()
     const needToBind = EmulatorPanel.instance === undefined
     EmulatorPanel.show(this.extensionPath, Uri.file(args.diskImage), [])
+    const message: HostMessageSetDebugMode = {
+      command: HostCommand.SetDebugMode,
+    }
+    EmulatorPanel.instance?.notifyClient(message)
     if (needToBind) {
       this.webview = EmulatorPanel.instance?.GetWebview()
       if (this.webview) {
@@ -495,7 +500,6 @@ export class JSBeebDebugSession extends LoggingDebugSession {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     request?: DebugProtocol.Request | undefined,
   ): void {
-    console.log('pauseRequest called')
     const message: HostMessageDebugCommand = {
       command: HostCommand.DebugCommand,
       instruction: { instruction: DebugInstructionType.Pause },
@@ -511,7 +515,6 @@ export class JSBeebDebugSession extends LoggingDebugSession {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     request?: DebugProtocol.Request | undefined,
   ): void {
-    console.log('continueRequest called')
     const message: HostMessageDebugCommand = {
       command: HostCommand.DebugCommand,
       instruction: { instruction: DebugInstructionType.Continue },
@@ -528,7 +531,6 @@ export class JSBeebDebugSession extends LoggingDebugSession {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     request?: DebugProtocol.Request | undefined,
   ): void {
-    console.log('stepInRequest called')
     const message: HostMessageDebugCommand = {
       command: HostCommand.DebugCommand,
       instruction: { instruction: DebugInstructionType.Step },
@@ -544,7 +546,6 @@ export class JSBeebDebugSession extends LoggingDebugSession {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     request?: DebugProtocol.Request | undefined,
   ): void {
-    console.log('nextRequest called')
     const message: HostMessageDebugCommand = {
       command: HostCommand.DebugCommand,
       instruction: { instruction: DebugInstructionType.StepOver },
@@ -560,7 +561,6 @@ export class JSBeebDebugSession extends LoggingDebugSession {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     request?: DebugProtocol.Request | undefined,
   ): void {
-    console.log('stepOutRequest called')
     const message: HostMessageDebugCommand = {
       command: HostCommand.DebugCommand,
       instruction: { instruction: DebugInstructionType.StepOut },
@@ -576,7 +576,6 @@ export class JSBeebDebugSession extends LoggingDebugSession {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     request?: DebugProtocol.Request | undefined,
   ): void {
-    console.log(`${new Date().toLocaleTimeString()} terminateRequest called`)
     EmulatorPanel.instance?.dispose()
     this.sendEvent(new TerminatedEvent())
     this.sendResponse(response)
@@ -587,8 +586,6 @@ export class JSBeebDebugSession extends LoggingDebugSession {
     args: DebugProtocol.ScopesArguments,
   ): void {
     response.body = { scopes: [] }
-    console.log(`${new Date().toLocaleTimeString()} scopesRequest called`)
-    console.log(args)
     // if (args !== null && args.frameId === STACKFRAME) { // STACKFRAME not used as a concept, no locals in assembled code?
     if (args !== null) {
       response.body.scopes.push(new Scope('Registers', VARTYPE.Register, false))
@@ -609,8 +606,6 @@ export class JSBeebDebugSession extends LoggingDebugSession {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     request?: DebugProtocol.Request | undefined,
   ): Promise<void> {
-    // console.log(args)
-    console.log(`${new Date().toLocaleTimeString()} variablesRequest called`)
     const variables: Variable[] = []
     if (args.filter === undefined || args.filter === 'named') {
       if (args.variablesReference === VARTYPE.Register) {
@@ -699,8 +694,6 @@ export class JSBeebDebugSession extends LoggingDebugSession {
     response: DebugProtocol.ReadMemoryResponse,
     { memoryReference, offset = 0, count }: DebugProtocol.ReadMemoryArguments,
   ): Promise<void> {
-    console.log(`${new Date().toLocaleTimeString()} readMemoryRequest called`)
-    // console.log({ memoryReference, offset, count })
     if (memoryReference === 'memory' && count !== 0) {
       if (offset > this.memory.length) {
         response.body = {
@@ -740,9 +733,6 @@ export class JSBeebDebugSession extends LoggingDebugSession {
     args: DebugProtocol.StackTraceArguments,
   ): Promise<void> {
     // const levels = args.levels || 0
-    // log time of call
-    console.log(`${new Date().toLocaleTimeString()} stackTraceRequest called`)
-    // console.log(args)
     const startFrame = args.startFrame || 0
     let frameId = STACKFRAME
     // Get information from emulator
@@ -789,9 +779,6 @@ export class JSBeebDebugSession extends LoggingDebugSession {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     request?: DebugProtocol.Request,
   ): Promise<void> {
-    console.log(
-      `${new Date().toLocaleTimeString()} evaluateRequest '${args.expression}'`,
-    )
     const validExp =
       /([$&%.]|\.\*|\.\^)?([a-z][a-z0-9_]*|\([$&][0-9a-f]+\)|\([0-9]+\))(\.[wd]|\.s[0-9]+)?/gi
     if (args.context === 'watch') {
