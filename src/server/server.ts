@@ -23,6 +23,7 @@ import { FileHandler, URItoVSCodeURI } from './filehandler'
 import { HoverProvider } from './hoverprovider'
 import { AST } from './ast'
 import { SemanticTokensProvider } from './semantictokenprovider'
+import { InlayHintsProvider } from './inlayhintsprovider'
 import * as path from 'path'
 import { writeFileSync } from 'fs'
 
@@ -74,6 +75,7 @@ connection.onInitialize((params: InitializeParams) => {
         },
         full: true,
       },
+      inlayHintProvider: true,
     },
   }
   result.capabilities.workspace = {
@@ -355,6 +357,11 @@ connection.onHover(hoverHandler.onHover.bind(hoverHandler))
 const semanticTokensProvider = new SemanticTokensProvider(trees)
 connection.languages.semanticTokens.on(
   semanticTokensProvider.on.bind(semanticTokensProvider),
+)
+
+const inlayHintsProvider = new InlayHintsProvider(trees)
+connection.languages.inlayHint.on(
+  inlayHintsProvider.on.bind(inlayHintsProvider),
 )
 
 // Make the text document manager listen on the connection

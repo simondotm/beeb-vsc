@@ -16,6 +16,7 @@ import { CompletionProvider, SignatureProvider } from '../completions'
 import { FindDefinition, FindReferences } from '../symbolhandler'
 import { MacroTable } from '../beebasm-ts/macro'
 import * as AST from '../ast'
+import { InlayHintsProvider } from '../inlayhintsprovider'
 
 const diagnostics = new Map<string, Diagnostic[]>()
 const trees = new Map<string, AST.AST[]>()
@@ -280,6 +281,36 @@ suite('LineParser', function () {
     })
     test('Test inside macro with preceding code', function () {
       SourceMapInfoInsideMacroWithOffset()
+    })
+  })
+
+  suite('InlayHintsProvider', function () {
+    test('Test easiest case', function () {
+      testInlayHintEasy()
+    })
+    test('Test short value after opcode', function () {
+      testInlayHintShortValue()
+    })
+    test('Test long value after opcode', function () {
+      testInlayHintLongValue()
+    })
+    test('Test expression with function', function () {
+      testInlayHintExpressionWithFunction()
+    })
+    test('Test numerical expression', function () {
+      testInlayHintNumericalExpression()
+    })
+    test('Test label reference', function () {
+      testInlayHintLabelReference()
+    })
+    test('Test expression with labels', function () {
+      testInlayHintExpressionWithLabels()
+    })
+    test('Test multiple statements on line', function () {
+      testInlayHintMultipleStatements()
+    })
+    test('Test comment after opcode', function () {
+      testInlayHintCommentAfterStatement()
     })
   })
 })
@@ -1313,4 +1344,116 @@ TEMP 1`
   const sourceMap = ObjectCode.Instance.GetSourceMap()
   const info = sourceMap[0x1900]
   assert.equal(info?.line, 6)
+}
+
+function testInlayHintEasy() {
+  const code = 'INX'
+  const input = new SourceCode(code, 0, null, diagnostics, '', trees, links)
+  input.Process()
+  const tree = input.GetTrees().get('')!
+  const provider = new InlayHintsProvider(input.GetTrees())
+  const hints = provider.GetHintsForLineRange(0, 0, tree, '', code)
+  assert.equal(hints.length, 1)
+  assert.deepEqual(hints[0].position, { character: 3, line: 0 })
+}
+
+function testInlayHintShortValue() {
+  const code = 'LDA #1'
+  const input = new SourceCode(code, 0, null, diagnostics, '', trees, links)
+  input.Process()
+  const tree = input.GetTrees().get('')!
+  const provider = new InlayHintsProvider(input.GetTrees())
+  const hints = provider.GetHintsForLineRange(0, 0, tree, '', code)
+  assert.equal(hints.length, 1)
+  assert.deepEqual(hints[0].position, { character: 6, line: 0 })
+}
+
+function testInlayHintLongValue() {
+  const code = 'LDA #255'
+  const input = new SourceCode(code, 0, null, diagnostics, '', trees, links)
+  input.Process()
+  const tree = input.GetTrees().get('')!
+  const provider = new InlayHintsProvider(input.GetTrees())
+  const hints = provider.GetHintsForLineRange(0, 0, tree, '', code)
+  assert.equal(hints.length, 1)
+  assert.deepEqual(hints[0].position, { character: 8, line: 0 })
+}
+
+function testInlayHintExpressionWithFunction() {
+  const code = 'LDA #LO(640)'
+  const input = new SourceCode(code, 0, null, diagnostics, '', trees, links)
+  input.Process()
+  const tree = input.GetTrees().get('')!
+  const provider = new InlayHintsProvider(input.GetTrees())
+  const hints = provider.GetHintsForLineRange(0, 0, tree, '', code)
+  assert.equal(hints.length, 1)
+  assert.deepEqual(hints[0].position, { character: 12, line: 0 })
+}
+
+function testInlayHintNumericalExpression() {
+  const code = 'LDA 25 - 5'
+  const input = new SourceCode(code, 0, null, diagnostics, '', trees, links)
+  input.Process()
+  const tree = input.GetTrees().get('')!
+  const provider = new InlayHintsProvider(input.GetTrees())
+  const hints = provider.GetHintsForLineRange(0, 0, tree, '', code)
+  assert.equal(hints.length, 1)
+  assert.deepEqual(hints[0].position, { character: 10, line: 0 })
+}
+
+function testInlayHintLabelReference() {
+  const code = `ORG &100
+LDA addr
+ORG &1000
+.addr`
+  let input = new SourceCode(code, 0, null, diagnostics, '', trees, links)
+  input.Process()
+  GlobalData.Instance.SetPass(1)
+  ObjectCode.Instance.InitialisePass()
+  GlobalData.Instance.ResetForId()
+  input = new SourceCode(code, 0, null, diagnostics, '', trees, links)
+  input.Process()
+  const tree = input.GetTrees().get('')!
+  const provider = new InlayHintsProvider(input.GetTrees())
+  const hints = provider.GetHintsForLineRange(1, 1, tree, '', code)
+  assert.equal(hints.length, 1)
+  assert.deepEqual(hints[0].position, { character: 8, line: 1 })
+}
+
+function testInlayHintExpressionWithLabels() {
+  const code = `ORG &100
+JMP addr1 + offset
+ORG &1000
+.addr1
+offset = 100`
+  const input = new SourceCode(code, 0, null, diagnostics, '', trees, links)
+  input.Process()
+  const tree = input.GetTrees().get('')!
+  const provider = new InlayHintsProvider(input.GetTrees())
+  const hints = provider.GetHintsForLineRange(1, 1, tree, '', code)
+  assert.equal(hints.length, 1)
+  assert.deepEqual(hints[0].position, { character: 18, line: 1 })
+}
+
+function testInlayHintMultipleStatements() {
+  const code = 'INX: INY'
+  const input = new SourceCode(code, 0, null, diagnostics, '', trees, links)
+  input.Process()
+  const tree = input.GetTrees().get('')!
+  const provider = new InlayHintsProvider(input.GetTrees())
+  const hints = provider.GetHintsForLineRange(0, 0, tree, '', code)
+  assert.equal(hints.length, 2)
+  assert.deepEqual(hints[0].position, { character: 3, line: 0 })
+  assert.deepEqual(hints[1].position, { character: 8, line: 0 })
+}
+
+function testInlayHintCommentAfterStatement() {
+  const code = 'LDA #0  ; comment'
+  const input = new SourceCode(code, 0, null, diagnostics, '', trees, links)
+  input.Process()
+  const tree = input.GetTrees().get('')!
+  const provider = new InlayHintsProvider(input.GetTrees())
+  const hints = provider.GetHintsForLineRange(0, 0, tree, '', code)
+  assert.equal(hints.length, 1)
+  assert.deepEqual(hints[0].position, { character: 6, line: 0 })
 }
