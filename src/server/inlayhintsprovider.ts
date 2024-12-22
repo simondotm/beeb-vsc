@@ -5,12 +5,16 @@ import { opcodeData } from './shareddata'
 
 export class InlayHintsProvider {
   private trees: Map<string, AST[]>
+  public enabled: boolean = false
 
   constructor(trees: Map<string, AST[]>) {
     this.trees = trees
   }
 
   on(params: InlayHintParams): InlayHint[] | null {
+    if (!this.enabled) {
+      return null
+    }
     const uri = URItoVSCodeURI(params.textDocument.uri)
     const startLine = params.range.start.line
     const endLine = params.range.end.line

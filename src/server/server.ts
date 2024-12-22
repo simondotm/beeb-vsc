@@ -94,6 +94,11 @@ connection.onInitialized(() => {
   })
 })
 
+const inlayHintsProvider = new InlayHintsProvider(trees)
+connection.languages.inlayHint.on(
+  inlayHintsProvider.on.bind(inlayHintsProvider),
+)
+
 // connection.onDidChangeConfiguration((change) => {
 //   // Revalidate all open text documents
 //   // Only calling once as always start from root document and that will pick up others via INCLUDE statements
@@ -121,13 +126,13 @@ async function getStartingFileNames(fileName: string): Promise<string[]> {
     return [file]
   }
   // not known yet, so check the files in settings.json
-  const filenames = await getSourcesFromSettings()
+  const filenames = await getInfoFromSettings()
   return filenames
 }
 
-// Read settings.json setting for source file name
+// Read settings.json setting for source file name and other settings
 // TODO - move to FileHandler?
-async function getSourcesFromSettings(): Promise<string[]> {
+async function getInfoFromSettings(): Promise<string[]> {
   // check the workspace settings
   const folders = await connection.workspace.getWorkspaceFolders()
   if (folders !== null) {
@@ -139,6 +144,10 @@ async function getSourcesFromSettings(): Promise<string[]> {
         section: 'beebvsc',
       }
       const settings = await connection.workspace.getConfiguration(item)
+      const inlayHints = settings['enableInlayHints']
+      if (inlayHints !== undefined) {
+        inlayHintsProvider.enabled = JSON.parse(inlayHints)
+      }
       let filename = settings['sourceFile']
       if (typeof filename === 'string') {
         // prefix the workspace root if this is not an absolute path
@@ -257,7 +266,7 @@ connection.onDidChangeWatchedFiles((_change) => {
   // start by clearing the text document map
   FileHandler.Instance.ClearIncludeMapping()
   // Trigger a re-parse of the root document(s)
-  const filenames = getSourcesFromSettings()
+  const filenames = getInfoFromSettings()
   filenames.then((files): void => {
     files.forEach((file) => {
       ParseDocument(file, '')
@@ -357,11 +366,6 @@ connection.onHover(hoverHandler.onHover.bind(hoverHandler))
 const semanticTokensProvider = new SemanticTokensProvider(trees)
 connection.languages.semanticTokens.on(
   semanticTokensProvider.on.bind(semanticTokensProvider),
-)
-
-const inlayHintsProvider = new InlayHintsProvider(trees)
-connection.languages.inlayHint.on(
-  inlayHintsProvider.on.bind(inlayHintsProvider),
 )
 
 // Make the text document manager listen on the connection

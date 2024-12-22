@@ -46,6 +46,7 @@ interface BeebVSCSettings {
   beebvsc: {
     sourceFile: string | string[]
     targetName: string
+    enableInlayHints: boolean
   }
 }
 
@@ -421,7 +422,13 @@ function tryGetSettingsFromTasks(
   }
   console.log('Adding details to settings.json: ' + sourceFiles)
   // CreateNewLocalSettingsJson(sourceFiles, targetName)
-  return { beebvsc: { sourceFile: sourceFiles, targetName: targetName } }
+  return {
+    beebvsc: {
+      sourceFile: sourceFiles,
+      targetName: targetName,
+      enableInlayHints: false,
+    },
+  }
 }
 
 //----------------------------------------------------------------------------------------
@@ -469,6 +476,7 @@ function CreateNewLocalSettingsJson(sourceFiles: string[], targetName: string) {
     beebvsc: {
       sourceFile: sourceFiles,
       targetName: targetName,
+      enableInlayHints: false,
     },
   }
   if (!fileExists(settingsPath)) {
@@ -751,6 +759,7 @@ function SaveJSONFiles(
     settingsObject.beebvsc = {
       sourceFile: newSourceFile,
       targetName: targetDiskImage,
+      enableInlayHints: false,
     }
 
     // save the settings.json file
