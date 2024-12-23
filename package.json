@@ -94,6 +94,11 @@
           "type": "string",
           "default": "BeebEm.exe",
           "description": "Your preferred emulator executable (eg. BeebEm.exe)."
+        },
+        "beebvsc.enableInlayHints": {
+          "type": "boolean",
+          "default": false,
+          "markdownDescription": "Enable inlay hints for cycle counts. Use in combination with `#editor.inlayHints.enabled#`"
         }
       }
     },

@@ -42,11 +42,11 @@ import {
 
 let client: LanguageClient
 
+// Settings for use at the workspace folder level. Other settings are typical global/user level settings
 interface BeebVSCSettings {
   beebvsc: {
     sourceFile: string | string[]
     targetName: string
-    enableInlayHints: boolean
   }
 }
 
@@ -426,7 +426,6 @@ function tryGetSettingsFromTasks(
     beebvsc: {
       sourceFile: sourceFiles,
       targetName: targetName,
-      enableInlayHints: false,
     },
   }
 }
@@ -476,7 +475,6 @@ function CreateNewLocalSettingsJson(sourceFiles: string[], targetName: string) {
     beebvsc: {
       sourceFile: sourceFiles,
       targetName: targetName,
-      enableInlayHints: false,
     },
   }
   if (!fileExists(settingsPath)) {
@@ -759,7 +757,6 @@ function SaveJSONFiles(
     settingsObject.beebvsc = {
       sourceFile: newSourceFile,
       targetName: targetDiskImage,
-      enableInlayHints: false,
     }
 
     // save the settings.json file
