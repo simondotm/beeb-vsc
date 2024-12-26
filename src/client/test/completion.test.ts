@@ -12,10 +12,12 @@ suite('Should do completion', () => {
   const docUri = getDocUri('completion.6502')
 
   test('Completes BeebASM keywords', async () => {
-    await testCompletion(docUri, new Position(0, 0), {
+    await testCompletion(docUri, new Position(3, 0), {
       items: [
         { label: 'PRINT', kind: CompletionItemKind.Method },
         { label: 'STRING$', kind: CompletionItemKind.Function },
+        { label: 'testsymbol', kind: CompletionItemKind.Variable },
+        { label: 'testlabel', kind: CompletionItemKind.Reference },
       ],
     })
   })
@@ -35,12 +37,13 @@ async function testCompletion(
     position,
   )) as CompletionList
 
-  assert.ok(actualCompletionList.items.length >= 2)
+  assert.ok(actualCompletionList.items.length >= 4)
   // check list contains each of the expected items
   expectedCompletionList.items.forEach((expectedItem, _i) => {
     assert.ok(
       actualCompletionList.items.some(
-        (item) => item.label === expectedItem.label,
+        (item) =>
+          item.label === expectedItem.label && item.kind === expectedItem.kind,
       ),
     )
   })
