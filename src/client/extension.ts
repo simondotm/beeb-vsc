@@ -42,6 +42,7 @@ import {
 
 let client: LanguageClient
 
+// Settings for use at the workspace folder level. Other settings are typical global/user level settings
 interface BeebVSCSettings {
   beebvsc: {
     sourceFile: string | string[]
@@ -421,7 +422,12 @@ function tryGetSettingsFromTasks(
   }
   console.log('Adding details to settings.json: ' + sourceFiles)
   // CreateNewLocalSettingsJson(sourceFiles, targetName)
-  return { beebvsc: { sourceFile: sourceFiles, targetName: targetName } }
+  return {
+    beebvsc: {
+      sourceFile: sourceFiles,
+      targetName: targetName,
+    },
+  }
 }
 
 //----------------------------------------------------------------------------------------
