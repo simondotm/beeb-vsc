@@ -181,6 +181,8 @@ export class SymbolTable {
     this._labelList = []
     this._scopeDetails = []
     this._references.clear()
+    this._lastLabel = { _addr: 0, _scope: 0, _identifier: '' }
+    this._labelStack = []
     this.AddSymbol('PI', Math.PI, noLocation)
     this.AddSymbol('P%', 0, noLocation)
     this.AddSymbol('TRUE', -1, noLocation)
@@ -258,7 +260,11 @@ export class SymbolTable {
         _scope: this._labelScopes,
         _identifier: identifier,
       }
-      this._labelList.push(this._lastLabel)
+      this._labelList.push({
+        _addr: addr,
+        _scope: this._labelScopes,
+        _identifier: identifier,
+      })
     }
   }
 
