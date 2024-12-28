@@ -1,0 +1,3 @@
+testsymbol = &6502
+ORG &2000
+.testlabel
