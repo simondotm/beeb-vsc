@@ -102,6 +102,9 @@ suite('LineParser', function () {
     test('Test failing forward reference', function () {
       testFailingForwardReference()
     })
+    test('Test labels where there is a FOR loop', function () {
+      testLabelsWithForLoop()
+    })
   })
 
   suite('Braces', function () {
@@ -645,6 +648,35 @@ EQUB 0,0,1,1,3,3,3,3
 `
   Run2Passes(code)
   assert.equal(diagnostics.get('')!.length, 0, diagnostics.get('')![0]?.message)
+}
+
+function testLabelsWithForLoop() {
+  const code = `ORG &2000
+.start
+LDA #2
+FOR i, 1, 10
+    LDA i
+NEXT
+.loop
+CPY #0
+BEQ exit
+DEY
+JMP loop
+.exit
+RTS
+.end
+
+PUTTEXT "BOOT.txt", "!BOOT", &FFFF
+SAVE "code", start, end`
+  Run2Passes(code)
+  const labels = SymbolTable.Instance.GetAllLabels()
+  console.log(labels)
+
+  // check labels contains '.start', '.loop', '.exit', '.end'
+  assert.ok(labels['.start'] !== undefined)
+  assert.ok(labels['.loop'] !== undefined)
+  assert.ok(labels['.exit'] !== undefined)
+  assert.ok(labels['.end'] !== undefined)
 }
 
 function testSkipAndOrg() {
