@@ -108,3 +108,38 @@ export function GetSemanticTokens(ast: AST, lineNum: number): number[] {
   }
   return tokens
 }
+
+export function GetEndColumn(
+  lineast: AST,
+  column: number,
+  linetext: string,
+): number {
+  // Going to need to do some light parsing to find the end column
+  // Can start from "end" of the statement and work backwards
+  // End of statement is either end of line if last statement in line
+  // or 1 character before the start of the next statement if not last statement
+  let statementText: string | undefined = undefined
+  if (lineast.children.length > 1) {
+    // find child that corresponds to the current column
+    let i = 0
+    for (; i < lineast.children.length; i++) {
+      if (lineast.children[i].startColumn === column) {
+        break
+      }
+    }
+    // If not the last child, save the statement text
+    if (i < lineast.children.length - 1) {
+      statementText = linetext.substring(
+        column,
+        lineast.children[i + 1].startColumn,
+      )
+    }
+  }
+  // if statementText is not set, then we are at the last (or only) child
+  if (statementText === undefined) {
+    statementText = linetext.substring(column)
+  }
+
+  // now we do some slight clean-up to allow for whitespace at the end of the statement
+  return column + statementText.trimEnd().length
+}

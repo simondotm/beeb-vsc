@@ -19,6 +19,7 @@ See the [CHANGELOG](./CHANGELOG.md) for full release history.
 - BeebAsm directives (`SAVE`, `EQUB`, `ORG` etc.)
 - Op-code information (description, bytecode, cycles etc.)
 - Symbols and labels show the line of code where they are declared
+- Can also show cycle count as inlay hints
 
 ## References:
 The various types of reference navigation options available within VS Code via the context menu (right-click on a symbol or label).
@@ -196,6 +197,10 @@ Examples:
 
 ![Watch panel](/docs/images/watch-panel.png?raw=true)
 
+## Inlay hints for cycle count
+The cycle count for each assembly instruction can be shown inline by enabling the setting `"beebvsc.enableInlayHints"`. The precise behaviour is controlled from the standard VS Code setting `"editor.inlayHints.enabled"`.
+
+![Inlay hints example](/docs/images/InlayHints.png?raw=true)
 
 ## Linux/Mac support
 The installation is for Windows by default, but its quite feasible to get it working for Linux and MacOS. Primarily this is done by changing the settings for `"beebvsc.assembler"` and `"beebvsc.emulator"`.
