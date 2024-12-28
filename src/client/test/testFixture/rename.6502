@@ -1,6 +1,6 @@
 symbol = %01001010
 ORG &1000
-.label
+.label ; comment
 {
 	LDA #symbol
 	CMP &80
