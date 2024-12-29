@@ -2,6 +2,11 @@
 
 See [Releases on Github](https://github.com/simondotm/beeb-vsc/releases) for full release history.
 
+### 0.3.3
+ - Debugger now stops on first breakpoint encountered rather than second
+ - Fix for labels outside of FOR loops getting affected by loop counter
+ - Add inlay hints for showing cycle counts next to assembly instructions (enable via setting `beebvsc.enableInlayHints`)
+
 ### 0.3.2
  - Create new target command now finds all matching file extensions regardless of case e.g. main.ASM
 
