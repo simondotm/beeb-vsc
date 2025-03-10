@@ -296,7 +296,7 @@
     "eslint-plugin-unused-imports": "^3.1.0",
     "glob": "^10.3.12",
     "minimist": "^1.2.8",
-    "mocha": "^10.2.0",
+    "mocha": "^10.8.2",
     "npm-run-all": "^4.1.5",
     "patch-package": "^8.0.0",
     "prettier": "^3.2.5",
