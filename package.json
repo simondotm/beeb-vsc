@@ -104,39 +104,39 @@
     },
     "commands": [
       {
-        "command": "extension.target.create",
+        "command": "beebvsc.target.create",
         "title": "BeebVSC: Create new build target"
       },
       {
-        "command": "extension.target.select",
+        "command": "beebvsc.target.select",
         "title": "BeebVSC: Select default build target"
       },
       {
-        "command": "extension.target.run",
+        "command": "beebvsc.target.run",
         "title": "BeebVSC: Run the currently selected target"
       },
       {
-        "command": "extension.target.build",
+        "command": "beebvsc.target.build",
         "title": "BeebVSC: Build the currently selected target"
       },
       {
-        "command": "extension.emulator.start",
+        "command": "beebvsc.emulator.start",
         "title": "BeebVSC: Open Emulator"
       },
       {
-        "command": "extension.emulator.option1",
+        "command": "beebvsc.emulator.option1",
         "title": "BeebVSC: Emulator option1"
       },
       {
-        "command": "extension.emulator.option2",
+        "command": "beebvsc.emulator.option2",
         "title": "BeebVSC: Emulator option2"
       },
       {
-        "command": "extension.jsbeebdebugger.debug",
+        "command": "beebvsc.jsbeebdebugger.debug",
         "title": "BeebVSC: Debug"
       },
       {
-        "command": "extension.createSourceMap",
+        "command": "beebvsc.createSourceMap",
         "title": "BeebVSC: Create source map"
       }
     ],
@@ -144,49 +144,49 @@
       "explorer/context": [
         {
           "when": "(resourceExtname == .ssd || resourceExtname == .dsd) && extension.feature.emulator",
-          "command": "extension.emulator.start",
+          "command": "beebvsc.emulator.start",
           "group": "YourGroup@1"
         },
         {
           "when": "(resourceExtname == .ssd || resourceExtname == .dsd) && extension.feature.emulator",
-          "command": "extension.jsbeebdebugger.debug",
+          "command": "beebvsc.jsbeebdebugger.debug",
           "group": "YourGroup@1"
         }
       ],
       "webview/context": [
         {
-          "command": "extension.emulator.option1",
+          "command": "beebvsc.emulator.option1",
           "when": "webviewId == 'emulator' && extension.feature.emulatorContextMenu"
         },
         {
-          "command": "extension.emulator.option2",
+          "command": "beebvsc.emulator.option2",
           "when": "webviewId == 'emulator' && webviewSection == 'editor' && extension.feature.emulatorContextMenu"
         }
       ]
     },
     "keybindings": [
       {
-        "command": "extension.target.create",
+        "command": "beebvsc.target.create",
         "key": "f10",
         "mac": "f10"
       },
       {
-        "command": "extension.target.select",
+        "command": "beebvsc.target.select",
         "key": "f6",
         "mac": "f6"
       },
       {
-        "command": "extension.target.run",
+        "command": "beebvsc.target.run",
         "key": "Ctrl+Shift+T",
         "mac": "Ctrl+Shift+T"
       },
       {
-        "command": "extension.target.run",
+        "command": "beebvsc.target.run",
         "key": "F9",
         "mac": "F9"
       },
       {
-        "command": "extension.target.build",
+        "command": "beebvsc.target.build",
         "key": "F7",
         "mac": "F7"
       },

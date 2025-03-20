@@ -153,25 +153,25 @@ export function activate(context: ExtensionContext) {
 
   // Create a new build target
   context.subscriptions.push(
-    commands.registerCommand('extension.target.create', () => {
+    commands.registerCommand('beebvsc.target.create', () => {
       createTargetCommand()
     }),
   )
   // Set a new default build target
   context.subscriptions.push(
-    commands.registerCommand('extension.target.select', () => {
+    commands.registerCommand('beebvsc.target.select', () => {
       selectTargetCommand()
     }),
   )
   // Run (Test) the current build target - just a wrapper for the "Run test task"
   context.subscriptions.push(
-    commands.registerCommand('extension.target.run', () => {
+    commands.registerCommand('beebvsc.target.run', () => {
       commands.executeCommand('workbench.action.tasks.test')
     }),
   )
   // Build the current target - just a wrapper for the "Run build task"
   context.subscriptions.push(
-    commands.registerCommand('extension.target.build', () => {
+    commands.registerCommand('beebvsc.target.build', () => {
       commands.executeCommand('workbench.action.tasks.build')
     }),
   )
@@ -194,7 +194,7 @@ export function activate(context: ExtensionContext) {
       //WIP
       context.subscriptions.push(
         commands.registerCommand(
-          'extension.emulator.option1',
+          'beebvsc.emulator.option1',
           (contextSelection: Uri, allSelections: Uri[]) => {
             window.showInformationMessage(
               'BeebVSC: extension.emulator.option1 selected',
@@ -204,7 +204,7 @@ export function activate(context: ExtensionContext) {
       )
       context.subscriptions.push(
         commands.registerCommand(
-          'extension.emulator.option2',
+          'beebvsc.emulator.option2',
           (contextSelection: Uri, allSelections: Uri[]) => {
             window.showInformationMessage(
               'BeebVSC: extension.emulator.option2 selected',
@@ -216,7 +216,7 @@ export function activate(context: ExtensionContext) {
 
     context.subscriptions.push(
       commands.registerCommand(
-        'extension.emulator.start',
+        'beebvsc.emulator.start',
         (contextSelection: Uri | undefined, allSelections: Uri[]) => {
           EmulatorPanel.show(
             context.extensionPath,
@@ -229,7 +229,7 @@ export function activate(context: ExtensionContext) {
 
     // Register the custom command
     context.subscriptions.push(
-      commands.registerCommand('extension.createSourceMap', async () => {
+      commands.registerCommand('beebvsc.createSourceMap', async () => {
         // get file name of currently displayed file
         const editor = window.activeTextEditor
         if (!editor) {
@@ -247,7 +247,7 @@ export function activate(context: ExtensionContext) {
     // Debug the current file
     context.subscriptions.push(
       commands.registerCommand(
-        'extension.jsbeebdebugger.debug',
+        'beebvsc.jsbeebdebugger.debug',
         (contextSelection: Uri | undefined, allSelections: Uri[]) => {
           EmulatorPanel.show(
             context.extensionPath,
