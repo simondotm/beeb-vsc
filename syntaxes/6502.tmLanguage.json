@@ -110,8 +110,7 @@
     "quotes": {
       "patterns": [
         {
-          "begin": "'",
-          "end": "'",
+          "match": "(?i)'(?:[^']|\\')'",
           "name": "string.quoted.single"
         },
         {
