@@ -143,7 +143,7 @@
     "operators": {
       "patterns": [
         {
-          "match": "(?i)[+\\-*/%!|^=~\\:&<>]|equ|\\.(and|x?or|not|(lo|hi)(?=\\s*\\())",
+          "match": "(?i)[+\\-*/%!|^=~\\:&<>]|\\.(and|x?or|not|(lo|hi)(?=\\s*\\())",
           "name": "keyword.operators"
         }
       ]
