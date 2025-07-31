@@ -3802,7 +3802,7 @@ export class LineParser {
   private HandleEqub(): void {
     const args = new ArgListParser(this)
     let value = args.ParseValue().AcceptUndef()
-    // eslint-disable-next-line no-constant-condition
+
     while (true) {
       if (typeof value.Value() === 'string') {
         // handle equs
@@ -3842,10 +3842,10 @@ export class LineParser {
   private HandleEqud(): void {
     const args = new ArgListParser(this)
     let value = args.ParseInt().AcceptUndef()
-    // eslint-disable-next-line no-constant-condition
+
     if (typeof value.Value() === 'number') {
       const number = value.Value() as integer
-      // eslint-disable-next-line no-constant-condition
+
       while (true) {
         try {
           ObjectCode.Instance.PutByte(number & 0xff)
@@ -3886,7 +3886,7 @@ export class LineParser {
   private HandleEquw(): void {
     const args = new ArgListParser(this)
     let value = args.ParseInt().AcceptUndef().Maximum(0xffff).Value() as number
-    // eslint-disable-next-line no-constant-condition
+
     while (true) {
       try {
         ObjectCode.Instance.PutByte(value & 0xff)
@@ -3907,7 +3907,6 @@ export class LineParser {
     args.CheckComplete()
   }
   private HandleAssert(): void {
-    // eslint-disable-next-line no-constant-condition
     while (true) {
       try {
         // Take a copy of the column before evaluating the expression so
@@ -4765,9 +4764,7 @@ export class LineParser {
         this._column - 1,
       )
     }
-    this._valueStack[this._valueStackPtr - 2] = Math.floor(
-      values[0] / values[1],
-    )
+    this._valueStack[this._valueStackPtr - 2] = values[0] / values[1]
     this._valueStackPtr--
   }
   private EvalDiv(): void {
