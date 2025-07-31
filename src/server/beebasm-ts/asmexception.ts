@@ -1,24 +1,24 @@
 /*************************************************************************************************/
 /**
-	Derived from asmexception.cpp/h
+  Derived from asmexception.cpp/h
 
-	Exception handling for the app
+  Exception handling for the app
 
 
-	Copyright (C) Rich Talbot-Watkins 2007 - 2012
+  Copyright (C) Rich Talbot-Watkins 2007 - 2012
 
-	This file is part of BeebAsm.
+  This file is part of BeebAsm.
 
-	BeebAsm is free software: you can redistribute it and/or modify it under the terms of the GNU
-	General Public License as published by the Free Software Foundation, either version 3 of the
-	License, or (at your option) any later version.
+  BeebAsm is free software: you can redistribute it and/or modify it under the terms of the GNU
+  General Public License as published by the Free Software Foundation, either version 3 of the
+  License, or (at your option) any later version.
 
-	BeebAsm is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
-	even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-	GNU General Public License for more details.
+  BeebAsm is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
+  even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
 
-	You should have received a copy of the GNU General Public License along with BeebAsm, as
-	COPYING.txt.  If not, see <http://www.gnu.org/licenses/>.
+  You should have received a copy of the GNU General Public License along with BeebAsm, as
+  COPYING.txt.  If not, see <http://www.gnu.org/licenses/>.
 */
 /*************************************************************************************************/
 
@@ -319,6 +319,13 @@ export class SyntaxError_BadStep extends SyntaxError {
     Object.setPrototypeOf(this, SyntaxError_BadStep.prototype)
   }
   message = 'Step value cannot be zero.'
+}
+export class SyntaxError_BadForLoop extends SyntaxError {
+  constructor(line: string, column: number) {
+    super(line, column)
+    Object.setPrototypeOf(this, SyntaxError_BadForLoop.prototype)
+  }
+  message = 'FOR loop not correctly formed.'
 }
 export class SyntaxError_NextWithoutFor extends SyntaxError {
   constructor(line: string, column: number) {
