@@ -2,6 +2,10 @@
 
 See [Releases on Github](https://github.com/simondotm/beeb-vsc/releases) for full release history.
 
+### 0.3.5
+ - Fix evaluation of division in expressions to not floor the result
+ - Avoid infinite loop possibility with FOR loops inside macros
+
 ### 0.3.4
  - Bump versions for tar-fs, undici, serialize-javascript, mocha and esbuild [@dependabot]
  - Add project identifier `beebvsc` to commands
