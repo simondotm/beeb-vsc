@@ -541,6 +541,11 @@ export class SourceCode {
     if (thisFor.step === 0) {
       throw new AsmException.SyntaxError_NextWithoutFor(line, column)
     }
+    // Can rarely get this if a macro has a FOR loop inside a macro
+    // and with parameters not passed to the macro
+    if (thisFor.current === undefined || thisFor.end === undefined) {
+      throw new AsmException.SyntaxError_BadForLoop(line, column)
+    }
 
     thisFor.current += thisFor.step
     if (
