@@ -26,6 +26,7 @@ import { AST } from '../ast'
 import { FileHandler } from '../filehandler'
 import { SourceMap } from '../../types/shared/debugsource'
 import { SourceCode } from './sourcecode'
+import { DocumentContext } from '../documentContext'
 import { Diagnostic, DocumentLink, URI } from 'vscode-languageserver'
 
 export class SourceFile extends SourceCode {
@@ -37,8 +38,9 @@ export class SourceFile extends SourceCode {
     trees: Map<string, AST[]>,
     links: Map<string, DocumentLink[]>,
     callPoint: SourceMap | null,
+    context: DocumentContext,
   ) {
-    super(contents, 0, parent, diagnostics, uri, trees, links, callPoint)
+    super(contents, 0, parent, diagnostics, uri, trees, links, callPoint, context)
     // set self-reference in source to parent map if this is a root file
     if (parent === null) {
       FileHandler.Instance.SetTargetFileName(uri, uri)

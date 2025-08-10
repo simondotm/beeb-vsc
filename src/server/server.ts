@@ -6,31 +6,23 @@ import {
   TextDocumentSyncKind,
   InitializeResult,
   ConfigurationItem,
-  DocumentLink,
   Files,
   RequestType,
 } from 'vscode-languageserver/node'
 import { TextDocument } from 'vscode-languageserver-textdocument'
 import { CompletionProvider, SignatureProvider } from './completions'
-import { SymbolTable } from './beebasm-ts/symboltable'
-import { GlobalData } from './beebasm-ts/globaldata'
-import { ObjectCode } from './beebasm-ts/objectcode'
 import { SourceMapFile } from '../types/shared/debugsource'
 import { SourceFile } from './beebasm-ts/sourcefile'
 import { RenameProvider, SymbolProvider } from './symbolhandler'
-import { MacroTable } from './beebasm-ts/macro'
 import { FileHandler, URItoVSCodeURI } from './filehandler'
 import { HoverProvider } from './hoverprovider'
-import { AST } from './ast'
 import { SemanticTokensProvider } from './semantictokenprovider'
 import { InlayHintsProvider } from './inlayhintsprovider'
+import { DocumentContext } from './documentContext'
 import * as path from 'path'
 import { writeFileSync } from 'fs'
 
 const connection = createConnection(ProposedFeatures.all)
-const trees: Map<string, AST[]> = new Map<string, AST[]>()
-const links: Map<string, DocumentLink[]> = new Map<string, DocumentLink[]>()
-// GlobalData and ObjectCode objects are static and will be set up when called in ParseDocument
 
 // Define the custom request type for requesting a source map
 const SourceMapRequestType = new RequestType<{ text: string }, string, void>(
@@ -94,22 +86,10 @@ connection.onInitialized(() => {
   })
 })
 
-const inlayHintsProvider = new InlayHintsProvider(trees)
+const inlayHintsProvider = new InlayHintsProvider()
 connection.languages.inlayHint.on(
   inlayHintsProvider.on.bind(inlayHintsProvider),
 )
-
-// connection.onDidChangeConfiguration((change) => {
-//   // Revalidate all open text documents
-//   // Only calling once as always start from root document and that will pick up others via INCLUDE statements
-//   const temp = FileHandler.Instance.documents.all().at(0)
-//   if (temp !== undefined) {
-//     ParseDocument(temp)
-//   }
-// })
-
-// FileHandler.Instance.documents.onDidClose((e) => {
-// })
 
 // The content of a text document has changed. This event is emitted
 // when the text document first opened or when its content has changed.
@@ -186,13 +166,14 @@ async function ParseFromRoot(textDocument: TextDocument): Promise<void> {
 
   // Check if the document is in the sourceFilePath list
   if (sourceFilePath.includes(uri)) {
-    await ParseDocument(uri, uri)
+    await ParseDocument(uri, uri, FileHandler.Instance.getContext(uri))
     return
   }
 
   // Parse each root in turn, until find the one that contains the document
   for (const file of sourceFilePath) {
-    await ParseDocument(file, textDocument.uri)
+    const context = FileHandler.Instance.getContext(file)
+    await ParseDocument(file, textDocument.uri, context)
     // check if the document is in this root
     const root = FileHandler.Instance.GetTargetFileName(uri)
     if (root === undefined) {
@@ -207,6 +188,7 @@ async function ParseFromRoot(textDocument: TextDocument): Promise<void> {
 async function ParseDocument(
   sourceFilePath: string,
   activeFile: string,
+  context: DocumentContext,
 ): Promise<void> {
   console.log(`Parsing ${activeFile} from root ${sourceFilePath}`)
   // map from uri to diagnostics
@@ -220,23 +202,22 @@ async function ParseDocument(
     console.log(`Error reading file ${sourceFilePath}: ${error}`)
     return
   }
-  SymbolTable.Instance.Reset()
-  MacroTable.Instance.Reset()
-  ObjectCode.Instance.Reset()
+  context.reset();
   for (let pass = 0; pass < 2; pass++) {
-    GlobalData.Instance.SetPass(pass)
-    ObjectCode.Instance.InitialisePass()
-    GlobalData.Instance.ResetForId()
-    trees.clear()
-    links.clear()
+    context.globalData.SetPass(pass)
+    context.objectCode.InitialisePass()
+    context.globalData.ResetForId()
+    context.trees.clear()
+    context.links.clear()
     const input = new SourceFile(
       text,
       null,
       diagnostics,
       sourceFilePath,
-      trees,
-      links,
+      context.trees,
+      context.links,
       null,
+      context,
     )
     input.Process()
   }
@@ -269,7 +250,8 @@ connection.onDidChangeWatchedFiles((_change) => {
   const filenames = getInfoFromSettings()
   filenames.then((files): void => {
     files.forEach((file) => {
-      ParseDocument(file, '')
+      const context = FileHandler.Instance.getContext(file)
+      ParseDocument(file, '', context)
     })
   })
   console.log('Settings.json update event received.')
@@ -278,12 +260,13 @@ connection.onDidChangeWatchedFiles((_change) => {
 // Handle the source map request
 connection.onRequest(SourceMapRequestType, async (params) => {
   console.log(`Received source map request for file: ${params.text}`)
-  const result = await SaveSourceMap(params.text)
+  const context = FileHandler.Instance.getContext(params.text)
+  const result = await SaveSourceMap(params.text, context)
   const response = `Source map saved: ${result}`
   return response
 })
 
-async function SaveSourceMap(activeFile: string): Promise<string | null> {
+async function SaveSourceMap(activeFile: string, context: DocumentContext): Promise<string | null> {
   const uri = URItoVSCodeURI(activeFile)
   const root = FileHandler.Instance.GetTargetFileName(uri)
   if (root === undefined) {
@@ -294,7 +277,7 @@ async function SaveSourceMap(activeFile: string): Promise<string | null> {
   const relative = path.relative(currentDir, root)
   const mapFile = relative + '.map'
 
-  const sourceMap = ObjectCode.Instance.GetSourceMap()
+  const sourceMap = context.objectCode.GetSourceMap()
 
   const output: SourceMapFile = {
     sources: {},
@@ -309,8 +292,8 @@ async function SaveSourceMap(activeFile: string): Promise<string | null> {
     }
   })
   output.sources = FileHandler.Instance.GetURIRefs()
-  output.labels = SymbolTable.Instance.GetAllLabels()
-  output.symbols = SymbolTable.Instance.GetAllSymbols()
+  output.labels = context.symbolTable.GetAllLabels()
+  output.symbols = context.symbolTable.GetAllSymbols()
 
   const sourceMapString = JSON.stringify(output, null, 2)
 
@@ -330,7 +313,7 @@ connection.onCompletionResolve(
   completionHandler.onCompletionResolve.bind(completionHandler),
 )
 // Setup signature help handling
-const signatureHandler = new SignatureProvider(FileHandler.Instance.documents)
+const signatureHandler = new SignatureProvider()
 connection.onSignatureHelp(
   signatureHandler.onSignatureHelp.bind(signatureHandler),
 )
@@ -352,18 +335,19 @@ connection.onRenameRequest(renameProvider.onRename.bind(renameProvider))
 // TODO - add document link provider for INCBIN, PUTFILE statements?
 // Those may not have file handlers but could still link to them and leave it to the user
 connection.onDocumentLinks((params) => {
+  const context = FileHandler.Instance.getContext(params.textDocument.uri)
   const doc = params.textDocument.uri
-  const docLinks = links.get(doc)
+  const docLinks = context.links.get(doc)
   if (docLinks !== undefined) {
     return docLinks
   }
   return []
 })
 
-const hoverHandler = new HoverProvider(trees)
+const hoverHandler = new HoverProvider()
 connection.onHover(hoverHandler.onHover.bind(hoverHandler))
 
-const semanticTokensProvider = new SemanticTokensProvider(trees)
+const semanticTokensProvider = new SemanticTokensProvider()
 connection.languages.semanticTokens.on(
   semanticTokensProvider.on.bind(semanticTokensProvider),
 )

@@ -1,17 +1,16 @@
 import { SemanticTokensParams } from 'vscode-languageserver'
-import { AST, GetSemanticTokens } from './ast'
-import { URItoVSCodeURI } from './filehandler'
+import { GetSemanticTokens } from './ast'
+import { FileHandler, URItoVSCodeURI } from './filehandler'
 
 export class SemanticTokensProvider {
-  private trees: Map<string, AST[]>
 
-  constructor(trees: Map<string, AST[]>) {
-    this.trees = trees
+  constructor() {
   }
 
   on(params: SemanticTokensParams): { data: number[] } {
     const doc = URItoVSCodeURI(params.textDocument.uri)
-    const asts = this.trees.get(doc)
+    const context = FileHandler.Instance.getContext(doc)
+    const asts = context.trees.get(doc)
     if (asts === undefined) {
       return { data: [] }
     }

@@ -12,27 +12,27 @@ import {
   ReferenceParams,
   DefinitionParams,
 } from 'vscode-languageserver/node'
-import { SymbolTable } from './beebasm-ts/symboltable'
+import { DocumentContext } from './documentContext'
 import { FileHandler, URItoReference } from './filehandler'
-import { MacroTable } from './beebasm-ts/macro'
 
 export class RenameProvider {
   constructor() { }
 
   onPrepareRename(params: PrepareRenameParams): Range | null {
-    const textDocument = FileHandler.Instance.documents.get(
+    const textDocument = FileHandler.Instance.GetDocumentText(
       params.textDocument.uri,
     )
     const uri = params.textDocument.uri
+    const context = FileHandler.Instance.getContext(uri)
     const position = params.position
     if (textDocument) {
-      const currentLine = textDocument.getText().split(/\r?\n/g)[position.line]
+      const currentLine = textDocument.split(/\r?\n/g)[position.line]
       const symbolname = GetTargetedSymbol(currentLine, position)
       if (symbolname === null) {
         return null
       }
       // lookup symbol in symbol table to confirm it exists
-      const [matched, _fullSymbolName] = SymbolTable.Instance.GetSymbolByLine(
+      const [matched, _fullSymbolName] = context.symbolTable.GetSymbolByLine(
         symbolname,
         uri,
         position.line,
@@ -51,21 +51,22 @@ export class RenameProvider {
 
   onRename(params: RenameParams): WorkspaceEdit | null {
     // Can assume symbol is valid for rename because use prepareRename first
-    const textDocument = FileHandler.Instance.documents.get(
+    const textDocument = FileHandler.Instance.GetDocumentText(
       params.textDocument.uri,
     )
     const uri = params.textDocument.uri
+    const context = FileHandler.Instance.getContext(uri)
     // const version = textDocument?.version
     const position = params.position
     if (!textDocument) {
       return null
     }
-    const currentLine = textDocument.getText().split(/\r?\n/g)[position.line]
+    const currentLine = textDocument.split(/\r?\n/g)[position.line]
     const symbolname = GetTargetedSymbol(currentLine, position)
     if (symbolname === null) {
       return null
     }
-    const [matched, _] = SymbolTable.Instance.GetSymbolByLine(
+    const [matched, _] = context.symbolTable.GetSymbolByLine(
       symbolname,
       uri,
       position.line,
@@ -73,7 +74,7 @@ export class RenameProvider {
     if (matched === undefined) {
       return null
     }
-    const references = SymbolTable.Instance.GetReferences(symbolname)
+    const references = context.symbolTable.GetReferences(symbolname)
     if (references === undefined) {
       return null
     }
@@ -122,12 +123,13 @@ export class SymbolProvider {
   // TODO - consider to change symbol to type outerLabel.innerLabel instead of label_@...
   // Might not be possible, depends on label style of programmer
   onDocumentSymbol(params: DocumentSymbolParams): DocumentSymbol[] | null {
-    const textDocument = FileHandler.Instance.documents.get(
+    const textDocument = FileHandler.Instance.GetDocumentText(
       params.textDocument.uri,
     )
     const uri = params.textDocument.uri
+    const context = FileHandler.Instance.getContext(uri)
     if (textDocument) {
-      const symbols = SymbolTable.Instance.GetSymbols()
+      const symbols = context.symbolTable.GetSymbols()
       const symbolList: DocumentSymbol[] = []
       symbols.forEach((symboldata, symbolname) => {
         if (symboldata.GetLocation().uri === uri) {
@@ -143,7 +145,7 @@ export class SymbolProvider {
         }
       })
       // add macros
-      const macros = MacroTable.Instance.GetMacros()
+      const macros = context.macroTable.GetMacros()
       macros.forEach((macro, macroName) => {
         if (macro.GetLocation().uri === uri) {
           symbolList.push({
@@ -161,16 +163,17 @@ export class SymbolProvider {
   }
 
   onReferences(params: ReferenceParams): Location[] | null {
-    const textDocument = FileHandler.Instance.documents.get(
+    const textDocument = FileHandler.Instance.GetDocumentText(
       params.textDocument.uri,
     )
     const uri = params.textDocument.uri
+    const context = FileHandler.Instance.getContext(uri)
     const location = params.position
     if (textDocument) {
-      const currentLine = textDocument.getText().split(/\r?\n/g)[location.line] // Would be nice to get just the line using a range argument but not sure what end position would be
-      const refs = FindReferences(currentLine, uri, location)
+      const currentLine = textDocument.split(/\r?\n/g)[location.line] // Would be nice to get just the line using a range argument but not sure what end position would be
+      const refs = FindReferences(currentLine, uri, location, context)
       const allRefs: Location[] = []
-      const definition = FindDefinition(currentLine, uri, location)
+      const definition = FindDefinition(currentLine, uri, location, context)
       if (definition !== null) {
         allRefs.push(definition)
       }
@@ -185,14 +188,15 @@ export class SymbolProvider {
   }
 
   onDefinition(params: DefinitionParams): Location | null {
-    const textDocument = FileHandler.Instance.documents.get(
+    const textDocument = FileHandler.Instance.GetDocumentText(
       params.textDocument.uri,
     )
     const uri = params.textDocument.uri
+    const context = FileHandler.Instance.getContext(uri)
     const location = params.position
     if (textDocument) {
-      const currentLine = textDocument.getText().split(/\r?\n/g)[location.line]
-      return FindDefinition(currentLine, uri, location)
+      const currentLine = textDocument.split(/\r?\n/g)[location.line]
+      return FindDefinition(currentLine, uri, location, context)
     }
     return null
   }
@@ -235,6 +239,7 @@ export function FindDefinition(
   currentLine: string,
   uri: string,
   location: Position,
+  context: DocumentContext,
 ): Location | null {
   let result: Location
   const symbolname = GetTargetedSymbol(currentLine, location)
@@ -243,7 +248,7 @@ export function FindDefinition(
   }
 
   // lookup symbol in symbol table
-  const [matched, _] = SymbolTable.Instance.GetSymbolByLine(
+  const [matched, _] = context.symbolTable.GetSymbolByLine(
     symbolname,
     uri,
     location.line,
@@ -253,7 +258,7 @@ export function FindDefinition(
     return result
   }
   // lookup macro in macro table
-  const macro = MacroTable.Instance.Get(symbolname)
+  const macro = context.macroTable.Get(symbolname)
   if (macro) {
     result = macro.GetLocation()
     return result
@@ -265,28 +270,29 @@ export function FindReferences(
   currentLine: string,
   uri: string,
   location: Position,
+  context: DocumentContext,
 ): Location[] | null {
   const symbolname = GetTargetedSymbol(currentLine, location)
   if (symbolname === null) {
     return null
   }
   // lookup symbol in symbol table
-  const [matched, fullSymbolName] = SymbolTable.Instance.GetSymbolByLine(
+  const [matched, fullSymbolName] = context.symbolTable.GetSymbolByLine(
     symbolname,
     uri,
     location.line,
   )
   if (matched !== undefined) {
-    const refs = SymbolTable.Instance.GetReferences(fullSymbolName)
+    const refs = context.symbolTable.GetReferences(fullSymbolName)
     if (refs !== undefined) {
       return refs
     }
   }
 
   // lookup macro in macro table
-  const isMacro = MacroTable.Instance.Exists(symbolname)
+  const isMacro = context.macroTable.Exists(symbolname)
   if (isMacro) {
-    const refs = MacroTable.Instance.GetReferences(symbolname)
+    const refs = context.macroTable.GetReferences(symbolname)
     if (refs !== undefined) {
       return refs
     }

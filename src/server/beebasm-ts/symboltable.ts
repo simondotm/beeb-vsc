@@ -21,9 +21,8 @@
 /*************************************************************************************************/
 
 import { integer, Location } from 'vscode-languageserver'
-import { GlobalData } from './globaldata'
-import { ObjectCode } from './objectcode'
 import { LabelMap } from '../../types/shared/debugsource'
+import { DocumentContext } from '../documentContext'
 
 // can't use Symbol as a type name because it's a reserved word
 export class SymbolData {
@@ -72,7 +71,6 @@ const noLocation: Location = {
 }
 
 export class SymbolTable {
-  private static _instance: SymbolTable | null = null
   private _labelScopes: number // Just like For stack index?
   private readonly _map: Map<string, SymbolData> = new Map<string, SymbolData>()
   private _lastLabel: Label = { _addr: 0, _scope: 0, _identifier: '' }
@@ -80,17 +78,12 @@ export class SymbolTable {
   private _labelList: Label[] = []
   private _scopeDetails: ScopeDetails[] = []
   private _references = new Map<string, Location[]>()
+  private _context: DocumentContext
 
-  private constructor() {
-    this.Reset()
-    this._labelScopes = 0
-  }
-
-  public static get Instance() {
-    if (this._instance === null) {
-      this._instance = new SymbolTable()
-    }
-    return this._instance
+  constructor(context: DocumentContext) {
+    this._context = context;
+    this.Reset();
+    this._labelScopes = 0;
   }
 
   // get all symbols where location is not noLocation
@@ -247,8 +240,8 @@ export class SymbolTable {
   AddLabel(symbol: string): void {
     // Note: this data is not used (beebasm uses it for dumping label list to file)
     // Keeping around for now in case it's useful in debugging
-    if (GlobalData.Instance.IsSecondPass()) {
-      const addr = ObjectCode.Instance.GetPC()
+    if (this._context.globalData.IsSecondPass()) {
+      const addr = this._context.objectCode.GetPC()
       const identifier =
         (this._labelStack.length === 0
           ? ''
@@ -269,8 +262,8 @@ export class SymbolTable {
   }
 
   PushBrace(uri: string, startLine: number, forID: number): void {
-    if (GlobalData.Instance.IsSecondPass()) {
-      const addr = ObjectCode.Instance.GetPC()
+    if (this._context.globalData.IsSecondPass()) {
+      const addr = this._context.objectCode.GetPC()
       if (this._lastLabel!._addr !== addr) {
         const label = '._' + (this._labelScopes - this._lastLabel!._scope)
         this._lastLabel!._identifier =
@@ -287,7 +280,7 @@ export class SymbolTable {
   }
 
   PopScope(endLine = -1, forID = -1): void {
-    if (GlobalData.Instance.IsSecondPass()) {
+    if (this._context.globalData.IsSecondPass()) {
       this._labelStack.pop()
       this._lastLabel =
         this._labelStack.length === 0
@@ -306,8 +299,8 @@ export class SymbolTable {
     startLine = -1,
     forID = -1,
   ): void {
-    if (GlobalData.Instance.IsSecondPass()) {
-      const addr = ObjectCode.Instance.GetPC()
+    if (this._context.globalData.IsSecondPass()) {
+      const addr = this._context.objectCode.GetPC()
       symbol = symbol.substr(0, symbol.indexOf('@'))
       const label = '._' + symbol + '_' + value
       this._lastLabel!._identifier += label

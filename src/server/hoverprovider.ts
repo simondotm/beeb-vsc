@@ -13,20 +13,17 @@ import {
   beebasmCommands,
   beebasmFunctions,
 } from './shareddata'
-import { SymbolTable } from './beebasm-ts/symboltable'
 import { FileHandler } from './filehandler'
-import { MacroTable } from './beebasm-ts/macro'
 
 export class HoverProvider {
-  private trees: Map<string, AST[]>
 
-  constructor(trees: Map<string, AST[]>) {
-    this.trees = trees
+  constructor() {
   }
 
   onHover(params: HoverParams): Hover | null {
     const uri = params.textDocument.uri
-    const docTrees = this.trees.get(uri)
+    const context = FileHandler.Instance.getContext(uri)
+    const docTrees = context.trees.get(uri)
     const location = params.position
     if (docTrees !== undefined) {
       const lineTree = docTrees[location.line]
@@ -84,7 +81,7 @@ Return: ${cmd.return}`,
         // Symbols and labels
         const symbol = GetSymbolOrLabelFromAST(lineTree, location.character)
         if (symbol !== '') {
-          const [defn, _] = SymbolTable.Instance.GetSymbolByLine(
+          const [defn, _] = context.symbolTable.GetSymbolByLine(
             symbol,
             uri,
             location.line,
@@ -110,7 +107,7 @@ Return: ${cmd.return}`,
         // Macro calls
         const macroName = GetMacroCallFromAST(lineTree, location.character)
         if (macroName !== '') {
-          const macro = MacroTable.Instance.Get(macroName)
+          const macro = context.macroTable.Get(macroName)
           if (macro === undefined) {
             return null
           }

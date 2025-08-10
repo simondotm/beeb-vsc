@@ -1,6 +1,5 @@
 import * as assert from 'assert'
 import { suite, test } from 'mocha'
-
 import { LineParser } from '../beebasm-ts/lineparser'
 import { SourceCode } from '../beebasm-ts/sourcecode'
 import * as AsmException from '../beebasm-ts/asmexception'
@@ -9,35 +8,34 @@ import {
   DocumentLink,
   TextDocumentPositionParams,
 } from 'vscode-languageserver'
-import { GlobalData } from '../beebasm-ts/globaldata'
-import { SymbolTable } from '../beebasm-ts/symboltable'
-import { ObjectCode } from '../beebasm-ts/objectcode'
 import { CompletionProvider, SignatureProvider } from '../completions'
 import { FindDefinition, FindReferences } from '../symbolhandler'
-import { MacroTable } from '../beebasm-ts/macro'
 import * as AST from '../ast'
 import { InlayHintsProvider } from '../inlayhintsprovider'
+import { FileHandler } from '../filehandler'
 
 const diagnostics = new Map<string, Diagnostic[]>()
 const trees = new Map<string, AST.AST[]>()
 const links = new Map<string, DocumentLink[]>()
+const context = FileHandler.Instance.getContext('')
+
 // fixture to reset symbol table
 beforeEach(function () {
-  SymbolTable.Instance.Reset()
-  MacroTable.Instance.Reset()
-  ObjectCode.Instance.Reset()
-  GlobalData.Instance.ResetForId()
-  GlobalData.Instance.SetPass(0)
+  context.symbolTable.Reset()
+  context.macroTable.Reset()
+  context.objectCode.Reset()
+  context.globalData.ResetForId()
+  context.globalData.SetPass(0)
   diagnostics.set('', [])
 })
 
 // Helpers
 function Run2Passes(code: string) {
   for (let pass = 0; pass < 2; pass++) {
-    GlobalData.Instance.SetPass(pass)
-    ObjectCode.Instance.InitialisePass()
-    GlobalData.Instance.ResetForId()
-    const input = new SourceCode(code, 0, null, diagnostics, '', trees, links)
+    context.globalData.SetPass(pass)
+    context.objectCode.InitialisePass()
+    context.globalData.ResetForId()
+    const input = new SourceCode(code, 0, null, diagnostics, '', trees, links, null, context)
     input.Process()
   }
 }
@@ -337,8 +335,10 @@ function testSymbolAssignmentNumber() {
     '',
     trees,
     links,
+    null,
+    context,
   )
-  const parser = new LineParser(sourceCode, sourceCode.GetLine(1), 1)
+  const parser = new LineParser(sourceCode, sourceCode.GetLine(1), 1, context)
   parser.Process()
   const [_found, result] = sourceCode.GetSymbolValue('a')
   assert.equal(result, 10)
@@ -353,8 +353,10 @@ function testSymbolAssignmentString() {
     '',
     trees,
     links,
+    null,
+    context
   )
-  const parser = new LineParser(sourceCode, sourceCode.GetLine(3), 3)
+  const parser = new LineParser(sourceCode, sourceCode.GetLine(3), 3, context)
   parser.Process()
   const [_found, result] = sourceCode.GetSymbolValue('c')
   assert.equal(result, 'hello')
@@ -369,8 +371,10 @@ function testSymbolAssignmentHex() {
     '',
     trees,
     links,
+    null,
+    context
   )
-  const parser = new LineParser(sourceCode, sourceCode.GetLine(7), 7)
+  const parser = new LineParser(sourceCode, sourceCode.GetLine(7), 7, context)
   parser.Process()
   const [_found, result] = sourceCode.GetSymbolValue('oswrch')
   assert.equal(result, 0xffee)
@@ -385,8 +389,10 @@ function testSymbolAssignmentMultistatement() {
     '',
     trees,
     links,
+    null,
+    context
   )
-  const parser = new LineParser(sourceCode, sourceCode.GetLine(2), 2)
+  const parser = new LineParser(sourceCode, sourceCode.GetLine(2), 2, context)
   parser.Process()
   const [_found1, result1] = sourceCode.GetSymbolValue('b')
   assert.equal(result1, 20)
@@ -403,9 +409,11 @@ function testSymbolAssignmentUpdated() {
     '',
     trees,
     links,
+    null,
+    context
   )
-  const parser1 = new LineParser(sourceCode, sourceCode.GetLine(4), 4)
-  const parser2 = new LineParser(sourceCode, sourceCode.GetLine(5), 5)
+  const parser1 = new LineParser(sourceCode, sourceCode.GetLine(4), 4, context)
+  const parser2 = new LineParser(sourceCode, sourceCode.GetLine(5), 5, context)
   parser1.Process()
   try {
     parser2.Process()
@@ -427,8 +435,10 @@ function testSymbolAssignmentInvalid() {
     '',
     trees,
     links,
+    null,
+    context
   )
-  const parser = new LineParser(sourceCode, sourceCode.GetLine(6), 6)
+  const parser = new LineParser(sourceCode, sourceCode.GetLine(6), 6, context)
   try {
     parser.Process()
   } catch (e) {
@@ -458,6 +468,8 @@ function testLabelAllGlobalLevels() {
     '',
     trees,
     links,
+    null,
+    context
   )
   sourceCode.Process()
   const [found1, _result1] = sourceCode.GetSymbolValue('loop')
@@ -479,9 +491,11 @@ function testInnerLabel() {
     '',
     trees,
     links,
+    null,
+    context
   )
   for (let i = 0; i < 4; i++) {
-    const parser = new LineParser(sourceCode, sourceCode.GetLine(i), i)
+    const parser = new LineParser(sourceCode, sourceCode.GetLine(i), i, context)
     parser.Process()
   }
   const [found, _result] = sourceCode.GetSymbolValue('inner')
@@ -491,10 +505,11 @@ function testInnerLabel() {
 function test2Pass() {
   const code = 'a = 1'
   for (let pass = 0; pass < 2; pass++) {
-    GlobalData.Instance.SetPass(pass)
-    ObjectCode.Instance.InitialisePass()
-    GlobalData.Instance.ResetForId()
-    const input = new SourceCode(code, 0, null, diagnostics, '', trees, links)
+    context.globalData.SetPass(pass)
+    context.objectCode.InitialisePass()
+    context.globalData.ResetForId()
+
+    const input = new SourceCode(code, 0, null, diagnostics, '', trees, links, null, context)
     input.Process()
   }
   assert.equal(diagnostics.get('')!.length, 0)
@@ -509,6 +524,8 @@ function testLabelReassigned() {
     '',
     trees,
     links,
+    null,
+    context
   )
   sourceCode.Process()
 
@@ -523,7 +540,7 @@ function testFindReferenceToLabel() {
 JSR pressed_left
 .pressed_left`
   Run2Passes(code)
-  const res = FindReferences(code.split('\n')[2], '', { line: 2, character: 4 })
+  const res = FindReferences(code.split('\n')[2], '', { line: 2, character: 4 }, context)
   assert.equal(res!.length, 1)
   assert.equal(res![0].range.start.line, 1)
   assert.equal(res![0].range.start.character, 4)
@@ -534,7 +551,7 @@ function testFindReferenceToNestedLabel() {
 JSR pressed_left
 .pressed_left}`
   Run2Passes(code)
-  const res = FindReferences(code.split('\n')[2], '', { line: 2, character: 4 })
+  const res = FindReferences(code.split('\n')[2], '', { line: 2, character: 4 }, context)
   assert.equal(res!.length, 1)
   assert.equal(res![0].range.start.line, 1)
   assert.equal(res![0].range.start.character, 4)
@@ -544,9 +561,9 @@ function testMultipleFiles() {
   const code1 = '{ a = 1 }'
   const code2 = '{ a = 2 }'
   for (let pass = 0; pass < 2; pass++) {
-    GlobalData.Instance.SetPass(pass)
-    ObjectCode.Instance.InitialisePass()
-    GlobalData.Instance.ResetForId()
+    context.globalData.SetPass(pass)
+    context.objectCode.InitialisePass()
+    context.globalData.ResetForId()
     const input1 = new SourceCode(
       code1,
       0,
@@ -555,6 +572,8 @@ function testMultipleFiles() {
       'file1',
       trees,
       links,
+      null,
+      context
     )
     input1.Process()
     const input2 = new SourceCode(
@@ -565,17 +584,19 @@ function testMultipleFiles() {
       'file2',
       trees,
       links,
+      null,
+      context
     )
     input2.Process()
   }
   // check definition
-  const [symbol1, _fullname1] = SymbolTable.Instance.GetSymbolByLine(
+  const [symbol1, _fullname1] = context.symbolTable.GetSymbolByLine(
     'a',
     'file1',
     0,
   )
   assert.equal(symbol1?.GetValue(), 1)
-  const [symbol2, _fullname2] = SymbolTable.Instance.GetSymbolByLine(
+  const [symbol2, _fullname2] = context.symbolTable.GetSymbolByLine(
     'a',
     'file2',
     0,
@@ -599,8 +620,8 @@ ENDMACRO
   Run2Passes(code)
   assert.equal(diagnostics.get('')!.length, 0)
   // getting error in vscode after changing code i.e. need to parse again
-  SymbolTable.Instance.Reset()
-  MacroTable.Instance.Reset()
+  context.symbolTable.Reset()
+  context.macroTable.Reset()
   Run2Passes(code)
   assert.equal(diagnostics.get('')!.length, 0)
 }
@@ -611,12 +632,12 @@ MACRO TEMP a
   PRINT a
 ENDMACRO`
   Run2Passes(code)
-  const body = MacroTable.Instance.Get('TEMP')?.GetBody()
+  const body = context.macroTable.Get('TEMP')?.GetBody()
   assert.equal(body, '\nPRINT a\n')
 }
 
 function testMismatchedBraces() {
-  const sourceCode = new SourceCode('}', 0, null, diagnostics, '', trees, links)
+  const sourceCode = new SourceCode('}', 0, null, diagnostics, '', trees, links, null, context)
   try {
     sourceCode.Process()
   } catch (e) {
@@ -669,7 +690,7 @@ RTS
 PUTTEXT "BOOT.txt", "!BOOT", &FFFF
 SAVE "code", start, end`
   Run2Passes(code)
-  const labels = SymbolTable.Instance.GetAllLabels()
+  const labels = context.symbolTable.GetAllLabels()
   console.log(labels)
 
   // check labels contains '.start', '.loop', '.exit', '.end'
@@ -686,10 +707,10 @@ function testSkipAndOrg() {
 	`
   try {
     for (let pass = 0; pass < 2; pass++) {
-      GlobalData.Instance.SetPass(pass)
-      ObjectCode.Instance.InitialisePass()
-      GlobalData.Instance.ResetForId()
-      const input = new SourceCode(code, 0, null, diagnostics, '', trees, links)
+      context.globalData.SetPass(pass)
+      context.objectCode.InitialisePass()
+      context.globalData.ResetForId()
+      const input = new SourceCode(code, 0, null, diagnostics, '', trees, links, null, context)
       input.Process()
     }
   } catch (e) {
@@ -700,7 +721,7 @@ function testSkipAndOrg() {
     }
   }
   assert.equal(diagnostics.get('')!.length, 0)
-  const pc = ObjectCode.Instance.GetPC()
+  const pc = context.objectCode.GetPC()
   assert.equal(pc, 0x21)
 }
 
@@ -710,10 +731,10 @@ function testForLoop() {
 	LDA #n
 	NEXT`
   for (let pass = 0; pass < 2; pass++) {
-    GlobalData.Instance.SetPass(pass)
-    ObjectCode.Instance.InitialisePass()
-    GlobalData.Instance.ResetForId()
-    const input = new SourceCode(code, 0, null, diagnostics, '', trees, links)
+    context.globalData.SetPass(pass)
+    context.objectCode.InitialisePass()
+    context.globalData.ResetForId()
+    const input = new SourceCode(code, 0, null, diagnostics, '', trees, links, null, context)
     input.Process()
   }
   assert.equal(diagnostics.get('')!.length, 0, diagnostics.get('')![0]?.message)
@@ -732,6 +753,8 @@ INCLUDE "dumm"`
     '',
     trees,
     links,
+    null,
+    context
   )
   sourceCode.Process()
   const forLevel = sourceCode.GetForLevel()
@@ -757,6 +780,8 @@ NEXT`
     '',
     trees,
     links,
+    null,
+    context
   )
   sourceCode.Process()
   assert.equal(diagnostics.get('')!.length, 0)
@@ -772,6 +797,8 @@ function testAssembler1() {
     '',
     trees,
     links,
+    null,
+    context
   )
   sourceCode.Process()
   assert.equal(diagnostics.get('')!.length, 0)
@@ -787,6 +814,8 @@ function testIndirect() {
     '',
     trees,
     links,
+    null,
+    context,
   )
   sourceCode.Process()
   assert.equal(diagnostics.get('')!.length, 0)
@@ -802,6 +831,8 @@ function testAbsoluteX() {
     '',
     trees,
     links,
+    null,
+    context,
   )
   sourceCode.Process()
   assert.equal(diagnostics.get('')!.length, 0)
@@ -817,6 +848,8 @@ function testMappedCharExpr() {
     '',
     trees,
     links,
+    null,
+    context,
   )
   sourceCode.Process()
   assert.equal(diagnostics.get('')!.length, 0)
@@ -828,10 +861,10 @@ function testReferenceError() {
 	LDA layout, Y
 	`
   for (let pass = 0; pass < 2; pass++) {
-    GlobalData.Instance.SetPass(pass)
-    ObjectCode.Instance.InitialisePass()
-    GlobalData.Instance.ResetForId()
-    const input = new SourceCode(code, 0, null, diagnostics, '', trees, links)
+    context.globalData.SetPass(pass)
+    context.objectCode.InitialisePass()
+    context.globalData.ResetForId()
+    const input = new SourceCode(code, 0, null, diagnostics, '', trees, links, null, context)
     input.Process()
   }
   assert.equal(diagnostics.get('')!.length, 0)
@@ -840,10 +873,10 @@ function testReferenceError() {
 function testLOFunction() {
   const code = 'LDA #LO(640)'
   for (let pass = 0; pass < 2; pass++) {
-    GlobalData.Instance.SetPass(pass)
-    ObjectCode.Instance.InitialisePass()
-    GlobalData.Instance.ResetForId()
-    const input = new SourceCode(code, 0, null, diagnostics, '', trees, links)
+    context.globalData.SetPass(pass)
+    context.objectCode.InitialisePass()
+    context.globalData.ResetForId()
+    const input = new SourceCode(code, 0, null, diagnostics, '', trees, links, null, context)
     input.Process()
   }
   assert.equal(diagnostics.get('')!.length, 0, diagnostics.get('')![0]?.message)
@@ -851,9 +884,9 @@ function testLOFunction() {
 
 function testSymbolLocation() {
   const code = 'a=1: b=2: c=3'
-  const input = new SourceCode(code, 0, null, diagnostics, '', trees, links)
+  const input = new SourceCode(code, 0, null, diagnostics, '', trees, links, null, context)
   input.Process()
-  const syms = SymbolTable.Instance.GetSymbols()
+  const syms = context.symbolTable.GetSymbols()
   let loc = syms.get('a')!.GetLocation()
   assert.equal(loc.range.start.character, 0)
   assert.equal(loc.range.end.character, 1)
@@ -872,14 +905,14 @@ PRINT CALLSTACK$, " : Skipping",al - (P% AND (al - 1)),"at",~P%
 ENDIF
 ALIGN al
 ENDMACRO`
-  const input = new SourceCode(code, 0, null, diagnostics, '', trees, links)
+  const input = new SourceCode(code, 0, null, diagnostics, '', trees, links, null, context)
   input.Process()
   assert.equal(diagnostics.get('')!.length, 0)
 }
 
 function testMapChar() {
   const code = "MAPCHAR ' ','Z', 32"
-  const input = new SourceCode(code, 0, null, diagnostics, '', trees, links)
+  const input = new SourceCode(code, 0, null, diagnostics, '', trees, links, null, context)
   input.Process()
   assert.equal(diagnostics.get('')!.length, 0)
 }
@@ -899,11 +932,11 @@ function testSymbolReference() {
 a=1
 b=a
 `
-  const input = new SourceCode(code, 0, null, diagnostics, '', trees, links)
+  const input = new SourceCode(code, 0, null, diagnostics, '', trees, links, null, context)
   input.Process()
   const currentLine: string = input.GetLine(2)
   const position = { line: 2, character: 2 }
-  const result = FindDefinition(currentLine, '', position)
+  const result = FindDefinition(currentLine, '', position, context)
   assert.notEqual(result, null)
   assert.equal(result!.range.start.line, 1)
   assert.equal(result!.range.start.character, 0)
@@ -929,40 +962,40 @@ d=2
  a=1
 b=a
 `
-  const input = new SourceCode(code, 0, null, diagnostics, '', trees, links)
+  const input = new SourceCode(code, 0, null, diagnostics, '', trees, links, null, context)
   // input.Process();
   for (let pass = 0; pass < 2; pass++) {
-    GlobalData.Instance.SetPass(pass)
-    ObjectCode.Instance.InitialisePass()
-    GlobalData.Instance.ResetForId()
-    const input = new SourceCode(code, 0, null, diagnostics, '', trees, links)
+    context.globalData.SetPass(pass)
+    context.objectCode.InitialisePass()
+    context.globalData.ResetForId()
+    const input = new SourceCode(code, 0, null, diagnostics, '', trees, links, null, context)
     input.Process()
   }
   // check for i within for loop
   let currentLine = input.GetLine(9)
   let position = { line: 9, character: 5 }
-  let result = FindDefinition(currentLine, '', position)
+  let result = FindDefinition(currentLine, '', position, context)
   assert.notEqual(result, null)
   assert.equal(result!.range.start.line, 8)
   assert.equal(result!.range.start.character, 4)
   // check for a within first block
   currentLine = input.GetLine(3)
   position = { line: 3, character: 2 }
-  result = FindDefinition(currentLine, '', position)
+  result = FindDefinition(currentLine, '', position, context)
   assert.notEqual(result, null)
   assert.equal(result!.range.start.line, 2)
   assert.equal(result!.range.start.character, 0)
   // check for a within last block
   currentLine = input.GetLine(15)
   position = { line: 15, character: 2 }
-  result = FindDefinition(currentLine, '', position)
+  result = FindDefinition(currentLine, '', position, context)
   assert.notEqual(result, null)
   assert.equal(result!.range.start.line, 14)
   assert.equal(result!.range.start.character, 1)
   // check for c within nested blocks
   currentLine = input.GetLine(5)
   position = { line: 5, character: 0 }
-  result = FindDefinition(currentLine, '', position)
+  result = FindDefinition(currentLine, '', position, context)
   assert.notEqual(result, null)
   assert.equal(result!.range.start.line, 5)
   assert.equal(result!.range.start.character, 0)
@@ -981,7 +1014,7 @@ NEXT`
   // Check with cursor before first n
   let currentLine = code.split('\n')[2]
   let position = { line: 2, character: 9 }
-  let result = FindDefinition(currentLine, '', position)
+  let result = FindDefinition(currentLine, '', position, context)
   assert.notEqual(result, null)
   assert.equal(
     result!.range.start.line,
@@ -993,7 +1026,7 @@ NEXT`
   // Check with cursor after first n
   currentLine = code.split('\n')[2]
   position = { line: 2, character: 10 }
-  result = FindDefinition(currentLine, '', position)
+  result = FindDefinition(currentLine, '', position, context)
   assert.notEqual(result, null)
   assert.equal(result!.range.start.line, 1)
   assert.equal(result!.range.start.character, 4)
@@ -1001,7 +1034,7 @@ NEXT`
   // Check with cursor before second n
   currentLine = code.split('\n')[5]
   position = { line: 5, character: 9 }
-  result = FindDefinition(currentLine, '', position)
+  result = FindDefinition(currentLine, '', position, context)
   assert.notEqual(result, null)
   assert.equal(result!.range.start.line, 4)
   assert.equal(result!.range.start.character, 4)
@@ -1009,7 +1042,7 @@ NEXT`
   // Check with cursor after second n
   currentLine = code.split('\n')[5]
   position = { line: 5, character: 10 }
-  result = FindDefinition(currentLine, '', position)
+  result = FindDefinition(currentLine, '', position, context)
   assert.notEqual(result, null)
   assert.equal(result!.range.start.line, 4)
   assert.equal(result!.range.start.character, 4)
@@ -1049,13 +1082,13 @@ b = 7283 << 2
 c = 29658 << -2
 d = -1583 << 3`
   Run2Passes(code)
-  const a = SymbolTable.Instance.GetSymbols().get('a')?.GetValue()
+  const a = context.symbolTable.GetSymbols().get('a')?.GetValue()
   assert.equal(a, -16)
-  const b = SymbolTable.Instance.GetSymbols().get('b')?.GetValue()
+  const b = context.symbolTable.GetSymbols().get('b')?.GetValue()
   assert.equal(b, 29132)
-  const c = SymbolTable.Instance.GetSymbols().get('c')?.GetValue()
+  const c = context.symbolTable.GetSymbols().get('c')?.GetValue()
   assert.equal(c, 7414)
-  const d = SymbolTable.Instance.GetSymbols().get('d')?.GetValue()
+  const d = context.symbolTable.GetSymbols().get('d')?.GetValue()
   assert.equal(d, -12664)
 }
 
@@ -1112,7 +1145,7 @@ function testNotFunctionInComments() {
 
 function testASTAssign() {
   const code = 'a=1'
-  const input = new SourceCode(code, 0, null, diagnostics, '', trees, links)
+  const input = new SourceCode(code, 0, null, diagnostics, '', trees, links, null, context)
   input.Process()
   const tree = input.GetTrees().get('')![0]
   assert.equal(tree.children[0].type, AST.ASTType.VariableDeclaration)
@@ -1123,7 +1156,7 @@ function testASTAssign() {
 
 function testASTAssignExpr() {
   const code = 'a=SIN(1+2)'
-  const input = new SourceCode(code, 0, null, diagnostics, '', trees, links)
+  const input = new SourceCode(code, 0, null, diagnostics, '', trees, links, null, context)
   input.Process()
   const tree = input.GetTrees().get('')![0]
   assert.equal(tree.children[0].type, AST.ASTType.VariableDeclaration)
@@ -1136,8 +1169,8 @@ function testASTAssignExpr() {
 
 function testASTCommand() {
   const code = ' PRINT CHR$(6)'
-  const input = new SourceCode(code, 0, null, diagnostics, '', trees, links)
-  const thisLine = new LineParser(input, code, 0)
+  const input = new SourceCode(code, 0, null, diagnostics, '', trees, links, null, context)
+  const thisLine = new LineParser(input, code, 0, context)
   thisLine.Process()
   const tree = thisLine.GetTree()
   assert.equal(tree.children[0].children.length, 1)
@@ -1147,8 +1180,8 @@ function testASTCommand() {
 
 function testASTAssignCommand() {
   const code = 'a=CHR$(6)'
-  const input = new SourceCode(code, 0, null, diagnostics, '', trees, links)
-  const thisLine = new LineParser(input, code, 0)
+  const input = new SourceCode(code, 0, null, diagnostics, '', trees, links, null, context)
+  const thisLine = new LineParser(input, code, 0, context)
   thisLine.Process()
   const tree = thisLine.GetTree()
   assert.equal(tree.children[0].children.length, 1)
@@ -1158,7 +1191,7 @@ function testASTAssignCommand() {
 
 function testAST2Expressions() {
   const code = 'a=1: b=a' // `a=1: b=2`
-  const input = new SourceCode(code, 0, null, diagnostics, '', trees, links)
+  const input = new SourceCode(code, 0, null, diagnostics, '', trees, links, null, context)
   input.Process()
   const tree = input.GetTrees().get('')![0]
   assert.equal(tree.children.length, 3)
@@ -1169,7 +1202,7 @@ function testAST2Expressions() {
 
 function testASTAssembler1() {
   const code = 'RTS'
-  const input = new SourceCode(code, 0, null, diagnostics, '', trees, links)
+  const input = new SourceCode(code, 0, null, diagnostics, '', trees, links, null, context)
   input.Process()
   const tree = input.GetTrees().get('')![0]
   assert.equal(tree.children.length, 1)
@@ -1179,7 +1212,7 @@ function testASTAssembler1() {
 
 function testASTAssembler2() {
   const code = 'LDA #1'
-  const input = new SourceCode(code, 0, null, diagnostics, '', trees, links)
+  const input = new SourceCode(code, 0, null, diagnostics, '', trees, links, null, context)
   input.Process()
   const tree = input.GetTrees().get('')![0]
   assert.equal(tree.children.length, 1)
@@ -1191,7 +1224,7 @@ function testASTAssembler2() {
 
 function testASTAssembler3() {
   const code = 'JSR &FFEE'
-  const input = new SourceCode(code, 0, null, diagnostics, '', trees, links)
+  const input = new SourceCode(code, 0, null, diagnostics, '', trees, links, null, context)
   input.Process()
   const tree = input.GetTrees().get('')![0]
   assert.equal(tree.children.length, 1)
@@ -1203,7 +1236,7 @@ function testASTAssembler3() {
 
 function testASTModeACC() {
   const code = 'ASL A'
-  const input = new SourceCode(code, 0, null, diagnostics, '', trees, links)
+  const input = new SourceCode(code, 0, null, diagnostics, '', trees, links, null, context)
   input.Process()
   const tree = input.GetTrees().get('')![0]
   assert.equal(tree.children.length, 1)
@@ -1215,7 +1248,7 @@ function testASTModeACC() {
 
 function testASTModeINDX() {
   const code = 'LDA (&FF,X)'
-  const input = new SourceCode(code, 0, null, diagnostics, '', trees, links)
+  const input = new SourceCode(code, 0, null, diagnostics, '', trees, links, null, context)
   input.Process()
   const tree = input.GetTrees().get('')![0]
   assert.equal(tree.children[0].children.length, 2)
@@ -1227,7 +1260,7 @@ function testASTModeIND16X() {
   const code = `
 CPU 1 ; set 65C02 mode as IND16,X is not supported on 6502
 JMP (&1000,X)`
-  const input = new SourceCode(code, 0, null, diagnostics, '', trees, links)
+  const input = new SourceCode(code, 0, null, diagnostics, '', trees, links, null, context)
   input.Process()
   const tree = input.GetTrees().get('')![2]
   assert.equal(tree.children[0].children.length, 2)
@@ -1237,7 +1270,7 @@ JMP (&1000,X)`
 
 function testASTEQUB() {
   const code = 'EQUB 1,2,3'
-  const input = new SourceCode(code, 0, null, diagnostics, '', trees, links)
+  const input = new SourceCode(code, 0, null, diagnostics, '', trees, links, null, context)
   input.Process()
   const tree = input.GetTrees().get('')![0]
   assert.equal(tree.children[0].children.length, 3)
@@ -1254,7 +1287,7 @@ function testASTEQUB() {
 // for type contains count which could be useful
 function testASTForLoop() {
   const code = 'FOR n, 0, 1: EQUB n: NEXT'
-  const input = new SourceCode(code, 0, null, diagnostics, '', trees, links)
+  const input = new SourceCode(code, 0, null, diagnostics, '', trees, links, null, context)
   input.Process()
   const tree = input.GetTrees().get('')![0]
   assert.equal(tree.children.length, 5) // includes statement separator
@@ -1266,7 +1299,7 @@ function testASTForLoopMultipleLines() {
   const code = `FOR n, 0, 1
 EQUB n
 NEXT`
-  const input = new SourceCode(code, 0, null, diagnostics, '', trees, links)
+  const input = new SourceCode(code, 0, null, diagnostics, '', trees, links, null, context)
   input.Process()
   const tree = input.GetTrees().get('')![0]
   assert.equal(tree.children[0].children.length, 2) // start and end range values
@@ -1278,7 +1311,7 @@ MACRO TEMP n
 PRINT n
 ENDMACRO
 TEMP 1`
-  const input = new SourceCode(code, 0, null, diagnostics, '', trees, links)
+  const input = new SourceCode(code, 0, null, diagnostics, '', trees, links, null, context)
   input.Process()
   const tree = input.GetTrees().get('')![4]
   assert.equal(tree.children.length, 1)
@@ -1289,7 +1322,7 @@ function testSourceMapInfo1Byte() {
 ORG &1900
 DEX`
   Run2Passes(code)
-  const sourceMap = ObjectCode.Instance.GetSourceMap()
+  const sourceMap = context.objectCode.GetSourceMap()
   const info = sourceMap[0x1900]
   // assert.equal(info?.file, 0) // Using hash function, could create index later if useful to interpret
   assert.equal(info?.line, 3)
@@ -1302,7 +1335,7 @@ function testSourceMapInfo2Byte() {
 ORG &1900
 LDA #1`
   Run2Passes(code)
-  const sourceMap = ObjectCode.Instance.GetSourceMap()
+  const sourceMap = context.objectCode.GetSourceMap()
   const info = sourceMap[0x1900]
   assert.equal(info?.line, 3)
   assert.equal(info?.column, 0)
@@ -1314,7 +1347,7 @@ function testSourceMapInfo3Byte() {
 ORG &1900
 JSR &FFEE`
   Run2Passes(code)
-  const sourceMap = ObjectCode.Instance.GetSourceMap()
+  const sourceMap = context.objectCode.GetSourceMap()
   const info = sourceMap[0x1900]
   assert.equal(info?.line, 3)
   assert.equal(info?.column, 0)
@@ -1326,7 +1359,7 @@ function testSourceMapInfoMultipleStatements() {
 ORG &1900
 LDA #10: STA &80`
   Run2Passes(code)
-  const sourceMap = ObjectCode.Instance.GetSourceMap()
+  const sourceMap = context.objectCode.GetSourceMap()
   const info = sourceMap[0x1902]
   assert.equal(info?.line, 3)
   assert.equal(info?.column, 9)
@@ -1340,7 +1373,7 @@ FOR n, 0, 10
 LDA #n
 NEXT`
   Run2Passes(code)
-  const sourceMap = ObjectCode.Instance.GetSourceMap()
+  const sourceMap = context.objectCode.GetSourceMap()
   let info = sourceMap[0x1900]
   assert.equal(info?.line, 4)
   info = sourceMap[0x1912]
@@ -1355,7 +1388,7 @@ ENDMACRO
 ORG &1900
 TEMP 1`
   Run2Passes(code)
-  const sourceMap = ObjectCode.Instance.GetSourceMap()
+  const sourceMap = context.objectCode.GetSourceMap()
   const info = sourceMap[0x1900]
   assert.equal(info?.line, 3)
 }
@@ -1373,17 +1406,17 @@ ENDMACRO
 ORG &1900
 TEMP 1`
   Run2Passes(code)
-  const sourceMap = ObjectCode.Instance.GetSourceMap()
+  const sourceMap = context.objectCode.GetSourceMap()
   const info = sourceMap[0x1900]
   assert.equal(info?.line, 6)
 }
 
 function testInlayHintEasy() {
   const code = 'INX'
-  const input = new SourceCode(code, 0, null, diagnostics, '', trees, links)
+  const input = new SourceCode(code, 0, null, diagnostics, '', trees, links, null, context)
   input.Process()
   const tree = input.GetTrees().get('')!
-  const provider = new InlayHintsProvider(input.GetTrees())
+  const provider = new InlayHintsProvider()
   const hints = provider.GetHintsForLineRange(0, 0, tree, '', code)
   assert.equal(hints.length, 1)
   assert.deepEqual(hints[0].position, { character: 3, line: 0 })
@@ -1391,10 +1424,10 @@ function testInlayHintEasy() {
 
 function testInlayHintShortValue() {
   const code = 'LDA #1'
-  const input = new SourceCode(code, 0, null, diagnostics, '', trees, links)
+  const input = new SourceCode(code, 0, null, diagnostics, '', trees, links, null, context)
   input.Process()
   const tree = input.GetTrees().get('')!
-  const provider = new InlayHintsProvider(input.GetTrees())
+  const provider = new InlayHintsProvider()
   const hints = provider.GetHintsForLineRange(0, 0, tree, '', code)
   assert.equal(hints.length, 1)
   assert.deepEqual(hints[0].position, { character: 6, line: 0 })
@@ -1402,10 +1435,10 @@ function testInlayHintShortValue() {
 
 function testInlayHintLongValue() {
   const code = 'LDA #255'
-  const input = new SourceCode(code, 0, null, diagnostics, '', trees, links)
+  const input = new SourceCode(code, 0, null, diagnostics, '', trees, links, null, context)
   input.Process()
   const tree = input.GetTrees().get('')!
-  const provider = new InlayHintsProvider(input.GetTrees())
+  const provider = new InlayHintsProvider()
   const hints = provider.GetHintsForLineRange(0, 0, tree, '', code)
   assert.equal(hints.length, 1)
   assert.deepEqual(hints[0].position, { character: 8, line: 0 })
@@ -1413,10 +1446,10 @@ function testInlayHintLongValue() {
 
 function testInlayHintExpressionWithFunction() {
   const code = 'LDA #LO(640)'
-  const input = new SourceCode(code, 0, null, diagnostics, '', trees, links)
+  const input = new SourceCode(code, 0, null, diagnostics, '', trees, links, null, context)
   input.Process()
   const tree = input.GetTrees().get('')!
-  const provider = new InlayHintsProvider(input.GetTrees())
+  const provider = new InlayHintsProvider()
   const hints = provider.GetHintsForLineRange(0, 0, tree, '', code)
   assert.equal(hints.length, 1)
   assert.deepEqual(hints[0].position, { character: 12, line: 0 })
@@ -1424,10 +1457,10 @@ function testInlayHintExpressionWithFunction() {
 
 function testInlayHintNumericalExpression() {
   const code = 'LDA 25 - 5'
-  const input = new SourceCode(code, 0, null, diagnostics, '', trees, links)
+  const input = new SourceCode(code, 0, null, diagnostics, '', trees, links, null, context)
   input.Process()
   const tree = input.GetTrees().get('')!
-  const provider = new InlayHintsProvider(input.GetTrees())
+  const provider = new InlayHintsProvider()
   const hints = provider.GetHintsForLineRange(0, 0, tree, '', code)
   assert.equal(hints.length, 1)
   assert.deepEqual(hints[0].position, { character: 10, line: 0 })
@@ -1438,15 +1471,15 @@ function testInlayHintLabelReference() {
 LDA addr
 ORG &1000
 .addr`
-  let input = new SourceCode(code, 0, null, diagnostics, '', trees, links)
+  let input = new SourceCode(code, 0, null, diagnostics, '', trees, links, null, context)
   input.Process()
-  GlobalData.Instance.SetPass(1)
-  ObjectCode.Instance.InitialisePass()
-  GlobalData.Instance.ResetForId()
-  input = new SourceCode(code, 0, null, diagnostics, '', trees, links)
+  context.globalData.SetPass(1)
+  context.objectCode.InitialisePass()
+  context.globalData.ResetForId()
+  input = new SourceCode(code, 0, null, diagnostics, '', trees, links, null, context)
   input.Process()
   const tree = input.GetTrees().get('')!
-  const provider = new InlayHintsProvider(input.GetTrees())
+  const provider = new InlayHintsProvider()
   const hints = provider.GetHintsForLineRange(1, 1, tree, '', code)
   assert.equal(hints.length, 1)
   assert.deepEqual(hints[0].position, { character: 8, line: 1 })
@@ -1458,10 +1491,10 @@ JMP addr1 + offset
 ORG &1000
 .addr1
 offset = 100`
-  const input = new SourceCode(code, 0, null, diagnostics, '', trees, links)
+  const input = new SourceCode(code, 0, null, diagnostics, '', trees, links, null, context)
   input.Process()
   const tree = input.GetTrees().get('')!
-  const provider = new InlayHintsProvider(input.GetTrees())
+  const provider = new InlayHintsProvider()
   const hints = provider.GetHintsForLineRange(1, 1, tree, '', code)
   assert.equal(hints.length, 1)
   assert.deepEqual(hints[0].position, { character: 18, line: 1 })
@@ -1469,10 +1502,10 @@ offset = 100`
 
 function testInlayHintMultipleStatements() {
   const code = 'INX: INY'
-  const input = new SourceCode(code, 0, null, diagnostics, '', trees, links)
+  const input = new SourceCode(code, 0, null, diagnostics, '', trees, links, null, context)
   input.Process()
   const tree = input.GetTrees().get('')!
-  const provider = new InlayHintsProvider(input.GetTrees())
+  const provider = new InlayHintsProvider()
   const hints = provider.GetHintsForLineRange(0, 0, tree, '', code)
   assert.equal(hints.length, 2)
   assert.deepEqual(hints[0].position, { character: 3, line: 0 })
@@ -1481,10 +1514,10 @@ function testInlayHintMultipleStatements() {
 
 function testInlayHintCommentAfterStatement() {
   const code = 'LDA #0  ; comment'
-  const input = new SourceCode(code, 0, null, diagnostics, '', trees, links)
+  const input = new SourceCode(code, 0, null, diagnostics, '', trees, links, null, context)
   input.Process()
   const tree = input.GetTrees().get('')!
-  const provider = new InlayHintsProvider(input.GetTrees())
+  const provider = new InlayHintsProvider()
   const hints = provider.GetHintsForLineRange(0, 0, tree, '', code)
   assert.equal(hints.length, 1)
   assert.deepEqual(hints[0].position, { character: 6, line: 0 })

@@ -25,16 +25,13 @@
 import { DocumentLink, Location, integer } from 'vscode-languageserver'
 import { SourceCode, MacroInstance } from './sourcecode'
 import { SourceFile } from './sourcefile'
-import { SymbolTable } from './symboltable'
-import { GlobalData } from './globaldata'
-import { ObjectCode } from './objectcode'
 import { SourceMap } from '../../types/shared/debugsource'
-import { MacroTable } from './macro'
 import * as AsmException from './asmexception'
 import { strftime } from '../strftime-master/strftime'
 import { AST, ASTType } from '../ast'
 import { FileHandler, URItoReference, URItoVSCodeURI } from '../filehandler'
 import path from 'path'
+import { DocumentContext } from '../documentContext'
 // import exp = require('constants');
 // import { match } from 'assert';
 
@@ -174,11 +171,18 @@ export class LineParser {
   private _tree: AST
   private _parentAST: AST
   private _currentAST: AST
+  public _context: DocumentContext
 
-  constructor(sourceCode: SourceCode, line: string, lineno: integer) {
+  constructor(
+    sourceCode: SourceCode,
+    line: string,
+    lineno: integer,
+    context: DocumentContext,
+  ) {
     this._sourceCode = sourceCode
     this._line = line
     this._lineno = lineno
+    this._context = context
     this._gaTokenTable = [
       { name: '.', handler: 'HandleDefineLabel', directiveHandler: '' },
       { name: '\\', handler: 'HandleDefineComment', directiveHandler: '' },
@@ -1778,12 +1782,12 @@ export class LineParser {
         const value: number | string = this.EvaluateExpression()
 
         if (
-          GlobalData.Instance.IsFirstPass() &&
+          this._context.globalData.IsFirstPass() &&
           this._sourceCode.GetForCount() === 0
         ) {
           // only add the symbol on the first pass
 
-          if (SymbolTable.Instance.IsSymbolDefined(symbolName)) {
+          if (this._context.symbolTable.IsSymbolDefined(symbolName)) {
             if (!bIsConditionalAssignment) {
               throw new AsmException.SyntaxError_LabelAlreadyDefined(
                 this._line,
@@ -1795,7 +1799,7 @@ export class LineParser {
               uri: this._sourceCode.GetURI(),
               range: { start: startLoc, end: endLoc },
             }
-            SymbolTable.Instance.AddSymbol(symbolName, value, loc)
+            this._context.symbolTable.AddSymbol(symbolName, value, loc)
           }
         }
         // else {
@@ -1831,12 +1835,12 @@ export class LineParser {
         this._line[this._column] == '_'
       ) {
         const macroName = this.GetSymbolName()
-        const macro = MacroTable.Instance.Get(macroName)
+        const macro = this._context.macroTable.Get(macroName)
         if (macro !== undefined) {
           this.HandleOpenBrace()
 
           // add reference
-          if (GlobalData.Instance.IsSecondPass()) {
+          if (this._context.globalData.IsSecondPass()) {
             const loc = {
               uri: this._sourceCode.GetURI(),
               range: {
@@ -1847,7 +1851,7 @@ export class LineParser {
                 end: { line: this._lineno, character: this._column },
               },
             }
-            MacroTable.Instance.AddReference(macroName, loc)
+            this._context.macroTable.AddReference(macroName, loc)
           }
 
           // add macro reference to AST
@@ -1864,7 +1868,7 @@ export class LineParser {
               macro.GetParameter(i) + this._sourceCode.GetSymbolNameSuffix()
 
             try {
-              if (!SymbolTable.Instance.IsSymbolDefined(paramName)) {
+              if (!this._context.symbolTable.IsSymbolDefined(paramName)) {
                 const value = this.EvaluateExpression()
                 const loc = {
                   uri: this._sourceCode.GetURI(),
@@ -1873,14 +1877,14 @@ export class LineParser {
                     end: { line: this._lineno, character: this._column },
                   },
                 }
-                SymbolTable.Instance.AddSymbol(paramName, value, loc)
-              } else if (GlobalData.Instance.IsSecondPass()) {
+                this._context.symbolTable.AddSymbol(paramName, value, loc)
+              } else if (this._context.globalData.IsSecondPass()) {
                 // We must remove the symbol before evaluating the expression,
                 // otherwise nested macros which share the same parameter name can
                 // evaluate the inner macro parameter using the old value of the inner
                 // macro parameter rather than the new value of the outer macro
                 // parameter. See local-forward-branch-5.6502 for an example.
-                SymbolTable.Instance.RemoveSymbol(paramName)
+                this._context.symbolTable.RemoveSymbol(paramName)
                 const value = this.EvaluateExpression()
                 const loc = {
                   uri: this._sourceCode.GetURI(),
@@ -1889,11 +1893,11 @@ export class LineParser {
                     end: { line: this._lineno, character: this._column },
                   },
                 }
-                SymbolTable.Instance.AddSymbol(paramName, value, loc)
+                this._context.symbolTable.AddSymbol(paramName, value, loc)
               }
             } catch (e) {
               if (e instanceof AsmException.SyntaxError_SymbolNotDefined) {
-                if (GlobalData.Instance.IsSecondPass()) {
+                if (this._context.globalData.IsSecondPass()) {
                   throw e
                 }
               }
@@ -1935,6 +1939,7 @@ export class LineParser {
             this._sourceCode.GetTrees(),
             this._sourceCode.GetDocumentLinks(),
             callingPoint,
+            this._context,
           )
           macroInstance.Process()
 
@@ -2309,7 +2314,7 @@ export class LineParser {
             }
           } catch (e) {
             // If we encountered an unknown symbol whilst evaluation the expression...
-            if (GlobalData.Instance.IsFirstPass()) {
+            if (this._context.globalData.IsFirstPass()) {
               // On first pass, we have to continue gracefully.
               // This moves the string pointer to beyond the expression
               this.SkipExpression(bracketCount, bAllowOneMismatchedCloseBracket)
@@ -2645,7 +2650,7 @@ export class LineParser {
     ) {
       // get current PC
       this._column++
-      value = ObjectCode.Instance.GetPC()
+      value = this._context.objectCode.GetPC()
       // value = 0; // Don't track PC
     } else if (
       this._column < this._line.length &&
@@ -2929,7 +2934,7 @@ export class LineParser {
     mode: ADDRESSING_MODE,
   ): boolean {
     const i = LineParser._gaOpcodeTable[instructionIndex].opcodes[mode]
-    return i !== -1 && (i & 0xff00) <= ObjectCode.Instance.GetCPU() << 8
+    return i !== -1 && (i & 0xff00) <= this._context.objectCode.GetCPU() << 8
   }
 
   private HandleAssembler(instruction: integer): void {
@@ -2959,7 +2964,7 @@ export class LineParser {
         value = this.EvaluateExpressionAsInt()
       } catch (e) {
         if (e instanceof AsmException.SyntaxError_SymbolNotDefined) {
-          if (GlobalData.Instance.IsFirstPass()) {
+          if (this._context.globalData.IsFirstPass()) {
             value = 0
           } else {
             throw e
@@ -3015,7 +3020,7 @@ export class LineParser {
         value = this.EvaluateExpressionAsInt(true)
       } catch (e) {
         if (e instanceof AsmException.SyntaxError_SymbolNotDefined) {
-          if (GlobalData.Instance.IsFirstPass()) {
+          if (this._context.globalData.IsFirstPass()) {
             value = 0
           } else {
             throw e
@@ -3219,17 +3224,17 @@ export class LineParser {
       // out of range error. See local-forward-branch-1.6502 for an example.
       if (
         this.HasAddressingMode(instruction, ADDRESSING_MODE.REL) &&
-        GlobalData.Instance.IsFirstPass()
+        this._context.globalData.IsFirstPass()
       ) {
-        value = ObjectCode.Instance.GetPC()
+        value = this._context.objectCode.GetPC()
       }
     } catch (e) {
       if (e instanceof AsmException.SyntaxError_SymbolNotDefined) {
-        if (GlobalData.Instance.IsFirstPass()) {
+        if (this._context.globalData.IsFirstPass()) {
           // this allows branches to assemble when the value is unknown due to a label not having
           // yet been defined.  Also, this is most likely a 16-bit value, which is a sensible
           // default addressing mode to assume.
-          value = ObjectCode.Instance.GetPC()
+          value = this._context.objectCode.GetPC()
         } else {
           throw e
         }
@@ -3241,7 +3246,7 @@ export class LineParser {
       // end of this instruction
       // see if this is relative addressing (branch)
       if (this.HasAddressingMode(instruction, ADDRESSING_MODE.REL)) {
-        const branchAmount = value - (ObjectCode.Instance.GetPC() + 2)
+        const branchAmount = value - (this._context.objectCode.GetPC() + 2)
         if (branchAmount < -128) {
           throw new AsmException.SyntaxError_BranchOutOfRange(
             this._line,
@@ -3378,7 +3383,7 @@ export class LineParser {
       parent: this._sourceCode.GetSourceMap(),
     }
     try {
-      ObjectCode.Instance.Assemble1(opcode, sourcemap)
+      this._context.objectCode.Assemble1(opcode, sourcemap)
     } catch (e) {
       if (e instanceof AsmException.AssembleError) {
         e.SetColumn(this._column)
@@ -3412,7 +3417,7 @@ export class LineParser {
       parent: this._sourceCode.GetSourceMap(),
     }
     try {
-      ObjectCode.Instance.Assemble2(opcode, value, sourcemap)
+      this._context.objectCode.Assemble2(opcode, value, sourcemap)
     } catch (e) {
       if (e instanceof AsmException.AssembleError) {
         e.SetString(this._line)
@@ -3455,7 +3460,7 @@ export class LineParser {
       parent: this._sourceCode.GetSourceMap(),
     }
     try {
-      ObjectCode.Instance.Assemble3(opcode, value, sourcemap)
+      this._context.objectCode.Assemble3(opcode, value, sourcemap)
     } catch (e) {
       if (e instanceof AsmException.AssembleError) {
         e.SetString(this._line)
@@ -3540,7 +3545,7 @@ export class LineParser {
   }
 
   private FormatAssemblyTime(formatString: string) {
-    const t = GlobalData.Instance.GetAssemblyTime()
+    const t = this._context.globalData.GetAssemblyTime()
     const ts = strftime(formatString, t)
     if (ts.length > 256) {
       throw new AsmException.SyntaxError_TimeResultTooBig(
@@ -3600,9 +3605,9 @@ export class LineParser {
       // ...and mangle it according to whether we are in a FOR loop
       const fullSymbolName =
         symbolName + this._sourceCode.GetSymbolNameSuffix(target_level)
-      if (GlobalData.Instance.IsFirstPass()) {
+      if (this._context.globalData.IsFirstPass()) {
         // only add the symbol on the first pass
-        if (SymbolTable.Instance.IsSymbolDefined(fullSymbolName)) {
+        if (this._context.symbolTable.IsSymbolDefined(fullSymbolName)) {
           throw new AsmException.SyntaxError_LabelAlreadyDefined(
             this._line,
             oldColumn,
@@ -3615,29 +3620,29 @@ export class LineParser {
               end: { line: this._lineno, character: this._column },
             },
           }
-          SymbolTable.Instance.AddSymbol(
+          this._context.symbolTable.AddSymbol(
             fullSymbolName,
-            ObjectCode.Instance.GetPC(),
+            this._context.objectCode.GetPC(),
             loc,
             true,
           )
         }
       } else {
         // on the second pass, check that the label would be assigned the same numeric value
-        const value = SymbolTable.Instance.GetSymbol(fullSymbolName)
+        const value = this._context.symbolTable.GetSymbol(fullSymbolName)
         if (
           typeof value !== 'number' ||
-          value !== ObjectCode.Instance.GetPC()
+          value !== this._context.objectCode.GetPC()
         ) {
-          if (!ObjectCode.Instance.HadSecondPassError) {
-            ObjectCode.Instance.HadSecondPassError = true
+          if (!this._context.objectCode.HadSecondPassError) {
+            this._context.objectCode.HadSecondPassError = true
             throw new AsmException.SyntaxError_SecondPassProblem(
               this._line,
               oldColumn,
             )
           }
         }
-        SymbolTable.Instance.AddLabel(symbolName)
+        this._context.symbolTable.AddLabel(symbolName)
       }
     } else {
       throw new AsmException.SyntaxError_InvalidSymbolName(
@@ -3675,7 +3680,7 @@ export class LineParser {
           value = this.EvaluateExpressionAsInt()
         } catch (e) {
           if (e instanceof AsmException.SyntaxError_SymbolNotDefined) {
-            if (GlobalData.Instance.IsFirstPass()) {
+            if (this._context.globalData.IsFirstPass()) {
               value = 0
             } else {
               throw e
@@ -3723,7 +3728,7 @@ export class LineParser {
             this._currentAST.children.push(this._ASTValueStack[0])
           } catch (e) {
             if (e instanceof AsmException.SyntaxError_SymbolNotDefined) {
-              if (GlobalData.Instance.IsSecondPass()) {
+              if (this._context.globalData.IsSecondPass()) {
                 throw e
               }
             }
@@ -3738,7 +3743,7 @@ export class LineParser {
     const newCpu = args.ParseInt().Range(0, 1).Value() as number
     args.CheckComplete()
 
-    ObjectCode.Instance.SetCPU(newCpu)
+    this._context.objectCode.SetCPU(newCpu)
   }
 
   private HandleOrg(): void {
@@ -3746,8 +3751,8 @@ export class LineParser {
     const newPC = args.ParseInt().Range(0, 0xffff).Value() as number
     args.CheckComplete()
 
-    ObjectCode.Instance.SetPC(newPC)
-    SymbolTable.Instance.ChangeSymbol('P%', newPC)
+    this._context.objectCode.SetPC(newPC)
+    this._context.symbolTable.ChangeSymbol('P%', newPC)
   }
 
   private HandleInclude(): void {
@@ -3789,6 +3794,7 @@ export class LineParser {
       this._sourceCode.GetTrees(),
       this._sourceCode.GetDocumentLinks(),
       callingPoint,
+      this._context,
     )
     input.Process()
 
@@ -3817,7 +3823,7 @@ export class LineParser {
           )
         }
         try {
-          ObjectCode.Instance.PutByte(number & 0xff)
+          this._context.objectCode.PutByte(number & 0xff)
         } catch (e) {
           if (e instanceof AsmException.AssembleError) {
             e.SetString(this._line)
@@ -3848,10 +3854,10 @@ export class LineParser {
 
       while (true) {
         try {
-          ObjectCode.Instance.PutByte(number & 0xff)
-          ObjectCode.Instance.PutByte((number & 0xff00) >> 8)
-          ObjectCode.Instance.PutByte((number & 0xff0000) >> 16)
-          ObjectCode.Instance.PutByte((number & 0xff000000) >> 24)
+          this._context.objectCode.PutByte(number & 0xff)
+          this._context.objectCode.PutByte((number & 0xff00) >> 8)
+          this._context.objectCode.PutByte((number & 0xff0000) >> 16)
+          this._context.objectCode.PutByte((number & 0xff000000) >> 24)
         } catch (e) {
           if (e instanceof AsmException.AssembleError) {
             e.SetString(this._line)
@@ -3870,10 +3876,10 @@ export class LineParser {
   }
   private HandleEqus(equs: string): void {
     for (let i = 0; i < equs.length; i++) {
-      const mappedchar = ObjectCode.Instance.GetMapping(equs.charCodeAt(i))
+      const mappedchar = this._context.objectCode.GetMapping(equs.charCodeAt(i))
       try {
         // remap character from string as per character mapping table
-        ObjectCode.Instance.PutByte(mappedchar)
+        this._context.objectCode.PutByte(mappedchar)
       } catch (e) {
         if (e instanceof AsmException.AssembleError) {
           e.SetString(this._line)
@@ -3889,8 +3895,8 @@ export class LineParser {
 
     while (true) {
       try {
-        ObjectCode.Instance.PutByte(value & 0xff)
-        ObjectCode.Instance.PutByte((value & 0xff00) >> 8)
+        this._context.objectCode.PutByte(value & 0xff)
+        this._context.objectCode.PutByte((value & 0xff00) >> 8)
       } catch (e) {
         if (e instanceof AsmException.AssembleError) {
           e.SetString(this._line)
@@ -3916,7 +3922,7 @@ export class LineParser {
         // We never throw for value being false on the first pass, simply
         // to ensure that if two assertions both fail, the one which
         // appears earliest in the source will be reported.
-        if (!GlobalData.Instance.IsFirstPass() && !value) {
+        if (!this._context.globalData.IsFirstPass() && !value) {
           while (
             this._column < this._line.length &&
             isspace(this._line[this._column])
@@ -3927,7 +3933,7 @@ export class LineParser {
         }
       } catch (e) {
         if (e instanceof AsmException.SyntaxError_SymbolNotDefined) {
-          if (!GlobalData.Instance.IsFirstPass()) {
+          if (!this._context.globalData.IsFirstPass()) {
             throw e
           }
         } else {
@@ -3974,16 +3980,16 @@ export class LineParser {
       .Value() as number
     args.CheckComplete()
     if (!saveParam.Found()) {
-      if (GlobalData.Instance.GetOutputFile() != null) {
-        saveParam.Default(GlobalData.Instance.GetOutputFile())
-        if (GlobalData.Instance.IsSecondPass()) {
-          if (GlobalData.Instance.GetNumAnonSaves() > 0) {
+      if (this._context.globalData.GetOutputFile() != null) {
+        saveParam.Default(this._context.globalData.GetOutputFile())
+        if (this._context.globalData.IsSecondPass()) {
+          if (this._context.globalData.GetNumAnonSaves() > 0) {
             throw new AsmException.SyntaxError_OnlyOneAnonSave(
               this._line,
               saveParam.Column(),
             )
           } else {
-            GlobalData.Instance.IncNumAnonSaves()
+            this._context.globalData.IncNumAnonSaves()
           }
         }
       } else {
@@ -4016,7 +4022,7 @@ export class LineParser {
     const symbolName = this.GetSymbolName() // + this._sourceCode.GetSymbolNameSuffix();
     // Check variable has not yet been defined
     // Should not need this check since creating a new unique symbol including the new for stack pointer
-    // if (SymbolTable.Instance.IsSymbolDefined(symbolName)) {
+    // if (this._context.symbolTable.IsSymbolDefined(symbolName)) {
     // 	throw new AsmException.SyntaxError_LabelAlreadyDefined(this._line, oldColumn);
     // }
     const args = new ArgListParser(this, true)
@@ -4077,9 +4083,9 @@ export class LineParser {
     if (val < 1 || (val & (val - 1)) != 0) {
       throw new AsmException.SyntaxError_BadAlignment(this._line, oldColumn)
     }
-    while ((ObjectCode.Instance.GetPC() & (val - 1)) != 0) {
+    while ((this._context.objectCode.GetPC() & (val - 1)) != 0) {
       try {
-        ObjectCode.Instance.PutByte(0)
+        this._context.objectCode.PutByte(0)
       } catch (e) {
         if (e instanceof AsmException.AssembleError) {
           e.SetString(this._line)
@@ -4101,12 +4107,12 @@ export class LineParser {
     const addr = args.ParseInt().Range(0, 0x10000).Value() as number
     args.CheckComplete()
 
-    if (addr < ObjectCode.Instance.GetPC()) {
+    if (addr < this._context.objectCode.GetPC()) {
       throw new AsmException.SyntaxError_BackwardsSkip(this._line, this._column)
     }
-    while (ObjectCode.Instance.GetPC() < addr) {
+    while (this._context.objectCode.GetPC() < addr) {
       try {
-        ObjectCode.Instance.PutByte(0)
+        this._context.objectCode.PutByte(0)
       } catch (e) {
         if (e instanceof AsmException.AssembleError) {
           e.SetString(this._line)
@@ -4124,7 +4130,7 @@ export class LineParser {
     }
     for (let i = 0; i < val; i++) {
       try {
-        ObjectCode.Instance.PutByte(0)
+        this._context.objectCode.PutByte(0)
       } catch (e) {
         if (e instanceof AsmException.AssembleError) {
           e.SetString(this._line)
@@ -4146,7 +4152,7 @@ export class LineParser {
     const val = args.ParseInt().Range(0, 0xffff).Value() as number
     args.CheckComplete()
 
-    ObjectCode.Instance.SetGuard(val)
+    this._context.objectCode.SetGuard(val)
   }
   private HandleClear(): void {
     const args = new ArgListParser(this)
@@ -4154,12 +4160,12 @@ export class LineParser {
     const end = args.ParseInt().Range(0, 0x10000).Value() as number
     args.CheckComplete()
 
-    ObjectCode.Instance.Clear(start, end)
+    this._context.objectCode.Clear(start, end)
   }
   private HandleIncBin(): void {
     const filename = this.EvaluateExpressionAsString()
     try {
-      // ObjectCode.Instance.IncBin(filename); // Not needed for vscode extension unless want to check filesystem
+      // this._context.objectCode.IncBin(filename); // Not needed for vscode extension unless want to check filesystem
     } catch (e) {
       if (e instanceof AsmException.AssembleError) {
         e.SetString(this._line)
@@ -4190,7 +4196,7 @@ export class LineParser {
     if (!param3.Found()) {
       // two parameters
       // do single character remapping
-      ObjectCode.Instance.SetMapping(param1, param2)
+      this._context.objectCode.SetMapping(param1, param2)
     } else {
       // three parameters
       if (param2 < 0x20 || param2 > 0x7e || param2 < param1) {
@@ -4198,7 +4204,7 @@ export class LineParser {
       }
       // remap a block
       for (let i = param1; i <= param2; i++) {
-        ObjectCode.Instance.SetMapping(
+        this._context.objectCode.SetMapping(
           i,
           (param3.Value() as number) + i - param1,
         )
@@ -4296,8 +4302,8 @@ export class LineParser {
     let macroName = ''
     if (isalpha(this._line[this._column]) || this._line[this._column] == '_') {
       macroName = this.GetSymbolName()
-      if (GlobalData.Instance.IsFirstPass()) {
-        if (MacroTable.Instance.Exists(macroName)) {
+      if (this._context.globalData.IsFirstPass()) {
+        if (this._context.macroTable.Exists(macroName)) {
           throw new AsmException.SyntaxError_DuplicateMacroName(
             this._line,
             this._column,
@@ -4329,7 +4335,7 @@ export class LineParser {
         this._line[this._column] == '_'
       ) {
         const param = this.GetSymbolName()
-        if (GlobalData.Instance.IsFirstPass()) {
+        if (this._context.globalData.IsFirstPass()) {
           this._sourceCode.GetCurrentMacro()!.AddParameter(param)
         }
         expectComma = true
@@ -4351,7 +4357,7 @@ export class LineParser {
     // beginning of the macro definition, so any errors are reported on the correct line
     if (
       this._column == this._line.length &&
-      GlobalData.Instance.IsFirstPass()
+      this._context.globalData.IsFirstPass()
     ) {
       this._sourceCode.GetCurrentMacro()!.AddLine('\n')
     }
@@ -4392,11 +4398,11 @@ export class LineParser {
     const dest = args.ParseInt().Range(0, 0xffff).Value() as number
     args.CheckComplete()
     try {
-      ObjectCode.Instance.CopyBlock(
+      this._context.objectCode.CopyBlock(
         start,
         end,
         dest,
-        GlobalData.Instance.IsFirstPass(),
+        this._context.globalData.IsFirstPass(),
       )
     } catch (e) {
       if (e instanceof AsmException.AssembleError) {
@@ -4412,7 +4418,7 @@ export class LineParser {
       value = this.EvaluateExpressionAsInt()
     } catch (e) {
       if (e instanceof AsmException.SyntaxError_SymbolNotDefined) {
-        if (GlobalData.Instance.IsFirstPass()) {
+        if (this._context.globalData.IsFirstPass()) {
           value = 0
         } else {
           throw e
@@ -4438,7 +4444,7 @@ export class LineParser {
         this._column,
       )
     }
-    const parser = new LineParser(this._sourceCode, assembly, this._lineno)
+    const parser = new LineParser(this._sourceCode, assembly, this._lineno, this._context)
     // Parse the mnemonic, don't require a non-alpha after it.
     const instruction = parser.GetInstructionAndAdvanceColumn(false)
     if (instruction < 0) {
@@ -4606,7 +4612,7 @@ export class LineParser {
   }
   private EvalEval(): void {
     const expr = this.StackTopString()
-    const parser = new LineParser(this._sourceCode, expr, this._lineno)
+    const parser = new LineParser(this._sourceCode, expr, this._lineno, this._context)
     const result = parser.EvaluateExpression()
     this._valueStack[this._valueStackPtr - 1] = result
   }
@@ -5149,7 +5155,7 @@ class ArgListParser {
           this._pendingValue = this._lineParser.EvaluateExpression()
         } catch (e) {
           if (e instanceof AsmException.SyntaxError_SymbolNotDefined) {
-            if (!GlobalData.Instance.IsFirstPass()) {
+            if (!this._lineParser._context.globalData.IsFirstPass()) {
               throw e
             }
             this._pendingUndefined = true

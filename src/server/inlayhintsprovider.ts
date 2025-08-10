@@ -2,13 +2,12 @@ import { InlayHintParams, InlayHint } from 'vscode-languageserver'
 import { AST, ASTType, GetEndColumn } from './ast'
 import { FileHandler, URItoVSCodeURI } from './filehandler'
 import { opcodeData } from './shareddata'
+import { DocumentContext } from './documentContext'
 
 export class InlayHintsProvider {
-  private trees: Map<string, AST[]>
   public enabled: boolean = false
 
-  constructor(trees: Map<string, AST[]>) {
-    this.trees = trees
+  constructor() {
   }
 
   on(params: InlayHintParams): InlayHint[] | null {
@@ -16,9 +15,10 @@ export class InlayHintsProvider {
       return null
     }
     const uri = URItoVSCodeURI(params.textDocument.uri)
+    const context = FileHandler.Instance.getContext(uri)
     const startLine = params.range.start.line
     const endLine = params.range.end.line
-    const docTrees = this.trees.get(uri)
+    const docTrees = context.trees.get(uri)
     if (docTrees === undefined) {
       return null
     }

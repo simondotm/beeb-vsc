@@ -97,11 +97,9 @@ export class Macro {
 export class MacroTable {
   private _macros: Map<string, Macro> = new Map<string, Macro>()
   private _references = new Map<string, Location[]>()
-  private static _instance: MacroTable
 
-  public static get Instance() {
-    // Do you need arguments? Make it a regular static method instead.
-    return this._instance || (this._instance = new this())
+  constructor() {
+    //TBD
   }
 
   Add(macro: Macro): void {
