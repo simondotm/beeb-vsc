@@ -43,278 +43,132 @@ function Run2Passes(code: string) {
 }
 
 suite('LineParser', function () {
-  setup(function () {
-    // ...
-  })
-
   suite('Assignments', function () {
-    test('test symbol assignment number', function () {
-      testSymbolAssignmentNumber()
-    })
-    test('test symbol assignment string', function () {
-      testSymbolAssignmentString()
-    })
-    test('test symbol assignment hex', function () {
-      testSymbolAssignmentHex()
-    })
-    test('test symbol assignment multistatement', function () {
-      testSymbolAssignmentMultistatement()
-    })
-    test('test symbol assignment updated', function () {
-      testSymbolAssignmentUpdated()
-    })
-    test('test symbol assignment invalid', function () {
-      testSymbolAssignmentInvalid()
-    })
+    test('test symbol assignment number', testSymbolAssignmentNumber)
+    test('test symbol assignment string', testSymbolAssignmentString)
+    test('test symbol assignment hex', testSymbolAssignmentHex)
+    test(
+      'test symbol assignment multistatement',
+      testSymbolAssignmentMultistatement,
+    )
+    test('test symbol assignment updated', testSymbolAssignmentUpdated)
+    test('test symbol assignment invalid', testSymbolAssignmentInvalid)
   })
 
   suite('Labels', function () {
-    test('test symbol top level label', function () {
-      testLabelAllGlobalLevels()
-    })
-    test('test symbol reassignment', function () {
-      testLabelReassigned()
-    })
-    test('test inner label', function () {
-      testInnerLabel()
-    })
-    test('Test 2 pass', function () {
-      test2Pass()
-    })
-    test('Test symbol location', function () {
-      testSymbolLocation()
-    })
-    test('Test find reference to label', function () {
-      testFindReferenceToLabel()
-    })
-    test('Test find reference to nested label', function () {
-      testFindReferenceToNestedLabel()
-    })
-    test('Test macro naming', function () {
-      testMacroNaming()
-    })
-    test('Test macro body', function () {
-      testMacroBody()
-    })
-    test('Test forward reference with decrement', function () {
-      testForwardReferenceWithDecrement()
-    })
-    test('Test failing forward reference', function () {
-      testFailingForwardReference()
-    })
-    test('Test labels where there is a FOR loop', function () {
-      testLabelsWithForLoop()
-    })
+    test('test symbol top level label', testLabelAllGlobalLevels)
+    test('test symbol reassignment', testLabelReassigned)
+    test('test inner label', testInnerLabel)
+    test('Test 2 pass', test2Pass)
+    test('Test symbol location', testSymbolLocation)
+    test('Test find reference to label', testFindReferenceToLabel)
+    test('Test find reference to nested label', testFindReferenceToNestedLabel)
+    test('Test macro naming', testMacroNaming)
+    test('Test macro body', testMacroBody)
+    test(
+      'Test forward reference with decrement',
+      testForwardReferenceWithDecrement,
+    )
+    test('Test failing forward reference', testFailingForwardReference)
+    test('Test labels where there is a FOR loop', testLabelsWithForLoop)
   })
 
   suite('Braces', function () {
-    test('test mismatched braces', function () {
-      testMismatchedBraces()
-    })
+    test('test mismatched braces', testMismatchedBraces)
   })
 
   suite('Handlers', function () {
-    test('test labeled skip and org', function () {
-      testSkipAndOrg()
-    })
-    test('test for loop', function () {
-      testForLoop()
-    })
-    test('test for level', function () {
-      testForLevel()
-    })
-    test('test conditional', function () {
-      testConditional()
-    })
+    test('test labeled skip and org', testSkipAndOrg)
+    test('test for loop', testForLoop)
+    test('test for level', testForLevel)
+    test('test conditional', testConditional)
   })
 
   suite('Assembly', function () {
-    test('RTS', function () {
-      testAssembler1()
-    })
-    test('Reference error', function () {
-      testReferenceError()
-    })
-    test('Indirect', function () {
-      testIndirect()
-    })
-    test('Absolute X', function () {
-      testAbsoluteX()
-    })
-    test('Mapped char expr', function () {
-      testMappedCharExpr()
-    })
+    test('RTS', testAssembler1)
+    test('Reference error', testReferenceError)
+    test('Indirect', testIndirect)
+    test('Absolute X', testAbsoluteX)
+    test('Mapped char expr', testMappedCharExpr)
   })
 
   suite('Functions', function () {
-    test('LO function', function () {
-      testLOFunction()
-    })
-    test('Eval shift left', function () {
-      testEvalShiftLeft()
-    })
-    test('TIME$', function () {
-      testTIME$()
-    })
-    test('Expressionless ERROR', function () {
-      testExpressionlessERROR()
-    })
-    test('Divide by zero from function', function () {
-      testMacroError()
-    })
-    test('MapChar', function () {
-      testMapChar()
-    })
+    test('LO function', testLOFunction)
+    test('Eval shift left', testEvalShiftLeft)
+    test('TIME$', testTIME$)
+    test('Expressionless ERROR', testExpressionlessERROR)
+    test('Divide by zero from function', testMacroError)
+    test('MapChar', testMapChar)
   })
 
   suite('Completions', function () {
-    test('Test completions', async function () {
-      await testCompletions()
-    })
+    test('Test completions', testCompletions)
   })
 
   suite('Symbol features', function () {
-    test('Test symbol reference', function () {
-      testSymbolReference()
-    })
-    test('Test local symbol reference', function () {
-      testLocalSymbolReference()
-    })
-    test('Test repeated for symbol', function () {
-      testRepeatedForSymbol()
-    })
-    test('Test multiple files', function () {
-      testMultipleFiles()
-    })
+    test('Test symbol reference', testSymbolReference)
+    test('Test local symbol reference', testLocalSymbolReference)
+    test('Test repeated for symbol', testRepeatedForSymbol)
+    test('Test multiple files', testMultipleFiles)
   })
 
   suite('Commands', function () {
-    test('Test assert fails', function () {
-      testAssertFails()
-    })
-    test('Test assert passes', function () {
-      testAssertPasses()
-    })
-    test('Test assert string concat', function () {
-      testAssertStringConcat()
-    })
+    test('Test assert fails', testAssertFails)
+    test('Test assert passes', testAssertPasses)
+    test('Test assert string concat', testAssertStringConcat)
   })
 
   suite('Signatures', function () {
-    test('Test find function name', function () {
-      testFindFunctionName()
-    })
-    test('Test find function name CHR$', function () {
-      testFindFunctionNameCHR$()
-    })
-    test('Test find function name MID$', function () {
-      testFindFunctionNameMID$()
-    })
-    test('Test not function in comments', function () {
-      testNotFunctionInComments()
-    })
+    test('Test find function name', testFindFunctionName)
+    test('Test find function name CHR$', testFindFunctionNameCHR$)
+    test('Test find function name MID$', testFindFunctionNameMID$)
+    test('Test not function in comments', testNotFunctionInComments)
   })
 
   suite('AST', function () {
-    test('Test assign to value', function () {
-      testASTAssign()
-    })
-    test('Test assign to expression evaluation', function () {
-      testASTAssignExpr()
-    })
-    test('Test command', function () {
-      testASTCommand()
-    })
-    test('Test assign command', function () {
-      testASTAssignCommand()
-    })
-    test('Test 2 expressions', function () {
-      testAST2Expressions()
-    })
-    test('Test assembler 1', function () {
-      testASTAssembler1()
-    })
-    test('Test assembler 2', function () {
-      testASTAssembler2()
-    })
-    test('Test assembler 3', function () {
-      testASTAssembler3()
-    })
-    test('Test mode ACC', function () {
-      testASTModeACC()
-    })
-    test('Test mode INDX', function () {
-      testASTModeINDX()
-    })
-    test('Test mode IND16X', function () {
-      testASTModeIND16X()
-    })
-    test('Test EQUB', function () {
-      testASTEQUB()
-    })
-    test('Test 1-line For loop', function () {
-      testASTForLoop()
-    })
-    test('Test multi-line For loop', function () {
-      testASTForLoopMultipleLines()
-    })
-    test('Test Macro call', function () {
-      testASTMacroCall()
-    })
+    test('Test assign to value', testASTAssign)
+    test('Test assign to expression evaluation', testASTAssignExpr)
+    test('Test command', testASTCommand)
+    test('Test assign command', testASTAssignCommand)
+    test('Test 2 expressions', testAST2Expressions)
+    test('Test assembler 1', testASTAssembler1)
+    test('Test assembler 2', testASTAssembler2)
+    test('Test assembler 3', testASTAssembler3)
+    test('Test mode ACC', testASTModeACC)
+    test('Test mode INDX', testASTModeINDX)
+    test('Test mode IND16X', testASTModeIND16X)
+    test('Test EQUB', testASTEQUB)
+    test('Test 1-line For loop', testASTForLoop)
+    test('Test multi-line For loop', testASTForLoopMultipleLines)
+    test('Test Macro call', testASTMacroCall)
   })
 
   suite('SourceMap', function () {
-    test('Test source map 1 byte', function () {
-      testSourceMapInfo1Byte()
-    })
-    test('Test source map 2 bytes', function () {
-      testSourceMapInfo2Byte()
-    })
-    test('Test source map 3 bytes', function () {
-      testSourceMapInfo3Byte()
-    })
-    test('Test multiple statements on line', function () {
-      testSourceMapInfoMultipleStatements()
-    })
-    test('Test inside of for loop', function () {
-      testSourcMapInfoForLoop()
-    })
-    test('Test inside macro call', function () {
-      testSourceMapInfoInsideMacro()
-    })
-    test('Test inside macro with preceding code', function () {
-      SourceMapInfoInsideMacroWithOffset()
-    })
+    test('Test source map 1 byte', testSourceMapInfo1Byte)
+    test('Test source map 2 bytes', testSourceMapInfo2Byte)
+    test('Test source map 3 bytes', testSourceMapInfo3Byte)
+    test(
+      'Test multiple statements on line',
+      testSourceMapInfoMultipleStatements,
+    )
+    test('Test inside of for loop', testSourcMapInfoForLoop)
+    test('Test inside macro call', testSourceMapInfoInsideMacro)
+    test(
+      'Test inside macro with preceding code',
+      SourceMapInfoInsideMacroWithOffset,
+    )
   })
 
   suite('InlayHintsProvider', function () {
-    test('Test easiest case', function () {
-      testInlayHintEasy()
-    })
-    test('Test short value after opcode', function () {
-      testInlayHintShortValue()
-    })
-    test('Test long value after opcode', function () {
-      testInlayHintLongValue()
-    })
-    test('Test expression with function', function () {
-      testInlayHintExpressionWithFunction()
-    })
-    test('Test numerical expression', function () {
-      testInlayHintNumericalExpression()
-    })
-    test('Test label reference', function () {
-      testInlayHintLabelReference()
-    })
-    test('Test expression with labels', function () {
-      testInlayHintExpressionWithLabels()
-    })
-    test('Test multiple statements on line', function () {
-      testInlayHintMultipleStatements()
-    })
-    test('Test comment after opcode', function () {
-      testInlayHintCommentAfterStatement()
-    })
+    test('Test easiest case', testInlayHintEasy)
+    test('Test short value after opcode', testInlayHintShortValue)
+    test('Test long value after opcode', testInlayHintLongValue)
+    test('Test expression with function', testInlayHintExpressionWithFunction)
+    test('Test numerical expression', testInlayHintNumericalExpression)
+    test('Test label reference', testInlayHintLabelReference)
+    test('Test expression with labels', testInlayHintExpressionWithLabels)
+    test('Test multiple statements on line', testInlayHintMultipleStatements)
+    test('Test comment after opcode', testInlayHintCommentAfterStatement)
   })
 })
 
