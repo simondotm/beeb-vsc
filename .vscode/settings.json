@@ -5,7 +5,7 @@
 	"editor.codeActionsOnSave": {
 		"source.fixAll.eslint": "explicit"
 	},
-	"mochaExplorer.files": "out/server/test/*.js",
-	"mochaExplorer.require": "source-map-support/register",
-	"mochaExplorer.watch": "out/server/test/*.js"
+	"mochaExplorer.files": "src/server/test/tests.ts",
+	"mochaExplorer.require": "ts-node/register",
+	"mochaExplorer.watch": "src/server/test/tests.ts",
 }
