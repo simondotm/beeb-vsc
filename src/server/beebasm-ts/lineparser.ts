@@ -39,35 +39,39 @@ const MAX_VALUES = 128
 const MAX_OPERATORS = 32
 
 function isdigit(ch: string): boolean {
-  return ch.match(/[0-9]/i) !== null
+  if (!ch) return false
+  const c = ch.charCodeAt(0)
+  return c >= 48 && c <= 57 // '0'-'9'
 }
 
 function isalpha(ch: string): boolean {
-  return ch.match(/[a-z]/i) !== null
+  if (!ch) return false
+  const c = ch.charCodeAt(0)
+  // 'A'-'Z' or 'a'-'z'
+  return (c >= 65 && c <= 90) || (c >= 97 && c <= 122)
 }
 
-// Check if can replace with isdigit later
-function is_decimal_digit(ch: string): boolean {
-  return ch.match(/[0-9]/) !== null
-}
+// Alias (originally duplicated logic)
+const is_decimal_digit = isdigit
 
 function hex_digit_value(ch: string): integer {
-  if (ch.match(/[0-9]/) !== null) {
-    return ch.charCodeAt(0) - '0'.charCodeAt(0)
-  }
-  if (ch.match(/[A-F]/) !== null) {
-    return ch.charCodeAt(0) - 'A'.charCodeAt(0) + 10
-  }
-  if (ch.match(/[a-f]/) !== null) {
-    return ch.charCodeAt(0) - 'a'.charCodeAt(0) + 10
-  }
+  if (!ch) return -1
+  const c = ch.charCodeAt(0)
+  // '0'-'9'
+  if (c >= 48 && c <= 57) return c - 48
+  // 'A'-'F'
+  if (c >= 65 && c <= 70) return c - 65 + 10
+  // 'a'-'f'
+  if (c >= 97 && c <= 102) return c - 97 + 10
   return -1
 }
 
 function isspace(ch: string): boolean {
-  return ch.match(/\s/) !== null
+  if (!ch) return false
+  const c = ch.charCodeAt(0)
+  // Only treat space and tab as whitespace (matches existing usage)
+  return c === 32 || c === 9
 }
-
 type Token = {
   name: string
   handler: string //() => void;
@@ -1974,11 +1978,9 @@ export class LineParser {
   private GetSymbolName(): string {
     // assert(isalpha(this._line[this._column]) || this._line[this._column] == '_');
 
-    let symbolName = ''
+    const startColumn = this._column
 
-    do {
-      symbolName += this._line[this._column++]
-    } while (
+    while (
       this._column < this._line.length &&
       (isalpha(this._line[this._column]) ||
         isdigit(this._line[this._column]) ||
@@ -1987,15 +1989,19 @@ export class LineParser {
         this._line[this._column] == '$') &&
       this._line[this._column - 1] != '%' &&
       this._line[this._column - 1] != '$'
-    )
+    ) {
+      this._column++
+    }
 
-    return symbolName
+    // Extract the symbol name using substring (original c++ used concatenation)
+    return this._line.substring(startColumn, this._column)
   }
 
   private GetInstructionAndAdvanceColumn(
     requireDistinctOpcodes = true,
   ): integer {
     requireDistinctOpcodes = false //TODO: get from settings
+    const lineUpperCase = this._line.toUpperCase()
     for (let i: integer = 0; i < LineParser._gaOpcodeTable.length; i++) {
       const token = LineParser._gaOpcodeTable[i].op
       const len = token.length
@@ -2010,7 +2016,7 @@ export class LineParser {
       // see if token matches
       let bMatch = true
       for (let j = 0; j < len; j++) {
-        if (token[j] != this._line[this._column + j].toUpperCase()) {
+        if (token[j] != lineUpperCase[this._column + j]) {
           bMatch = false
           break
         }
@@ -2073,18 +2079,24 @@ export class LineParser {
   }
 
   public EatWhitespace(): boolean {
-    const newColumn = this._line.slice(this._column).search(/[^ \t\r\n]/i)
-    if (newColumn == -1) {
-      this._column = this._line.length
-      return false
-    } else {
-      this._column += newColumn
-      return true
+    const line = this._line
+    let c = this._column
+    const len = line.length
+    while (c < len) {
+      const code = line.charCodeAt(c)
+      // space(32) tab(9)
+      if (code === 32 || code === 9) {
+        c++
+      } else {
+        break
+      }
     }
+    this._column = c
+    return c < len
   }
-
   private GetTokenAndAdvanceColumn(): integer {
     const remaining = this._line.length - this._column
+    const lineUpperCase = this._line.toUpperCase()
 
     for (let i = 0; i < this._gaTokenTable.length; i++) {
       const token = this._gaTokenTable[i].name
@@ -2095,7 +2107,7 @@ export class LineParser {
 
         let bMatch = true
         for (let j = 0; j < len; j++) {
-          if (token[j] != this._line[this._column + j].toUpperCase()) {
+          if (token[j] != lineUpperCase[this._column + j]) {
             bMatch = false
             break
           }
@@ -2244,6 +2256,8 @@ export class LineParser {
   public EvaluateExpression(
     bAllowOneMismatchedCloseBracket = false,
   ): number | string {
+    // Pre-uppercase the entire line once
+    const lineUpperCase = this._line.toUpperCase()
     // Reset stacks
     this._valueStackPtr = 0
     this._operatorStackPtr = 0
@@ -2269,7 +2283,7 @@ export class LineParser {
           for (let j = 0; j < len; j++) {
             if (
               this._column + j >= this._line.length ||
-              token[j] != this._line[this._column + j].toUpperCase()
+              token[j] != lineUpperCase[this._column + j]
             ) {
               bMatch = false
               break
@@ -2388,7 +2402,7 @@ export class LineParser {
           // see if token matches
           let bMatch = true
           for (let j = 0; j < len; j++) {
-            if (token[j] != this._line[this._column + j].toUpperCase()) {
+            if (token[j] != lineUpperCase[this._column + j]) {
               bMatch = false
               break
             }
@@ -4444,7 +4458,12 @@ export class LineParser {
         this._column,
       )
     }
-    const parser = new LineParser(this._sourceCode, assembly, this._lineno, this._context)
+    const parser = new LineParser(
+      this._sourceCode,
+      assembly,
+      this._lineno,
+      this._context,
+    )
     // Parse the mnemonic, don't require a non-alpha after it.
     const instruction = parser.GetInstructionAndAdvanceColumn(false)
     if (instruction < 0) {
@@ -4612,7 +4631,12 @@ export class LineParser {
   }
   private EvalEval(): void {
     const expr = this.StackTopString()
-    const parser = new LineParser(this._sourceCode, expr, this._lineno, this._context)
+    const parser = new LineParser(
+      this._sourceCode,
+      expr,
+      this._lineno,
+      this._context,
+    )
     const result = parser.EvaluateExpression()
     this._valueStack[this._valueStackPtr - 1] = result
   }
