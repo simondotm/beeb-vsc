@@ -21,10 +21,9 @@
 /*************************************************************************************************/
 
 import { integer } from 'vscode-languageserver'
-import { SymbolTable } from './symboltable'
 import * as AsmException from './asmexception'
-import { GlobalData } from './globaldata'
 import { SourceMap } from '../../types/shared/debugsource'
+import { DocumentContext } from '../documentContext'
 
 enum FLAGS {
   // This memory location has been used so don't assemble over it
@@ -38,7 +37,6 @@ enum FLAGS {
 }
 
 export class ObjectCode {
-  private static _instance: ObjectCode
   private _PC = 0
   private _CPU = 0
   private _aMemory: number[] = new Array(0x10000)
@@ -49,13 +47,11 @@ export class ObjectCode {
   // or we'll get a lot of errors and potentially cause severe slowdown
   private _hadConsistencyError = false
   private _hadSecondPassError = false
+  private _context: DocumentContext
 
-  private constructor() {
-    //SymbolTable.Instance.AddSymbol( "CPU", this._CPU );
-  }
-
-  public static get Instance() {
-    return this._instance || (this._instance = new this())
+  constructor(context: DocumentContext) {
+    this._context = context;
+    this.Reset();
   }
 
   public Reset(): void {
@@ -79,7 +75,7 @@ export class ObjectCode {
 
   public SetCPU(i: number): void {
     this._CPU = i
-    SymbolTable.Instance.ChangeSymbol('CPU', this._CPU)
+    this._context.symbolTable.ChangeSymbol('CPU', this._CPU)
   }
 
   public SetPC(i: number): void {
@@ -106,14 +102,14 @@ export class ObjectCode {
     }
     this._aFlags[this._PC] |= FLAGS.USED
     this._aMemory[this._PC++] = b
-    SymbolTable.Instance.ChangeSymbol('P%', this._PC)
+    this._context.symbolTable.ChangeSymbol('P%', this._PC)
   }
 
   InitialisePass(): void {
     // Reset CPU type and PC
     this.SetCPU(0)
     this.SetPC(0)
-    SymbolTable.Instance.ChangeSymbol('P%', this._PC)
+    this._context.symbolTable.ChangeSymbol('P%', this._PC)
     // Clear flags between passes
     this.Clear(0, 0x10000, false)
     // initialise ascii mapping table
@@ -208,7 +204,7 @@ export class ObjectCode {
       throw new AsmException.AssembleError_OutOfMemory()
     }
     if (
-      GlobalData.Instance.IsSecondPass() &&
+      this._context.globalData.IsSecondPass() &&
       this._aFlags[this._PC] & FLAGS.CHECK &&
       !(this._aFlags[this._PC] & FLAGS.DONT_CHECK) &&
       this._aMemory[this._PC] !== opcode
@@ -227,7 +223,7 @@ export class ObjectCode {
     this._aFlags[this._PC] |= FLAGS.USED | FLAGS.CHECK
     this._aSourceMap[this._PC] = sourcemap
     this._aMemory[this._PC++] = opcode
-    SymbolTable.Instance.ChangeSymbol('P%', this._PC)
+    this._context.symbolTable.ChangeSymbol('P%', this._PC)
   }
 
   Assemble2(opcode: number, val: number, sourcemap: SourceMap): void {
@@ -235,7 +231,7 @@ export class ObjectCode {
       throw new AsmException.AssembleError_OutOfMemory()
     }
     if (
-      GlobalData.Instance.IsSecondPass() &&
+      this._context.globalData.IsSecondPass() &&
       this._aFlags[this._PC] & FLAGS.CHECK &&
       !(this._aFlags[this._PC] & FLAGS.DONT_CHECK) &&
       this._aMemory[this._PC] !== opcode
@@ -256,7 +252,7 @@ export class ObjectCode {
     this._aMemory[this._PC++] = opcode
     this._aFlags[this._PC] |= FLAGS.USED
     this._aMemory[this._PC++] = val
-    SymbolTable.Instance.ChangeSymbol('P%', this._PC)
+    this._context.symbolTable.ChangeSymbol('P%', this._PC)
   }
 
   Assemble3(opcode: number, addr: number, sourcemap: SourceMap): void {
@@ -264,7 +260,7 @@ export class ObjectCode {
       throw new AsmException.AssembleError_OutOfMemory()
     }
     if (
-      GlobalData.Instance.IsSecondPass() &&
+      this._context.globalData.IsSecondPass() &&
       this._aFlags[this._PC] & FLAGS.CHECK &&
       !(this._aFlags[this._PC] & FLAGS.DONT_CHECK) &&
       this._aMemory[this._PC] !== opcode
@@ -295,7 +291,7 @@ export class ObjectCode {
     this._aMemory[this._PC++] = addr & 0xff
     this._aFlags[this._PC] |= FLAGS.USED
     this._aMemory[this._PC++] = (addr & 0xff00) >> 8
-    SymbolTable.Instance.ChangeSymbol('P%', this._PC)
+    this._context.symbolTable.ChangeSymbol('P%', this._PC)
   }
 
   public GetSourceMap(): SourceMap[] {

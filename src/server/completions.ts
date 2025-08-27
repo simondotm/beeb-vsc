@@ -4,13 +4,12 @@ import {
   CompletionItemKind,
   TextDocumentPositionParams,
   InsertTextFormat,
-  TextDocuments,
   SignatureHelp,
   SignatureInformation,
 } from 'vscode-languageserver/node'
 import { beebasmCommands, beebasmFunctions, opcodeData } from './shareddata'
-import { TextDocument } from 'vscode-languageserver-textdocument'
-import { SymbolTable } from './beebasm-ts/symboltable'
+import { DocumentContext } from './documentContext'
+import { FileHandler } from './filehandler'
 
 const triggerParameterHints = Command.create(
   'Trigger parameter hints',
@@ -69,7 +68,8 @@ export class CompletionProvider {
     // Collect all symbols and labels from the SymbolTable
     const uri = _textDocumentPosition.textDocument.uri
     const lineno = _textDocumentPosition.position.line
-    const symbols = SymbolTable.Instance.GetSymbolsByLocation(uri, lineno)
+    const context = FileHandler.Instance.getContext(uri)
+    const symbols = context.symbolTable.GetSymbolsByLocation(uri, lineno)
     const symbolCompletionItems: CompletionItem[] = [...symbols.entries()].map(
       (item) => ({
         label: item[0],
@@ -107,25 +107,18 @@ const functionAndCommandIdentifiers = new Set(
 )
 
 export class SignatureProvider {
-  private documents
-  constructor(documents: TextDocuments<TextDocument> | null = null) {
-    this.documents = documents
-  }
+  constructor() { }
 
   async onSignatureHelp(
-    _textDocumentPositionParams: TextDocumentPositionParams,
-  ): Promise<SignatureHelp | null> {
+    _textDocumentPositionParams: TextDocumentPositionParams): Promise<SignatureHelp | null> {
     const lineno = _textDocumentPositionParams.position.line
     const character = _textDocumentPositionParams.position.character
-    if (this.documents === null) {
-      return null
-    }
-    const doc = this.documents.get(_textDocumentPositionParams.textDocument.uri)
+    const doc = FileHandler.Instance.GetDocumentText(_textDocumentPositionParams.textDocument.uri)
     if (!doc) {
       return null
     }
     // Get text from document
-    const line = doc.getText().split(/\r?\n/g)[lineno]
+    const line = doc.split(/\r?\n/g)[lineno]
     const [functionName, parameterNo] = this.findMatchingFunction(
       line,
       character,

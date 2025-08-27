@@ -24,8 +24,6 @@
 
 import { Macro, MacroTable } from './macro'
 import { LineParser } from './lineparser'
-import { SymbolTable } from './symboltable'
-import { GlobalData } from './globaldata'
 import * as AsmException from './asmexception'
 import {
   Diagnostic,
@@ -36,7 +34,10 @@ import {
 import { integer } from 'vscode-languageserver'
 import { AST } from '../ast'
 import { SourceMap } from '../../types/shared/debugsource'
-import { cyrb53 } from '../filehandler'
+import { DocumentContext } from '../documentContext'
+import { SymbolTable } from './symboltable'
+import { cyrb53, FileHandler } from '../filehandler'
+
 
 const MAX_FOR_LEVELS = 256
 const MAX_IF_LEVELS = 256
@@ -87,6 +88,7 @@ export class SourceCode {
   private _trees: Map<string, AST[]>
   private _documentLinks: Map<string, DocumentLink[]>
   private _sourceMap: SourceMap | null
+  private _context: DocumentContext
 
   constructor(
     contents: string,
@@ -97,6 +99,7 @@ export class SourceCode {
     trees: Map<string, AST[]>,
     doclinks: Map<string, DocumentLink[]>,
     callPoint: SourceMap | null = null,
+    context: DocumentContext,
   ) {
     this._forStackPtr = 0
     this._initialForStackPtr = 0
@@ -121,10 +124,11 @@ export class SourceCode {
     if (this._documentLinks.get(uri) === undefined) {
       this._documentLinks.set(uri, [])
     }
-    this._symbolTable = SymbolTable.Instance // Added for debugging
+    this._symbolTable = context.symbolTable
     this._uri = uri
     this._uriRef = cyrb53(this._uri)
     this._sourceMap = callPoint
+    this._context = context
   }
 
   Process() {
@@ -144,7 +148,7 @@ export class SourceCode {
       // StringUtils::ExpandTabsToSpaces( lineFromFile, 8 );
       const lineParsed = this._lineNumber
       try {
-        const thisLine = new LineParser(this, lineFromFile, this._lineNumber)
+        const thisLine = new LineParser(this, lineFromFile, this._lineNumber, this._context)
         thisLine.Process()
         // Should only store tree on first loop if in FOR loop
         if (this._forStackPtr > 0) {
@@ -322,12 +326,12 @@ export class SourceCode {
     for (let forLevel = this.GetForLevel(); forLevel >= 0; forLevel--) {
       const fullSymbolName = symbolName + this.GetSymbolNameSuffix(forLevel)
 
-      if (SymbolTable.Instance.IsSymbolDefined(fullSymbolName)) {
+      if (this._context.symbolTable.IsSymbolDefined(fullSymbolName)) {
         // store symbol reference (fullSymbolName and location) in symbol table
-        if (location !== null && GlobalData.Instance.IsSecondPass()) {
-          SymbolTable.Instance.AddReference(fullSymbolName, location)
+        if (location !== null && this._context.globalData.IsSecondPass()) {
+          this._context.symbolTable.AddReference(fullSymbolName, location)
         }
-        return [true, SymbolTable.Instance.GetSymbol(fullSymbolName)]
+        return [true, this._context.symbolTable.GetSymbol(fullSymbolName)]
       }
     }
 
@@ -416,7 +420,7 @@ export class SourceCode {
   }
 
   StartMacro(line: string, column: number): void {
-    if (GlobalData.Instance.IsFirstPass()) {
+    if (this._context.globalData.IsFirstPass()) {
       if (this._currentMacro === null) {
         this._currentMacro = new Macro(this._uri, this._lineNumber, column)
       } else {
@@ -428,12 +432,12 @@ export class SourceCode {
   }
 
   EndMacro(line: string, column: number): void {
-    if (GlobalData.Instance.IsFirstPass() && this._currentMacro === null) {
+    if (this._context.globalData.IsFirstPass() && this._currentMacro === null) {
       throw new AsmException.SyntaxError_EndMacroUnexpected(line, column - 8)
     }
     this.RemoveIfLevel(line, column)
-    if (GlobalData.Instance.IsFirstPass()) {
-      MacroTable.Instance.Add(this._currentMacro!)
+    if (this._context.globalData.IsFirstPass()) {
+      this._context.macroTable.Add(this._currentMacro!)
       this._currentMacro = null
     }
   }
@@ -454,14 +458,14 @@ export class SourceCode {
       end: 0,
       step: 0,
       filePtr: 0,
-      id: GlobalData.Instance.GetNextForId(),
+      id: this._context.globalData.GetNextForId(),
       count: 0,
       line: line,
       column: column,
       lineNumber: this._lineNumber,
       firstPass: true,
     }
-    SymbolTable.Instance.PushBrace(
+    this._context.symbolTable.PushBrace(
       this._uri,
       this._lineNumber,
       this._forStack[this._forStackPtr].id,
@@ -478,7 +482,7 @@ export class SourceCode {
     if (thisFor.step != 0) {
       throw new AsmException.SyntaxError_MismatchedBraces(line, column)
     }
-    SymbolTable.Instance.PopScope(this._lineNumber, thisFor.id)
+    this._context.symbolTable.PopScope(this._lineNumber, thisFor.id)
     this._forStackPtr--
   }
 
@@ -512,7 +516,7 @@ export class SourceCode {
       end: end,
       step: step,
       filePtr: filePtr,
-      id: GlobalData.Instance.GetNextForId(),
+      id: this._context.globalData.GetNextForId(),
       count: 0,
       line: line,
       column: column,
@@ -522,8 +526,8 @@ export class SourceCode {
     this._forStackPtr++
     const symbolname = varName + this.GetSymbolNameSuffix()
     this._forStack[this._forStackPtr - 1].varName = symbolname // Update for stack to include suffix
-    SymbolTable.Instance.AddSymbol(symbolname, start, loc)
-    SymbolTable.Instance.PushFor(
+    this._context.symbolTable.AddSymbol(symbolname, start, loc)
+    this._context.symbolTable.PushFor(
       symbolname,
       start,
       this._uri,
@@ -553,18 +557,18 @@ export class SourceCode {
       (thisFor.step < 0 && thisFor.current < thisFor.end)
     ) {
       // we have reached the end of the FOR
-      if (GlobalData.Instance.IsFirstPass()) {
+      if (this._context.globalData.IsFirstPass()) {
         // Deviation from c++ original so can find definitions
-        SymbolTable.Instance.RemoveSymbol(thisFor.varName)
+        this._context.symbolTable.RemoveSymbol(thisFor.varName)
       }
-      SymbolTable.Instance.PopScope(this._lineNumber, thisFor.id)
+      this._context.symbolTable.PopScope(this._lineNumber, thisFor.id)
       this._forStackPtr--
     } else {
       // reloop
-      SymbolTable.Instance.ChangeSymbol(thisFor.varName, thisFor.current)
+      this._context.symbolTable.ChangeSymbol(thisFor.varName, thisFor.current)
       this.SetLinePointer(thisFor.filePtr)
-      SymbolTable.Instance.PopScope()
-      SymbolTable.Instance.PushFor(thisFor.varName, thisFor.current, this._uri)
+      this._context.symbolTable.PopScope()
+      this._context.symbolTable.PushFor(thisFor.varName, thisFor.current, this._uri)
       thisFor.count++
       // If parsing NEXT statement for a second time then no longer in first loop
       if (
@@ -609,6 +613,7 @@ export class MacroInstance extends SourceCode {
     trees: Map<string, AST[]>,
     links: Map<string, DocumentLink[]>,
     callPoint: SourceMap,
+    context: DocumentContext,
   ) {
     super(
       macro.GetBody(),
@@ -619,6 +624,7 @@ export class MacroInstance extends SourceCode {
       trees,
       links,
       callPoint,
+      context,
     )
     this._macro = macro
     this.CopyForStack(sourceCode)
