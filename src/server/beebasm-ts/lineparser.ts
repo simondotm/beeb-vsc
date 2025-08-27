@@ -1610,6 +1610,47 @@ export class LineParser {
   private _parentAST: AST
   private _currentAST: AST
   public _context: DocumentContext
+  // Operator lookup indexes (built once, lazy)
+  private static _unaryOpIndex: { [ch: string]: number[] } | null = null
+  private static _binaryOpIndex: { [ch: string]: number[] } | null = null
+
+  private static BuildOperatorIndexes(): void {
+    if (!LineParser._unaryOpIndex) {
+      const idx: { [ch: string]: number[] } = {}
+      for (let i = 0; i < LineParser._gaUnaryOperatorTable.length; i++) {
+        const tok = LineParser._gaUnaryOperatorTable[i].token
+        const ch = tok[0]
+        if (!idx[ch]) idx[ch] = []
+        idx[ch].push(i)
+      }
+      // Longer tokens first to prefer e.g. STR$~( over STR$(
+      for (const k in idx) {
+        idx[k].sort(
+          (a, b) =>
+            LineParser._gaUnaryOperatorTable[b].token.length -
+            LineParser._gaUnaryOperatorTable[a].token.length,
+        )
+      }
+      LineParser._unaryOpIndex = idx
+    }
+    if (!LineParser._binaryOpIndex) {
+      const idx: { [ch: string]: number[] } = {}
+      for (let i = 0; i < LineParser._gaBinaryOperatorTable.length; i++) {
+        const tok = LineParser._gaBinaryOperatorTable[i].token
+        const ch = tok[0]
+        if (!idx[ch]) idx[ch] = []
+        idx[ch].push(i)
+      }
+      for (const k in idx) {
+        idx[k].sort(
+          (a, b) =>
+            LineParser._gaBinaryOperatorTable[b].token.length -
+            LineParser._gaBinaryOperatorTable[a].token.length,
+        )
+      }
+      LineParser._binaryOpIndex = idx
+    }
+  }
 
   constructor(
     sourceCode: SourceCode,
@@ -2255,6 +2296,7 @@ export class LineParser {
   ): number | string {
     // Pre-uppercase the entire line once
     const lineUpperCase = this._line.toUpperCase()
+    LineParser.BuildOperatorIndexes()
     // Reset stacks
     this._valueStackPtr = 0
     this._operatorStackPtr = 0
@@ -2272,22 +2314,21 @@ export class LineParser {
         // Look for unary operator
         let matchedToken = -1
         // Check against unary operator tokens
-        for (let i = 0; i < LineParser._gaUnaryOperatorTable.length; i++) {
+        const firstChar = lineUpperCase[this._column]
+        const candidates =
+          (LineParser._unaryOpIndex && LineParser._unaryOpIndex[firstChar]) ||
+          []
+        for (let ci = 0; ci < candidates.length; ci++) {
+          const i = candidates[ci]
           const token = LineParser._gaUnaryOperatorTable[i].token
           const len = token.length
-          // see if token matches
-          let bMatch = true
-          for (let j = 0; j < len; j++) {
-            if (
-              this._column + j >= this._line.length ||
-              token[j] != lineUpperCase[this._column + j]
-            ) {
-              bMatch = false
-              break
-            }
+          if (this._column + len > this._line.length) continue
+          let j = 0
+          for (; j < len; j++) {
+            if (token[j] != lineUpperCase[this._column + j]) break
           }
           // it matches; advance line pointer and remember token
-          if (bMatch) {
+          if (j === len) {
             matchedToken = i
             this._column += len
             // if token ends with (but is not) an open bracket, step backwards one place so that we parse it next time
@@ -2393,19 +2434,22 @@ export class LineParser {
       } else {
         // Get binary operator
         let matchedToken = -1
-        for (let i = 0; i < LineParser._gaBinaryOperatorTable.length; i++) {
+        const firstChar = lineUpperCase[this._column]
+        const candidates =
+          (LineParser._binaryOpIndex && LineParser._binaryOpIndex[firstChar]) ||
+          []
+        // see if token matches
+        for (let ci = 0; ci < candidates.length; ci++) {
+          const i = candidates[ci]
           const token = LineParser._gaBinaryOperatorTable[i].token
           const len = token.length
-          // see if token matches
-          let bMatch = true
-          for (let j = 0; j < len; j++) {
-            if (token[j] != lineUpperCase[this._column + j]) {
-              bMatch = false
-              break
-            }
+          if (this._column + len > this._line.length) continue
+          let j = 0
+          for (; j < len; j++) {
+            if (token[j] != lineUpperCase[this._column + j]) break
           }
           // it matches; advance line pointer and remember token
-          if (bMatch) {
+          if (j === len) {
             matchedToken = i
             this._column += len
             break
