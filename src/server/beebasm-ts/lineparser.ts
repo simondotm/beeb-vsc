@@ -3745,7 +3745,7 @@ export class LineParser {
     }
     const value1 = this._valueStack[this._valueStackPtr - 2]
     const value2 = this._valueStack[this._valueStackPtr - 1]
-    if (typeof value1 !== 'number' && typeof value2 !== 'number') {
+    if (typeof value1 !== 'number' || typeof value2 !== 'number') {
       throw new AsmException.SyntaxError_TypeMismatch(this._line, this._column)
     }
     return [value1 as number, value2 as number]
