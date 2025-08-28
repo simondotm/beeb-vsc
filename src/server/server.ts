@@ -21,6 +21,7 @@ import { InlayHintsProvider } from './inlayhintsprovider'
 import { DocumentContext } from './documentContext'
 import * as path from 'path'
 import { writeFileSync } from 'fs'
+import { createDebouncer } from './debounce'
 
 const connection = createConnection(ProposedFeatures.all)
 
@@ -91,12 +92,17 @@ connection.languages.inlayHint.on(
   inlayHintsProvider.on.bind(inlayHintsProvider),
 )
 
+// Create a debounced version of the ParseFromRoot function
+// With a delay of 250ms which seems a nice balance
+const debouncedParse = createDebouncer(ParseFromRoot, 250)
+
 // The content of a text document has changed. This event is emitted
 // when the text document first opened or when its content has changed.
 FileHandler.Instance.documents.onDidChangeContent((change) => {
   // Call ParseDocument on root document for the document that has changed
   // or all root documents if don't have the mapping yet
-  ParseFromRoot(change.document)
+  // Using the wrapped function to allow debouncing
+  debouncedParse(change.document)
 })
 
 async function getStartingFileNames(fileName: string): Promise<string[]> {
@@ -154,7 +160,14 @@ async function getInfoFromSettings(): Promise<string[]> {
   return []
 }
 
-async function ParseFromRoot(textDocument: TextDocument): Promise<void> {
+async function ParseFromRoot(
+  textDocument: TextDocument,
+  signal: AbortSignal,
+): Promise<void> {
+  // Check if the operation was cancelled before we even start
+  if (signal.aborted) {
+    return
+  }
   const uri = textDocument.uri
 
   // Get the source file name
@@ -202,7 +215,7 @@ async function ParseDocument(
     console.log(`Error reading file ${sourceFilePath}: ${error}`)
     return
   }
-  context.reset();
+  context.reset()
   for (let pass = 0; pass < 2; pass++) {
     context.globalData.SetPass(pass)
     context.objectCode.InitialisePass()
@@ -266,7 +279,10 @@ connection.onRequest(SourceMapRequestType, async (params) => {
   return response
 })
 
-async function SaveSourceMap(activeFile: string, context: DocumentContext): Promise<string | null> {
+async function SaveSourceMap(
+  activeFile: string,
+  context: DocumentContext,
+): Promise<string | null> {
   const uri = URItoVSCodeURI(activeFile)
   const root = FileHandler.Instance.GetTargetFileName(uri)
   if (root === undefined) {
