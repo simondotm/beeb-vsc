@@ -39,35 +39,39 @@ const MAX_VALUES = 128
 const MAX_OPERATORS = 32
 
 function isdigit(ch: string): boolean {
-  return ch.match(/[0-9]/i) !== null
+  if (!ch) return false
+  const c = ch.charCodeAt(0)
+  return c >= 48 && c <= 57 // '0'-'9'
 }
 
 function isalpha(ch: string): boolean {
-  return ch.match(/[a-z]/i) !== null
+  if (!ch) return false
+  const c = ch.charCodeAt(0)
+  // 'A'-'Z' or 'a'-'z'
+  return (c >= 65 && c <= 90) || (c >= 97 && c <= 122)
 }
 
-// Check if can replace with isdigit later
-function is_decimal_digit(ch: string): boolean {
-  return ch.match(/[0-9]/) !== null
-}
+// Alias (originally duplicated logic)
+const is_decimal_digit = isdigit
 
 function hex_digit_value(ch: string): integer {
-  if (ch.match(/[0-9]/) !== null) {
-    return ch.charCodeAt(0) - '0'.charCodeAt(0)
-  }
-  if (ch.match(/[A-F]/) !== null) {
-    return ch.charCodeAt(0) - 'A'.charCodeAt(0) + 10
-  }
-  if (ch.match(/[a-f]/) !== null) {
-    return ch.charCodeAt(0) - 'a'.charCodeAt(0) + 10
-  }
+  if (!ch) return -1
+  const c = ch.charCodeAt(0)
+  // '0'-'9'
+  if (c >= 48 && c <= 57) return c - 48
+  // 'A'-'F'
+  if (c >= 65 && c <= 70) return c - 65 + 10
+  // 'a'-'f'
+  if (c >= 97 && c <= 102) return c - 97 + 10
   return -1
 }
 
 function isspace(ch: string): boolean {
-  return ch.match(/\s/) !== null
+  if (!ch) return false
+  const c = ch.charCodeAt(0)
+  // Only treat space and tab as whitespace (matches existing usage)
+  return c === 32 || c === 9
 }
-
 type Token = {
   name: string
   handler: string //() => void;
@@ -155,13 +159,1448 @@ type Operator = {
 export class LineParser {
   private _sourceCode: SourceCode
   public _line: string
+  private _lineUpperCase: string
   public _column: integer = 0
   private _statementStartColumn: integer = 0
   private _lineno: integer
   private _gaTokenTable: Token[]
-  private static _gaOpcodeTable: OpcodeData[]
-  private static _gaUnaryOperatorTable: Operator[]
-  private static _gaBinaryOperatorTable: Operator[]
+  private static _gaOpcodeTable: OpcodeData[] = [
+    Data(
+      0,
+      'ADC',
+      -1,
+      -1,
+      0x69,
+      0x65,
+      0x75,
+      -1,
+      0x6d,
+      0x7d,
+      0x79,
+      0x172,
+      0x61,
+      0x71,
+      -1,
+      -1,
+      -1,
+    ),
+    Data(
+      0,
+      'AND',
+      -1,
+      -1,
+      0x29,
+      0x25,
+      0x35,
+      -1,
+      0x2d,
+      0x3d,
+      0x39,
+      0x132,
+      0x21,
+      0x31,
+      -1,
+      -1,
+      -1,
+    ),
+    Data(
+      0,
+      'ASL',
+      -1,
+      0x0a,
+      -1,
+      0x06,
+      0x16,
+      -1,
+      0x0e,
+      0x1e,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+    ),
+    Data(
+      0,
+      'BCC',
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      0x90,
+    ),
+    Data(
+      0,
+      'BCS',
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      0xb0,
+    ),
+    Data(
+      0,
+      'BEQ',
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      0xf0,
+    ),
+    Data(
+      0,
+      'BIT',
+      -1,
+      -1,
+      0x189,
+      0x24,
+      0x134,
+      -1,
+      0x2c,
+      0x13c,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+    ),
+    Data(
+      0,
+      'BMI',
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      0x30,
+    ),
+    Data(
+      0,
+      'BNE',
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      0xd0,
+    ),
+    Data(
+      0,
+      'BPL',
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      0x10,
+    ),
+    Data(
+      1,
+      'BRA',
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      0x180,
+    ),
+    Data(
+      0,
+      'BRK',
+      0x00,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+    ),
+    Data(
+      0,
+      'BVC',
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      0x50,
+    ),
+    Data(
+      0,
+      'BVS',
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      0x70,
+    ),
+    Data(
+      0,
+      'CLC',
+      0x18,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+    ),
+    Data(
+      0,
+      'CLD',
+      0xd8,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+    ),
+    Data(
+      0,
+      'CLI',
+      0x58,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+    ),
+    Data(
+      1,
+      'CLR',
+      -1,
+      -1,
+      -1,
+      0x164,
+      0x174,
+      -1,
+      0x19c,
+      0x19e,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+    ),
+    Data(
+      0,
+      'CLV',
+      0xb8,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+    ),
+    Data(
+      0,
+      'CMP',
+      -1,
+      -1,
+      0xc9,
+      0xc5,
+      0xd5,
+      -1,
+      0xcd,
+      0xdd,
+      0xd9,
+      0x1d2,
+      0xc1,
+      0xd1,
+      -1,
+      -1,
+      -1,
+    ),
+    Data(
+      0,
+      'CPX',
+      -1,
+      -1,
+      0xe0,
+      0xe4,
+      -1,
+      -1,
+      0xec,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+    ),
+    Data(
+      0,
+      'CPY',
+      -1,
+      -1,
+      0xc0,
+      0xc4,
+      -1,
+      -1,
+      0xcc,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+    ),
+    Data(
+      1,
+      'DEA',
+      0x13a,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+    ),
+    Data(
+      0,
+      'DEC',
+      -1,
+      0x13a,
+      -1,
+      0xc6,
+      0xd6,
+      -1,
+      0xce,
+      0xde,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+    ),
+    Data(
+      0,
+      'DEX',
+      0xca,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+    ),
+    Data(
+      0,
+      'DEY',
+      0x88,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+    ),
+    Data(
+      0,
+      'EOR',
+      -1,
+      -1,
+      0x49,
+      0x45,
+      0x55,
+      -1,
+      0x4d,
+      0x5d,
+      0x59,
+      0x152,
+      0x41,
+      0x51,
+      -1,
+      -1,
+      -1,
+    ),
+    Data(
+      1,
+      'INA',
+      0x11a,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+    ),
+    Data(
+      0,
+      'INC',
+      -1,
+      0x11a,
+      -1,
+      0xe6,
+      0xf6,
+      -1,
+      0xee,
+      0xfe,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+    ),
+    Data(
+      0,
+      'INX',
+      0xe8,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+    ),
+    Data(
+      0,
+      'INY',
+      0xc8,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+    ),
+    Data(
+      0,
+      'JMP',
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      0x4c,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      0x6c,
+      0x17c,
+      -1,
+    ),
+    Data(
+      0,
+      'JSR',
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      0x20,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+    ),
+    Data(
+      0,
+      'LDA',
+      -1,
+      -1,
+      0xa9,
+      0xa5,
+      0xb5,
+      -1,
+      0xad,
+      0xbd,
+      0xb9,
+      0x1b2,
+      0xa1,
+      0xb1,
+      -1,
+      -1,
+      -1,
+    ),
+    Data(
+      0,
+      'LDX',
+      -1,
+      -1,
+      0xa2,
+      0xa6,
+      -1,
+      0xb6,
+      0xae,
+      -1,
+      0xbe,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+    ),
+    Data(
+      0,
+      'LDY',
+      -1,
+      -1,
+      0xa0,
+      0xa4,
+      0xb4,
+      -1,
+      0xac,
+      0xbc,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+    ),
+    Data(
+      0,
+      'LSR',
+      -1,
+      0x4a,
+      -1,
+      0x46,
+      0x56,
+      -1,
+      0x4e,
+      0x5e,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+    ),
+    Data(
+      0,
+      'NOP',
+      0xea,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+    ),
+    Data(
+      0,
+      'ORA',
+      -1,
+      -1,
+      0x09,
+      0x05,
+      0x15,
+      -1,
+      0x0d,
+      0x1d,
+      0x19,
+      0x112,
+      0x01,
+      0x11,
+      -1,
+      -1,
+      -1,
+    ),
+    Data(
+      0,
+      'PHA',
+      0x48,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+    ),
+    Data(
+      0,
+      'PHP',
+      0x08,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+    ),
+    Data(
+      1,
+      'PHX',
+      0x1da,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+    ),
+    Data(
+      1,
+      'PHY',
+      0x15a,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+    ),
+    Data(
+      0,
+      'PLA',
+      0x68,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+    ),
+    Data(
+      0,
+      'PLP',
+      0x28,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+    ),
+    Data(
+      1,
+      'PLX',
+      0x1fa,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+    ),
+    Data(
+      1,
+      'PLY',
+      0x17a,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+    ),
+    Data(
+      0,
+      'ROL',
+      -1,
+      0x2a,
+      -1,
+      0x26,
+      0x36,
+      -1,
+      0x2e,
+      0x3e,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+    ),
+    Data(
+      0,
+      'ROR',
+      -1,
+      0x6a,
+      -1,
+      0x66,
+      0x76,
+      -1,
+      0x6e,
+      0x7e,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+    ),
+    Data(
+      0,
+      'RTI',
+      0x40,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+    ),
+    Data(
+      0,
+      'RTS',
+      0x60,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+    ),
+    Data(
+      0,
+      'SBC',
+      -1,
+      -1,
+      0xe9,
+      0xe5,
+      0xf5,
+      -1,
+      0xed,
+      0xfd,
+      0xf9,
+      0x1f2,
+      0xe1,
+      0xf1,
+      -1,
+      -1,
+      -1,
+    ),
+    Data(
+      0,
+      'SEC',
+      0x38,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+    ),
+    Data(
+      0,
+      'SED',
+      0xf8,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+    ),
+    Data(
+      0,
+      'SEI',
+      0x78,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+    ),
+    Data(
+      0,
+      'STA',
+      -1,
+      -1,
+      -1,
+      0x85,
+      0x95,
+      -1,
+      0x8d,
+      0x9d,
+      0x99,
+      0x192,
+      0x81,
+      0x91,
+      -1,
+      -1,
+      -1,
+    ),
+    Data(
+      0,
+      'STX',
+      -1,
+      -1,
+      -1,
+      0x86,
+      -1,
+      0x96,
+      0x8e,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+    ),
+    Data(
+      0,
+      'STY',
+      -1,
+      -1,
+      -1,
+      0x84,
+      0x94,
+      -1,
+      0x8c,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+    ),
+    Data(
+      1,
+      'STZ',
+      -1,
+      -1,
+      -1,
+      0x164,
+      0x174,
+      -1,
+      0x19c,
+      0x19e,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+    ),
+    Data(
+      0,
+      'TAX',
+      0xaa,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+    ),
+    Data(
+      0,
+      'TAY',
+      0xa8,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+    ),
+    Data(
+      1,
+      'TRB',
+      -1,
+      -1,
+      -1,
+      0x114,
+      -1,
+      -1,
+      0x11c,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+    ),
+    Data(
+      1,
+      'TSB',
+      -1,
+      -1,
+      -1,
+      0x104,
+      -1,
+      -1,
+      0x10c,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+    ),
+    Data(
+      0,
+      'TSX',
+      0xba,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+    ),
+    Data(
+      0,
+      'TXA',
+      0x8a,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+    ),
+    Data(
+      0,
+      'TXS',
+      0x9a,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+    ),
+    Data(
+      0,
+      'TYA',
+      0x98,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+    ),
+  ]
+  private static _gaUnaryOperatorTable: Operator[] = [
+    { token: '(', precedence: -1, parameterCount: 0, handler: '' }, // special case
+    { token: '[', precedence: -1, parameterCount: 0, handler: '' }, // special case
+    { token: '-', precedence: 8, parameterCount: 0, handler: 'EvalNegate' },
+    { token: '+', precedence: 8, parameterCount: 0, handler: 'EvalPosate' },
+    { token: 'HI(', precedence: 10, parameterCount: 1, handler: 'EvalHi' },
+    { token: 'LO(', precedence: 10, parameterCount: 1, handler: 'EvalLo' },
+    { token: '>', precedence: 10, parameterCount: 0, handler: 'EvalHi' },
+    { token: '<', precedence: 10, parameterCount: 0, handler: 'EvalLo' },
+    { token: 'SIN(', precedence: 10, parameterCount: 1, handler: 'EvalSin' },
+    { token: 'COS(', precedence: 10, parameterCount: 1, handler: 'EvalCos' },
+    { token: 'TAN(', precedence: 10, parameterCount: 1, handler: 'EvalTan' },
+    {
+      token: 'ASN(',
+      precedence: 10,
+      parameterCount: 1,
+      handler: 'EvalArcSin',
+    },
+    {
+      token: 'ACS(',
+      precedence: 10,
+      parameterCount: 1,
+      handler: 'EvalArcCos',
+    },
+    {
+      token: 'ATN(',
+      precedence: 10,
+      parameterCount: 1,
+      handler: 'EvalArcTan',
+    },
+    { token: 'SQR(', precedence: 10, parameterCount: 1, handler: 'EvalSqrt' },
+    {
+      token: 'RAD(',
+      precedence: 10,
+      parameterCount: 1,
+      handler: 'EvalDegToRad',
+    },
+    {
+      token: 'DEG(',
+      precedence: 10,
+      parameterCount: 1,
+      handler: 'EvalRadToDeg',
+    },
+    { token: 'INT(', precedence: 10, parameterCount: 1, handler: 'EvalInt' },
+    { token: 'ABS(', precedence: 10, parameterCount: 1, handler: 'EvalAbs' },
+    { token: 'SGN(', precedence: 10, parameterCount: 1, handler: 'EvalSgn' },
+    { token: 'RND(', precedence: 10, parameterCount: 1, handler: 'EvalRnd' },
+    { token: 'NOT(', precedence: 10, parameterCount: 1, handler: 'EvalNot' },
+    { token: 'LOG(', precedence: 10, parameterCount: 1, handler: 'EvalLog' },
+    { token: 'LN(', precedence: 10, parameterCount: 1, handler: 'EvalLn' },
+    { token: 'EXP(', precedence: 10, parameterCount: 1, handler: 'EvalExp' },
+    {
+      token: 'TIME$(',
+      precedence: 10,
+      parameterCount: 1,
+      handler: 'EvalTime',
+    },
+    { token: 'STR$(', precedence: 10, parameterCount: 1, handler: 'EvalStr' },
+    {
+      token: 'STR$~(',
+      precedence: 10,
+      parameterCount: 1,
+      handler: 'EvalStrHex',
+    },
+    { token: 'VAL(', precedence: 10, parameterCount: 1, handler: 'EvalVal' },
+    {
+      token: 'EVAL(',
+      precedence: 10,
+      parameterCount: 1,
+      handler: 'EvalEval',
+    },
+    { token: 'LEN(', precedence: 10, parameterCount: 1, handler: 'EvalLen' },
+    { token: 'CHR$(', precedence: 10, parameterCount: 1, handler: 'EvalChr' },
+    { token: 'ASC(', precedence: 10, parameterCount: 1, handler: 'EvalAsc' },
+    { token: 'MID$(', precedence: 10, parameterCount: 3, handler: 'EvalMid' },
+    {
+      token: 'LEFT$(',
+      precedence: 10,
+      parameterCount: 2,
+      handler: 'EvalLeft',
+    },
+    {
+      token: 'RIGHT$(',
+      precedence: 10,
+      parameterCount: 2,
+      handler: 'EvalRight',
+    },
+    {
+      token: 'STRING$(',
+      precedence: 10,
+      parameterCount: 2,
+      handler: 'EvalString',
+    },
+    {
+      token: 'UPPER$(',
+      precedence: 10,
+      parameterCount: 1,
+      handler: 'EvalUpper',
+    },
+    {
+      token: 'LOWER$(',
+      precedence: 10,
+      parameterCount: 1,
+      handler: 'EvalLower',
+    },
+  ]
+  private static _gaBinaryOperatorTable: Operator[] = [
+    { token: ')', precedence: -1, parameterCount: 0, handler: '' }, // special case
+    { token: ']', precedence: -1, parameterCount: 0, handler: '' }, // special case
+    { token: ',', precedence: -1, parameterCount: 0, handler: '' }, // special case
+    { token: '^', precedence: 7, parameterCount: 0, handler: 'EvalPower' },
+    { token: '*', precedence: 6, parameterCount: 0, handler: 'EvalMultiply' },
+    { token: '/', precedence: 6, parameterCount: 0, handler: 'EvalDivide' },
+    { token: '%', precedence: 6, parameterCount: 0, handler: 'EvalMod' },
+    { token: 'DIV', precedence: 6, parameterCount: 0, handler: 'EvalDiv' },
+    { token: 'MOD', precedence: 6, parameterCount: 0, handler: 'EvalMod' },
+    {
+      token: '<<',
+      precedence: 6,
+      parameterCount: 0,
+      handler: 'EvalShiftLeft',
+    },
+    {
+      token: '>>',
+      precedence: 6,
+      parameterCount: 0,
+      handler: 'EvalShiftRight',
+    },
+    { token: '+', precedence: 5, parameterCount: 0, handler: 'EvalAdd' },
+    { token: '-', precedence: 5, parameterCount: 0, handler: 'EvalSubtract' },
+    { token: '==', precedence: 4, parameterCount: 0, handler: 'EvalEqual' },
+    { token: '=', precedence: 4, parameterCount: 0, handler: 'EvalEqual' },
+    {
+      token: '<>',
+      precedence: 4,
+      parameterCount: 0,
+      handler: 'EvalNotEqual',
+    },
+    {
+      token: '!=',
+      precedence: 4,
+      parameterCount: 0,
+      handler: 'EvalNotEqual',
+    },
+    {
+      token: '<=',
+      precedence: 4,
+      parameterCount: 0,
+      handler: 'EvalLessThanOrEqual',
+    },
+    {
+      token: '>=',
+      precedence: 4,
+      parameterCount: 0,
+      handler: 'EvalMoreThanOrEqual',
+    },
+    { token: '<', precedence: 4, parameterCount: 0, handler: 'EvalLessThan' },
+    { token: '>', precedence: 4, parameterCount: 0, handler: 'EvalMoreThan' },
+    { token: 'AND', precedence: 3, parameterCount: 0, handler: 'EvalAnd' },
+    { token: 'OR', precedence: 2, parameterCount: 0, handler: 'EvalOr' },
+    { token: 'EOR', precedence: 2, parameterCount: 0, handler: 'EvalEor' },
+  ]
   private _valueStackPtr: integer = 0
   private _operatorStackPtr: integer = 0
   private _valueStack: (number | string)[] = []
@@ -172,6 +1611,47 @@ export class LineParser {
   private _parentAST: AST
   private _currentAST: AST
   public _context: DocumentContext
+  // Operator lookup indexes (built once, lazy)
+  private static _unaryOpIndex: { [ch: string]: number[] } | null = null
+  private static _binaryOpIndex: { [ch: string]: number[] } | null = null
+
+  private static BuildOperatorIndexes(): void {
+    if (!LineParser._unaryOpIndex) {
+      const idx: { [ch: string]: number[] } = {}
+      for (let i = 0; i < LineParser._gaUnaryOperatorTable.length; i++) {
+        const tok = LineParser._gaUnaryOperatorTable[i].token
+        const ch = tok[0]
+        if (!idx[ch]) idx[ch] = []
+        idx[ch].push(i)
+      }
+      // Longer tokens first to prefer e.g. STR$~( over STR$(
+      for (const k in idx) {
+        idx[k].sort(
+          (a, b) =>
+            LineParser._gaUnaryOperatorTable[b].token.length -
+            LineParser._gaUnaryOperatorTable[a].token.length,
+        )
+      }
+      LineParser._unaryOpIndex = idx
+    }
+    if (!LineParser._binaryOpIndex) {
+      const idx: { [ch: string]: number[] } = {}
+      for (let i = 0; i < LineParser._gaBinaryOperatorTable.length; i++) {
+        const tok = LineParser._gaBinaryOperatorTable[i].token
+        const ch = tok[0]
+        if (!idx[ch]) idx[ch] = []
+        idx[ch].push(i)
+      }
+      for (const k in idx) {
+        idx[k].sort(
+          (a, b) =>
+            LineParser._gaBinaryOperatorTable[b].token.length -
+            LineParser._gaBinaryOperatorTable[a].token.length,
+        )
+      }
+      LineParser._binaryOpIndex = idx
+    }
+  }
 
   constructor(
     sourceCode: SourceCode,
@@ -181,6 +1661,7 @@ export class LineParser {
   ) {
     this._sourceCode = sourceCode
     this._line = line
+    this._lineUpperCase = line.toUpperCase()
     this._lineno = lineno
     this._context = context
     this._gaTokenTable = [
@@ -234,1443 +1715,6 @@ export class LineParser {
       { name: 'COPYBLOCK', handler: 'HandleCopyBlock', directiveHandler: '' },
       { name: 'RANDOMIZE', handler: 'HandleRandomize', directiveHandler: '' },
       { name: 'ASM', handler: 'HandleAsm', directiveHandler: '' },
-    ]
-    LineParser._gaOpcodeTable = [
-      Data(
-        0,
-        'ADC',
-        -1,
-        -1,
-        0x69,
-        0x65,
-        0x75,
-        -1,
-        0x6d,
-        0x7d,
-        0x79,
-        0x172,
-        0x61,
-        0x71,
-        -1,
-        -1,
-        -1,
-      ),
-      Data(
-        0,
-        'AND',
-        -1,
-        -1,
-        0x29,
-        0x25,
-        0x35,
-        -1,
-        0x2d,
-        0x3d,
-        0x39,
-        0x132,
-        0x21,
-        0x31,
-        -1,
-        -1,
-        -1,
-      ),
-      Data(
-        0,
-        'ASL',
-        -1,
-        0x0a,
-        -1,
-        0x06,
-        0x16,
-        -1,
-        0x0e,
-        0x1e,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-      ),
-      Data(
-        0,
-        'BCC',
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        0x90,
-      ),
-      Data(
-        0,
-        'BCS',
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        0xb0,
-      ),
-      Data(
-        0,
-        'BEQ',
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        0xf0,
-      ),
-      Data(
-        0,
-        'BIT',
-        -1,
-        -1,
-        0x189,
-        0x24,
-        0x134,
-        -1,
-        0x2c,
-        0x13c,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-      ),
-      Data(
-        0,
-        'BMI',
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        0x30,
-      ),
-      Data(
-        0,
-        'BNE',
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        0xd0,
-      ),
-      Data(
-        0,
-        'BPL',
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        0x10,
-      ),
-      Data(
-        1,
-        'BRA',
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        0x180,
-      ),
-      Data(
-        0,
-        'BRK',
-        0x00,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-      ),
-      Data(
-        0,
-        'BVC',
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        0x50,
-      ),
-      Data(
-        0,
-        'BVS',
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        0x70,
-      ),
-      Data(
-        0,
-        'CLC',
-        0x18,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-      ),
-      Data(
-        0,
-        'CLD',
-        0xd8,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-      ),
-      Data(
-        0,
-        'CLI',
-        0x58,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-      ),
-      Data(
-        1,
-        'CLR',
-        -1,
-        -1,
-        -1,
-        0x164,
-        0x174,
-        -1,
-        0x19c,
-        0x19e,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-      ),
-      Data(
-        0,
-        'CLV',
-        0xb8,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-      ),
-      Data(
-        0,
-        'CMP',
-        -1,
-        -1,
-        0xc9,
-        0xc5,
-        0xd5,
-        -1,
-        0xcd,
-        0xdd,
-        0xd9,
-        0x1d2,
-        0xc1,
-        0xd1,
-        -1,
-        -1,
-        -1,
-      ),
-      Data(
-        0,
-        'CPX',
-        -1,
-        -1,
-        0xe0,
-        0xe4,
-        -1,
-        -1,
-        0xec,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-      ),
-      Data(
-        0,
-        'CPY',
-        -1,
-        -1,
-        0xc0,
-        0xc4,
-        -1,
-        -1,
-        0xcc,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-      ),
-      Data(
-        1,
-        'DEA',
-        0x13a,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-      ),
-      Data(
-        0,
-        'DEC',
-        -1,
-        0x13a,
-        -1,
-        0xc6,
-        0xd6,
-        -1,
-        0xce,
-        0xde,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-      ),
-      Data(
-        0,
-        'DEX',
-        0xca,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-      ),
-      Data(
-        0,
-        'DEY',
-        0x88,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-      ),
-      Data(
-        0,
-        'EOR',
-        -1,
-        -1,
-        0x49,
-        0x45,
-        0x55,
-        -1,
-        0x4d,
-        0x5d,
-        0x59,
-        0x152,
-        0x41,
-        0x51,
-        -1,
-        -1,
-        -1,
-      ),
-      Data(
-        1,
-        'INA',
-        0x11a,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-      ),
-      Data(
-        0,
-        'INC',
-        -1,
-        0x11a,
-        -1,
-        0xe6,
-        0xf6,
-        -1,
-        0xee,
-        0xfe,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-      ),
-      Data(
-        0,
-        'INX',
-        0xe8,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-      ),
-      Data(
-        0,
-        'INY',
-        0xc8,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-      ),
-      Data(
-        0,
-        'JMP',
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        0x4c,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        0x6c,
-        0x17c,
-        -1,
-      ),
-      Data(
-        0,
-        'JSR',
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        0x20,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-      ),
-      Data(
-        0,
-        'LDA',
-        -1,
-        -1,
-        0xa9,
-        0xa5,
-        0xb5,
-        -1,
-        0xad,
-        0xbd,
-        0xb9,
-        0x1b2,
-        0xa1,
-        0xb1,
-        -1,
-        -1,
-        -1,
-      ),
-      Data(
-        0,
-        'LDX',
-        -1,
-        -1,
-        0xa2,
-        0xa6,
-        -1,
-        0xb6,
-        0xae,
-        -1,
-        0xbe,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-      ),
-      Data(
-        0,
-        'LDY',
-        -1,
-        -1,
-        0xa0,
-        0xa4,
-        0xb4,
-        -1,
-        0xac,
-        0xbc,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-      ),
-      Data(
-        0,
-        'LSR',
-        -1,
-        0x4a,
-        -1,
-        0x46,
-        0x56,
-        -1,
-        0x4e,
-        0x5e,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-      ),
-      Data(
-        0,
-        'NOP',
-        0xea,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-      ),
-      Data(
-        0,
-        'ORA',
-        -1,
-        -1,
-        0x09,
-        0x05,
-        0x15,
-        -1,
-        0x0d,
-        0x1d,
-        0x19,
-        0x112,
-        0x01,
-        0x11,
-        -1,
-        -1,
-        -1,
-      ),
-      Data(
-        0,
-        'PHA',
-        0x48,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-      ),
-      Data(
-        0,
-        'PHP',
-        0x08,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-      ),
-      Data(
-        1,
-        'PHX',
-        0x1da,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-      ),
-      Data(
-        1,
-        'PHY',
-        0x15a,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-      ),
-      Data(
-        0,
-        'PLA',
-        0x68,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-      ),
-      Data(
-        0,
-        'PLP',
-        0x28,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-      ),
-      Data(
-        1,
-        'PLX',
-        0x1fa,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-      ),
-      Data(
-        1,
-        'PLY',
-        0x17a,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-      ),
-      Data(
-        0,
-        'ROL',
-        -1,
-        0x2a,
-        -1,
-        0x26,
-        0x36,
-        -1,
-        0x2e,
-        0x3e,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-      ),
-      Data(
-        0,
-        'ROR',
-        -1,
-        0x6a,
-        -1,
-        0x66,
-        0x76,
-        -1,
-        0x6e,
-        0x7e,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-      ),
-      Data(
-        0,
-        'RTI',
-        0x40,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-      ),
-      Data(
-        0,
-        'RTS',
-        0x60,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-      ),
-      Data(
-        0,
-        'SBC',
-        -1,
-        -1,
-        0xe9,
-        0xe5,
-        0xf5,
-        -1,
-        0xed,
-        0xfd,
-        0xf9,
-        0x1f2,
-        0xe1,
-        0xf1,
-        -1,
-        -1,
-        -1,
-      ),
-      Data(
-        0,
-        'SEC',
-        0x38,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-      ),
-      Data(
-        0,
-        'SED',
-        0xf8,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-      ),
-      Data(
-        0,
-        'SEI',
-        0x78,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-      ),
-      Data(
-        0,
-        'STA',
-        -1,
-        -1,
-        -1,
-        0x85,
-        0x95,
-        -1,
-        0x8d,
-        0x9d,
-        0x99,
-        0x192,
-        0x81,
-        0x91,
-        -1,
-        -1,
-        -1,
-      ),
-      Data(
-        0,
-        'STX',
-        -1,
-        -1,
-        -1,
-        0x86,
-        -1,
-        0x96,
-        0x8e,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-      ),
-      Data(
-        0,
-        'STY',
-        -1,
-        -1,
-        -1,
-        0x84,
-        0x94,
-        -1,
-        0x8c,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-      ),
-      Data(
-        1,
-        'STZ',
-        -1,
-        -1,
-        -1,
-        0x164,
-        0x174,
-        -1,
-        0x19c,
-        0x19e,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-      ),
-      Data(
-        0,
-        'TAX',
-        0xaa,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-      ),
-      Data(
-        0,
-        'TAY',
-        0xa8,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-      ),
-      Data(
-        1,
-        'TRB',
-        -1,
-        -1,
-        -1,
-        0x114,
-        -1,
-        -1,
-        0x11c,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-      ),
-      Data(
-        1,
-        'TSB',
-        -1,
-        -1,
-        -1,
-        0x104,
-        -1,
-        -1,
-        0x10c,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-      ),
-      Data(
-        0,
-        'TSX',
-        0xba,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-      ),
-      Data(
-        0,
-        'TXA',
-        0x8a,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-      ),
-      Data(
-        0,
-        'TXS',
-        0x9a,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-      ),
-      Data(
-        0,
-        'TYA',
-        0x98,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-        -1,
-      ),
-    ]
-    LineParser._gaUnaryOperatorTable = [
-      { token: '(', precedence: -1, parameterCount: 0, handler: '' }, // special case
-      { token: '[', precedence: -1, parameterCount: 0, handler: '' }, // special case
-      { token: '-', precedence: 8, parameterCount: 0, handler: 'EvalNegate' },
-      { token: '+', precedence: 8, parameterCount: 0, handler: 'EvalPosate' },
-      { token: 'HI(', precedence: 10, parameterCount: 1, handler: 'EvalHi' },
-      { token: 'LO(', precedence: 10, parameterCount: 1, handler: 'EvalLo' },
-      { token: '>', precedence: 10, parameterCount: 0, handler: 'EvalHi' },
-      { token: '<', precedence: 10, parameterCount: 0, handler: 'EvalLo' },
-      { token: 'SIN(', precedence: 10, parameterCount: 1, handler: 'EvalSin' },
-      { token: 'COS(', precedence: 10, parameterCount: 1, handler: 'EvalCos' },
-      { token: 'TAN(', precedence: 10, parameterCount: 1, handler: 'EvalTan' },
-      {
-        token: 'ASN(',
-        precedence: 10,
-        parameterCount: 1,
-        handler: 'EvalArcSin',
-      },
-      {
-        token: 'ACS(',
-        precedence: 10,
-        parameterCount: 1,
-        handler: 'EvalArcCos',
-      },
-      {
-        token: 'ATN(',
-        precedence: 10,
-        parameterCount: 1,
-        handler: 'EvalArcTan',
-      },
-      { token: 'SQR(', precedence: 10, parameterCount: 1, handler: 'EvalSqrt' },
-      {
-        token: 'RAD(',
-        precedence: 10,
-        parameterCount: 1,
-        handler: 'EvalDegToRad',
-      },
-      {
-        token: 'DEG(',
-        precedence: 10,
-        parameterCount: 1,
-        handler: 'EvalRadToDeg',
-      },
-      { token: 'INT(', precedence: 10, parameterCount: 1, handler: 'EvalInt' },
-      { token: 'ABS(', precedence: 10, parameterCount: 1, handler: 'EvalAbs' },
-      { token: 'SGN(', precedence: 10, parameterCount: 1, handler: 'EvalSgn' },
-      { token: 'RND(', precedence: 10, parameterCount: 1, handler: 'EvalRnd' },
-      { token: 'NOT(', precedence: 10, parameterCount: 1, handler: 'EvalNot' },
-      { token: 'LOG(', precedence: 10, parameterCount: 1, handler: 'EvalLog' },
-      { token: 'LN(', precedence: 10, parameterCount: 1, handler: 'EvalLn' },
-      { token: 'EXP(', precedence: 10, parameterCount: 1, handler: 'EvalExp' },
-      {
-        token: 'TIME$(',
-        precedence: 10,
-        parameterCount: 1,
-        handler: 'EvalTime',
-      },
-      { token: 'STR$(', precedence: 10, parameterCount: 1, handler: 'EvalStr' },
-      {
-        token: 'STR$~(',
-        precedence: 10,
-        parameterCount: 1,
-        handler: 'EvalStrHex',
-      },
-      { token: 'VAL(', precedence: 10, parameterCount: 1, handler: 'EvalVal' },
-      {
-        token: 'EVAL(',
-        precedence: 10,
-        parameterCount: 1,
-        handler: 'EvalEval',
-      },
-      { token: 'LEN(', precedence: 10, parameterCount: 1, handler: 'EvalLen' },
-      { token: 'CHR$(', precedence: 10, parameterCount: 1, handler: 'EvalChr' },
-      { token: 'ASC(', precedence: 10, parameterCount: 1, handler: 'EvalAsc' },
-      { token: 'MID$(', precedence: 10, parameterCount: 3, handler: 'EvalMid' },
-      {
-        token: 'LEFT$(',
-        precedence: 10,
-        parameterCount: 2,
-        handler: 'EvalLeft',
-      },
-      {
-        token: 'RIGHT$(',
-        precedence: 10,
-        parameterCount: 2,
-        handler: 'EvalRight',
-      },
-      {
-        token: 'STRING$(',
-        precedence: 10,
-        parameterCount: 2,
-        handler: 'EvalString',
-      },
-      {
-        token: 'UPPER$(',
-        precedence: 10,
-        parameterCount: 1,
-        handler: 'EvalUpper',
-      },
-      {
-        token: 'LOWER$(',
-        precedence: 10,
-        parameterCount: 1,
-        handler: 'EvalLower',
-      },
-    ]
-    LineParser._gaBinaryOperatorTable = [
-      { token: ')', precedence: -1, parameterCount: 0, handler: '' }, // special case
-      { token: ']', precedence: -1, parameterCount: 0, handler: '' }, // special case
-      { token: ',', precedence: -1, parameterCount: 0, handler: '' }, // special case
-      { token: '^', precedence: 7, parameterCount: 0, handler: 'EvalPower' },
-      { token: '*', precedence: 6, parameterCount: 0, handler: 'EvalMultiply' },
-      { token: '/', precedence: 6, parameterCount: 0, handler: 'EvalDivide' },
-      { token: '%', precedence: 6, parameterCount: 0, handler: 'EvalMod' },
-      { token: 'DIV', precedence: 6, parameterCount: 0, handler: 'EvalDiv' },
-      { token: 'MOD', precedence: 6, parameterCount: 0, handler: 'EvalMod' },
-      {
-        token: '<<',
-        precedence: 6,
-        parameterCount: 0,
-        handler: 'EvalShiftLeft',
-      },
-      {
-        token: '>>',
-        precedence: 6,
-        parameterCount: 0,
-        handler: 'EvalShiftRight',
-      },
-      { token: '+', precedence: 5, parameterCount: 0, handler: 'EvalAdd' },
-      { token: '-', precedence: 5, parameterCount: 0, handler: 'EvalSubtract' },
-      { token: '==', precedence: 4, parameterCount: 0, handler: 'EvalEqual' },
-      { token: '=', precedence: 4, parameterCount: 0, handler: 'EvalEqual' },
-      {
-        token: '<>',
-        precedence: 4,
-        parameterCount: 0,
-        handler: 'EvalNotEqual',
-      },
-      {
-        token: '!=',
-        precedence: 4,
-        parameterCount: 0,
-        handler: 'EvalNotEqual',
-      },
-      {
-        token: '<=',
-        precedence: 4,
-        parameterCount: 0,
-        handler: 'EvalLessThanOrEqual',
-      },
-      {
-        token: '>=',
-        precedence: 4,
-        parameterCount: 0,
-        handler: 'EvalMoreThanOrEqual',
-      },
-      { token: '<', precedence: 4, parameterCount: 0, handler: 'EvalLessThan' },
-      { token: '>', precedence: 4, parameterCount: 0, handler: 'EvalMoreThan' },
-      { token: 'AND', precedence: 3, parameterCount: 0, handler: 'EvalAnd' },
-      { token: 'OR', precedence: 2, parameterCount: 0, handler: 'EvalOr' },
-      { token: 'EOR', precedence: 2, parameterCount: 0, handler: 'EvalEor' },
     ]
     this._tree = {
       type: ASTType.Line,
@@ -1974,11 +2018,9 @@ export class LineParser {
   private GetSymbolName(): string {
     // assert(isalpha(this._line[this._column]) || this._line[this._column] == '_');
 
-    let symbolName = ''
+    const startColumn = this._column
 
-    do {
-      symbolName += this._line[this._column++]
-    } while (
+    while (
       this._column < this._line.length &&
       (isalpha(this._line[this._column]) ||
         isdigit(this._line[this._column]) ||
@@ -1987,9 +2029,12 @@ export class LineParser {
         this._line[this._column] == '$') &&
       this._line[this._column - 1] != '%' &&
       this._line[this._column - 1] != '$'
-    )
+    ) {
+      this._column++
+    }
 
-    return symbolName
+    // Extract the symbol name using substring (original c++ used concatenation)
+    return this._line.substring(startColumn, this._column)
   }
 
   private GetInstructionAndAdvanceColumn(
@@ -2010,7 +2055,7 @@ export class LineParser {
       // see if token matches
       let bMatch = true
       for (let j = 0; j < len; j++) {
-        if (token[j] != this._line[this._column + j].toUpperCase()) {
+        if (token[j] != this._lineUpperCase[this._column + j]) {
           bMatch = false
           break
         }
@@ -2073,16 +2118,21 @@ export class LineParser {
   }
 
   public EatWhitespace(): boolean {
-    const newColumn = this._line.slice(this._column).search(/[^ \t\r\n]/i)
-    if (newColumn == -1) {
-      this._column = this._line.length
-      return false
-    } else {
-      this._column += newColumn
-      return true
+    const line = this._line
+    let c = this._column
+    const len = line.length
+    while (c < len) {
+      const code = line.charCodeAt(c)
+      // space(32) tab(9)
+      if (code === 32 || code === 9) {
+        c++
+      } else {
+        break
+      }
     }
+    this._column = c
+    return c < len
   }
-
   private GetTokenAndAdvanceColumn(): integer {
     const remaining = this._line.length - this._column
 
@@ -2095,7 +2145,7 @@ export class LineParser {
 
         let bMatch = true
         for (let j = 0; j < len; j++) {
-          if (token[j] != this._line[this._column + j].toUpperCase()) {
+          if (token[j] != this._lineUpperCase[this._column + j]) {
             bMatch = false
             break
           }
@@ -2119,38 +2169,191 @@ export class LineParser {
     }
   }
 
-  // No doubt there is some smart way to do this by either iterating over _gaTokenTable or getting methods matching desired signature ()=>void
-  // Or just set to ignore??? Probably best!
   private Execute(member: string) {
-    // if (member === "HandleDefineLabel" || member === "HandleDefineComment" || member === "HandleDefineComment"
-    // || member === "HandleStatementSeparator" || member === "HandlePrint" || member === "HandleCpu"
-    // || member === "HandleOrg" || member === "HandleInclude" || member === "HandleEqub"
-    // || member === "HandleEqud" || member === "HandleEquw" || member === "HandleEqu"
-    // || member === "HandleAssert" || member === "HandleSave" || member === "HandleFor" || member === "HandleNext"
-    // || member === "HandleIf" || member === "HandleIf" || member === "HandleDirective"
-    // || member === "HandleDirective" || member === "HandleAlign" || member === "HandleSkipTo"
-    // || member === "HandleSkip" || member === "HandleGuard" || member === "HandleClear"
-    // || member === "HandleIncBin" || member === "HandleOpenBrace" || member === "HandleCloseBrace"
-    // || member === "HandleMapChar" || member === "HandlePutFile" || member === "HandlePutText"
-    // || member === "HandlePutBasic" || member === "HandleMacro" || member === "HandleEndMacro"
-    // || member === "HandleError" || member === "HandleCopyBlock" || member === "HandleRandomize"
-    // || member === "HandleAsm" || member === "EvalPower" || member === "EvalMultiply" || member === "EvalDivide"
-    // || member === "EvalMod" || member === "EvalDiv" || member === "EvalShiftLeft" || member === "EvalShiftRight"
-    // || member === "EvalAdd" || member === "EvalSubtract" || member === "EvalEqual" || member === "EvalNotEqual"
-    // || member === "EvalLessThanOrEqual" || member === "EvalMoreThanOrEqual" || member === "EvalLessThan"
-    // || member === "EvalMoreThan" || member === "EvalAnd" || member === "EvalOr" || member === "EvalEor"
-    // || member === "EvalNegate" || member === "EvalPosate" || member === "EvalHi" || member === "EvalLo"
-    // || member === "EvalSin" || member === "EvalCos" || member === "EvalTan" || member === "EvalArcSin"
-    // || member === "EvalArcCos" || member === "EvalArcTan" || member === "EvalSqrt" || member === "EvalDegToRad"
-    // || member === "EvalRadToDeg" || member === "EvalInt" || member === "EvalAbs" || member === "EvalSgn"
-    // || member === "EvalRnd" || member === "EvalNot" || member === "EvalLog" || member === "EvalLn"
-    // || member === "EvalExp" || member === "EvalTime" || member === "EvalStr" || member === "EvalStrHex"
-    // || member === "EvalVal" || member === "EvalEval" || member === "EvalLen" || member === "EvalChr"
-    // || member === "EvalAsc" || member === "EvalMid" || member === "EvalLeft" || member === "EvalRight"
-    // || member === "EvalString" || member === "EvalUpper" || member === "EvalLower" ) {
-    // @ts-expect-error avoid having to specify every possible member - can uncomment above if really needed
-    this[member]()
-    // }
+    switch (member) {
+      // Token handlers
+      case 'HandleDefineLabel':
+        return this.HandleDefineLabel()
+      case 'HandleDefineComment':
+        return this.HandleDefineComment()
+      case 'HandleStatementSeparator':
+        return this.HandleStatementSeparator()
+      case 'HandlePrint':
+        return this.HandlePrint()
+      case 'HandleCpu':
+        return this.HandleCpu()
+      case 'HandleOrg':
+        return this.HandleOrg()
+      case 'HandleInclude':
+        return this.HandleInclude()
+      case 'HandleEqub':
+        return this.HandleEqub()
+      case 'HandleEqud':
+        return this.HandleEqud()
+      case 'HandleEquw':
+        return this.HandleEquw()
+      case 'HandleAssert':
+        return this.HandleAssert()
+      case 'HandleSave':
+        return this.HandleSave()
+      case 'HandleFor':
+        return this.HandleFor()
+      case 'HandleNext':
+        return this.HandleNext()
+      case 'HandleIf':
+        return this.HandleIf()
+      case 'HandleDirective':
+        return this.HandleDirective()
+      case 'HandleAlign':
+        return this.HandleAlign()
+      case 'HandleSkipTo':
+        return this.HandleSkipTo()
+      case 'HandleSkip':
+        return this.HandleSkip()
+      case 'HandleGuard':
+        return this.HandleGuard()
+      case 'HandleClear':
+        return this.HandleClear()
+      case 'HandleIncBin':
+        return this.HandleIncBin()
+      case 'HandleOpenBrace':
+        return this.HandleOpenBrace()
+      case 'HandleCloseBrace':
+        return this.HandleCloseBrace()
+      case 'HandleMapChar':
+        return this.HandleMapChar()
+      case 'HandlePutFile':
+        return this.HandlePutFile()
+      case 'HandlePutText':
+        return this.HandlePutText()
+      case 'HandlePutBasic':
+        return this.HandlePutBasic()
+      case 'HandleMacro':
+        return this.HandleMacro()
+      case 'HandleEndMacro':
+        return this.HandleEndMacro()
+      case 'HandleError':
+        return this.HandleError()
+      case 'HandleCopyBlock':
+        return this.HandleCopyBlock()
+      case 'HandleRandomize':
+        return this.HandleRandomize()
+      case 'HandleAsm':
+        return this.HandleAsm()
+
+      // Unary / function-like operator handlers
+      case 'EvalNegate':
+        return this.EvalNegate()
+      case 'EvalPosate':
+        return this.EvalPosate()
+      case 'EvalHi':
+        return this.EvalHi()
+      case 'EvalLo':
+        return this.EvalLo()
+      case 'EvalSin':
+        return this.EvalSin()
+      case 'EvalCos':
+        return this.EvalCos()
+      case 'EvalTan':
+        return this.EvalTan()
+      case 'EvalArcSin':
+        return this.EvalArcSin()
+      case 'EvalArcCos':
+        return this.EvalArcCos()
+      case 'EvalArcTan':
+        return this.EvalArcTan()
+      case 'EvalSqrt':
+        return this.EvalSqrt()
+      case 'EvalDegToRad':
+        return this.EvalDegToRad()
+      case 'EvalRadToDeg':
+        return this.EvalRadToDeg()
+      case 'EvalInt':
+        return this.EvalInt()
+      case 'EvalAbs':
+        return this.EvalAbs()
+      case 'EvalSgn':
+        return this.EvalSgn()
+      case 'EvalRnd':
+        return this.EvalRnd()
+      case 'EvalNot':
+        return this.EvalNot()
+      case 'EvalLog':
+        return this.EvalLog()
+      case 'EvalLn':
+        return this.EvalLn()
+      case 'EvalExp':
+        return this.EvalExp()
+      case 'EvalTime':
+        return this.EvalTime()
+      case 'EvalStr':
+        return this.EvalStr()
+      case 'EvalStrHex':
+        return this.EvalStrHex()
+      case 'EvalVal':
+        return this.EvalVal()
+      case 'EvalEval':
+        return this.EvalEval()
+      case 'EvalLen':
+        return this.EvalLen()
+      case 'EvalChr':
+        return this.EvalChr()
+      case 'EvalAsc':
+        return this.EvalAsc()
+      case 'EvalMid':
+        return this.EvalMid()
+      case 'EvalLeft':
+        return this.EvalLeft()
+      case 'EvalRight':
+        return this.EvalRight()
+      case 'EvalString':
+        return this.EvalString()
+      case 'EvalUpper':
+        return this.EvalUpper()
+      case 'EvalLower':
+        return this.EvalLower()
+
+      // Binary operator handlers
+      case 'EvalPower':
+        return this.EvalPower()
+      case 'EvalMultiply':
+        return this.EvalMultiply()
+      case 'EvalDivide':
+        return this.EvalDivide()
+      case 'EvalMod':
+        return this.EvalMod()
+      case 'EvalDiv':
+        return this.EvalDiv()
+      case 'EvalShiftLeft':
+        return this.EvalShiftLeft()
+      case 'EvalShiftRight':
+        return this.EvalShiftRight()
+      case 'EvalAdd':
+        return this.EvalAdd()
+      case 'EvalSubtract':
+        return this.EvalSubtract()
+      case 'EvalEqual':
+        return this.EvalEqual()
+      case 'EvalNotEqual':
+        return this.EvalNotEqual()
+      case 'EvalLessThanOrEqual':
+        return this.EvalLessThanOrEqual()
+      case 'EvalMoreThanOrEqual':
+        return this.EvalMoreThanOrEqual()
+      case 'EvalLessThan':
+        return this.EvalLessThan()
+      case 'EvalMoreThan':
+        return this.EvalMoreThan()
+      case 'EvalAnd':
+        return this.EvalAnd()
+      case 'EvalOr':
+        return this.EvalOr()
+      case 'EvalEor':
+        return this.EvalEor()
+      default:
+        // Unknown handler name; silently ignore (matches previous behaviour of no-op if property missing)
+        return
+    }
   }
 
   private HandleToken(i: integer, oldColumn: integer): void {
@@ -2244,6 +2447,8 @@ export class LineParser {
   public EvaluateExpression(
     bAllowOneMismatchedCloseBracket = false,
   ): number | string {
+    // Pre-uppercase the entire line once
+    LineParser.BuildOperatorIndexes()
     // Reset stacks
     this._valueStackPtr = 0
     this._operatorStackPtr = 0
@@ -2261,22 +2466,21 @@ export class LineParser {
         // Look for unary operator
         let matchedToken = -1
         // Check against unary operator tokens
-        for (let i = 0; i < LineParser._gaUnaryOperatorTable.length; i++) {
+        const firstChar = this._lineUpperCase[this._column]
+        const candidates =
+          (LineParser._unaryOpIndex && LineParser._unaryOpIndex[firstChar]) ||
+          []
+        for (let ci = 0; ci < candidates.length; ci++) {
+          const i = candidates[ci]
           const token = LineParser._gaUnaryOperatorTable[i].token
           const len = token.length
-          // see if token matches
-          let bMatch = true
-          for (let j = 0; j < len; j++) {
-            if (
-              this._column + j >= this._line.length ||
-              token[j] != this._line[this._column + j].toUpperCase()
-            ) {
-              bMatch = false
-              break
-            }
+          if (this._column + len > this._line.length) continue
+          let j = 0
+          for (; j < len; j++) {
+            if (token[j] != this._lineUpperCase[this._column + j]) break
           }
           // it matches; advance line pointer and remember token
-          if (bMatch) {
+          if (j === len) {
             matchedToken = i
             this._column += len
             // if token ends with (but is not) an open bracket, step backwards one place so that we parse it next time
@@ -2382,19 +2586,22 @@ export class LineParser {
       } else {
         // Get binary operator
         let matchedToken = -1
-        for (let i = 0; i < LineParser._gaBinaryOperatorTable.length; i++) {
+        const firstChar = this._lineUpperCase[this._column]
+        const candidates =
+          (LineParser._binaryOpIndex && LineParser._binaryOpIndex[firstChar]) ||
+          []
+        // see if token matches
+        for (let ci = 0; ci < candidates.length; ci++) {
+          const i = candidates[ci]
           const token = LineParser._gaBinaryOperatorTable[i].token
           const len = token.length
-          // see if token matches
-          let bMatch = true
-          for (let j = 0; j < len; j++) {
-            if (token[j] != this._line[this._column + j].toUpperCase()) {
-              bMatch = false
-              break
-            }
+          if (this._column + len > this._line.length) continue
+          let j = 0
+          for (; j < len; j++) {
+            if (token[j] != this._lineUpperCase[this._column + j]) break
           }
           // it matches; advance line pointer and remember token
-          if (bMatch) {
+          if (j === len) {
             matchedToken = i
             this._column += len
             break
@@ -3538,7 +3745,7 @@ export class LineParser {
     }
     const value1 = this._valueStack[this._valueStackPtr - 2]
     const value2 = this._valueStack[this._valueStackPtr - 1]
-    if (typeof value1 !== 'number' && typeof value2 !== 'number') {
+    if (typeof value1 !== 'number' || typeof value2 !== 'number') {
       throw new AsmException.SyntaxError_TypeMismatch(this._line, this._column)
     }
     return [value1 as number, value2 as number]
@@ -4444,7 +4651,12 @@ export class LineParser {
         this._column,
       )
     }
-    const parser = new LineParser(this._sourceCode, assembly, this._lineno, this._context)
+    const parser = new LineParser(
+      this._sourceCode,
+      assembly,
+      this._lineno,
+      this._context,
+    )
     // Parse the mnemonic, don't require a non-alpha after it.
     const instruction = parser.GetInstructionAndAdvanceColumn(false)
     if (instruction < 0) {
@@ -4612,7 +4824,12 @@ export class LineParser {
   }
   private EvalEval(): void {
     const expr = this.StackTopString()
-    const parser = new LineParser(this._sourceCode, expr, this._lineno, this._context)
+    const parser = new LineParser(
+      this._sourceCode,
+      expr,
+      this._lineno,
+      this._context,
+    )
     const result = parser.EvaluateExpression()
     this._valueStack[this._valueStackPtr - 1] = result
   }
