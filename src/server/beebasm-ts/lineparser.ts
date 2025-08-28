@@ -159,6 +159,7 @@ type Operator = {
 export class LineParser {
   private _sourceCode: SourceCode
   public _line: string
+  private _lineUpperCase: string
   public _column: integer = 0
   private _statementStartColumn: integer = 0
   private _lineno: integer
@@ -1660,6 +1661,7 @@ export class LineParser {
   ) {
     this._sourceCode = sourceCode
     this._line = line
+    this._lineUpperCase = line.toUpperCase()
     this._lineno = lineno
     this._context = context
     this._gaTokenTable = [
@@ -2039,7 +2041,6 @@ export class LineParser {
     requireDistinctOpcodes = true,
   ): integer {
     requireDistinctOpcodes = false //TODO: get from settings
-    const lineUpperCase = this._line.toUpperCase()
     for (let i: integer = 0; i < LineParser._gaOpcodeTable.length; i++) {
       const token = LineParser._gaOpcodeTable[i].op
       const len = token.length
@@ -2054,7 +2055,7 @@ export class LineParser {
       // see if token matches
       let bMatch = true
       for (let j = 0; j < len; j++) {
-        if (token[j] != lineUpperCase[this._column + j]) {
+        if (token[j] != this._lineUpperCase[this._column + j]) {
           bMatch = false
           break
         }
@@ -2134,7 +2135,6 @@ export class LineParser {
   }
   private GetTokenAndAdvanceColumn(): integer {
     const remaining = this._line.length - this._column
-    const lineUpperCase = this._line.toUpperCase()
 
     for (let i = 0; i < this._gaTokenTable.length; i++) {
       const token = this._gaTokenTable[i].name
@@ -2145,7 +2145,7 @@ export class LineParser {
 
         let bMatch = true
         for (let j = 0; j < len; j++) {
-          if (token[j] != lineUpperCase[this._column + j]) {
+          if (token[j] != this._lineUpperCase[this._column + j]) {
             bMatch = false
             break
           }
@@ -2169,38 +2169,191 @@ export class LineParser {
     }
   }
 
-  // No doubt there is some smart way to do this by either iterating over _gaTokenTable or getting methods matching desired signature ()=>void
-  // Or just set to ignore??? Probably best!
   private Execute(member: string) {
-    // if (member === "HandleDefineLabel" || member === "HandleDefineComment" || member === "HandleDefineComment"
-    // || member === "HandleStatementSeparator" || member === "HandlePrint" || member === "HandleCpu"
-    // || member === "HandleOrg" || member === "HandleInclude" || member === "HandleEqub"
-    // || member === "HandleEqud" || member === "HandleEquw" || member === "HandleEqu"
-    // || member === "HandleAssert" || member === "HandleSave" || member === "HandleFor" || member === "HandleNext"
-    // || member === "HandleIf" || member === "HandleIf" || member === "HandleDirective"
-    // || member === "HandleDirective" || member === "HandleAlign" || member === "HandleSkipTo"
-    // || member === "HandleSkip" || member === "HandleGuard" || member === "HandleClear"
-    // || member === "HandleIncBin" || member === "HandleOpenBrace" || member === "HandleCloseBrace"
-    // || member === "HandleMapChar" || member === "HandlePutFile" || member === "HandlePutText"
-    // || member === "HandlePutBasic" || member === "HandleMacro" || member === "HandleEndMacro"
-    // || member === "HandleError" || member === "HandleCopyBlock" || member === "HandleRandomize"
-    // || member === "HandleAsm" || member === "EvalPower" || member === "EvalMultiply" || member === "EvalDivide"
-    // || member === "EvalMod" || member === "EvalDiv" || member === "EvalShiftLeft" || member === "EvalShiftRight"
-    // || member === "EvalAdd" || member === "EvalSubtract" || member === "EvalEqual" || member === "EvalNotEqual"
-    // || member === "EvalLessThanOrEqual" || member === "EvalMoreThanOrEqual" || member === "EvalLessThan"
-    // || member === "EvalMoreThan" || member === "EvalAnd" || member === "EvalOr" || member === "EvalEor"
-    // || member === "EvalNegate" || member === "EvalPosate" || member === "EvalHi" || member === "EvalLo"
-    // || member === "EvalSin" || member === "EvalCos" || member === "EvalTan" || member === "EvalArcSin"
-    // || member === "EvalArcCos" || member === "EvalArcTan" || member === "EvalSqrt" || member === "EvalDegToRad"
-    // || member === "EvalRadToDeg" || member === "EvalInt" || member === "EvalAbs" || member === "EvalSgn"
-    // || member === "EvalRnd" || member === "EvalNot" || member === "EvalLog" || member === "EvalLn"
-    // || member === "EvalExp" || member === "EvalTime" || member === "EvalStr" || member === "EvalStrHex"
-    // || member === "EvalVal" || member === "EvalEval" || member === "EvalLen" || member === "EvalChr"
-    // || member === "EvalAsc" || member === "EvalMid" || member === "EvalLeft" || member === "EvalRight"
-    // || member === "EvalString" || member === "EvalUpper" || member === "EvalLower" ) {
-    // @ts-expect-error avoid having to specify every possible member - can uncomment above if really needed
-    this[member]()
-    // }
+    switch (member) {
+      // Token handlers
+      case 'HandleDefineLabel':
+        return this.HandleDefineLabel()
+      case 'HandleDefineComment':
+        return this.HandleDefineComment()
+      case 'HandleStatementSeparator':
+        return this.HandleStatementSeparator()
+      case 'HandlePrint':
+        return this.HandlePrint()
+      case 'HandleCpu':
+        return this.HandleCpu()
+      case 'HandleOrg':
+        return this.HandleOrg()
+      case 'HandleInclude':
+        return this.HandleInclude()
+      case 'HandleEqub':
+        return this.HandleEqub()
+      case 'HandleEqud':
+        return this.HandleEqud()
+      case 'HandleEquw':
+        return this.HandleEquw()
+      case 'HandleAssert':
+        return this.HandleAssert()
+      case 'HandleSave':
+        return this.HandleSave()
+      case 'HandleFor':
+        return this.HandleFor()
+      case 'HandleNext':
+        return this.HandleNext()
+      case 'HandleIf':
+        return this.HandleIf()
+      case 'HandleDirective':
+        return this.HandleDirective()
+      case 'HandleAlign':
+        return this.HandleAlign()
+      case 'HandleSkipTo':
+        return this.HandleSkipTo()
+      case 'HandleSkip':
+        return this.HandleSkip()
+      case 'HandleGuard':
+        return this.HandleGuard()
+      case 'HandleClear':
+        return this.HandleClear()
+      case 'HandleIncBin':
+        return this.HandleIncBin()
+      case 'HandleOpenBrace':
+        return this.HandleOpenBrace()
+      case 'HandleCloseBrace':
+        return this.HandleCloseBrace()
+      case 'HandleMapChar':
+        return this.HandleMapChar()
+      case 'HandlePutFile':
+        return this.HandlePutFile()
+      case 'HandlePutText':
+        return this.HandlePutText()
+      case 'HandlePutBasic':
+        return this.HandlePutBasic()
+      case 'HandleMacro':
+        return this.HandleMacro()
+      case 'HandleEndMacro':
+        return this.HandleEndMacro()
+      case 'HandleError':
+        return this.HandleError()
+      case 'HandleCopyBlock':
+        return this.HandleCopyBlock()
+      case 'HandleRandomize':
+        return this.HandleRandomize()
+      case 'HandleAsm':
+        return this.HandleAsm()
+
+      // Unary / function-like operator handlers
+      case 'EvalNegate':
+        return this.EvalNegate()
+      case 'EvalPosate':
+        return this.EvalPosate()
+      case 'EvalHi':
+        return this.EvalHi()
+      case 'EvalLo':
+        return this.EvalLo()
+      case 'EvalSin':
+        return this.EvalSin()
+      case 'EvalCos':
+        return this.EvalCos()
+      case 'EvalTan':
+        return this.EvalTan()
+      case 'EvalArcSin':
+        return this.EvalArcSin()
+      case 'EvalArcCos':
+        return this.EvalArcCos()
+      case 'EvalArcTan':
+        return this.EvalArcTan()
+      case 'EvalSqrt':
+        return this.EvalSqrt()
+      case 'EvalDegToRad':
+        return this.EvalDegToRad()
+      case 'EvalRadToDeg':
+        return this.EvalRadToDeg()
+      case 'EvalInt':
+        return this.EvalInt()
+      case 'EvalAbs':
+        return this.EvalAbs()
+      case 'EvalSgn':
+        return this.EvalSgn()
+      case 'EvalRnd':
+        return this.EvalRnd()
+      case 'EvalNot':
+        return this.EvalNot()
+      case 'EvalLog':
+        return this.EvalLog()
+      case 'EvalLn':
+        return this.EvalLn()
+      case 'EvalExp':
+        return this.EvalExp()
+      case 'EvalTime':
+        return this.EvalTime()
+      case 'EvalStr':
+        return this.EvalStr()
+      case 'EvalStrHex':
+        return this.EvalStrHex()
+      case 'EvalVal':
+        return this.EvalVal()
+      case 'EvalEval':
+        return this.EvalEval()
+      case 'EvalLen':
+        return this.EvalLen()
+      case 'EvalChr':
+        return this.EvalChr()
+      case 'EvalAsc':
+        return this.EvalAsc()
+      case 'EvalMid':
+        return this.EvalMid()
+      case 'EvalLeft':
+        return this.EvalLeft()
+      case 'EvalRight':
+        return this.EvalRight()
+      case 'EvalString':
+        return this.EvalString()
+      case 'EvalUpper':
+        return this.EvalUpper()
+      case 'EvalLower':
+        return this.EvalLower()
+
+      // Binary operator handlers
+      case 'EvalPower':
+        return this.EvalPower()
+      case 'EvalMultiply':
+        return this.EvalMultiply()
+      case 'EvalDivide':
+        return this.EvalDivide()
+      case 'EvalMod':
+        return this.EvalMod()
+      case 'EvalDiv':
+        return this.EvalDiv()
+      case 'EvalShiftLeft':
+        return this.EvalShiftLeft()
+      case 'EvalShiftRight':
+        return this.EvalShiftRight()
+      case 'EvalAdd':
+        return this.EvalAdd()
+      case 'EvalSubtract':
+        return this.EvalSubtract()
+      case 'EvalEqual':
+        return this.EvalEqual()
+      case 'EvalNotEqual':
+        return this.EvalNotEqual()
+      case 'EvalLessThanOrEqual':
+        return this.EvalLessThanOrEqual()
+      case 'EvalMoreThanOrEqual':
+        return this.EvalMoreThanOrEqual()
+      case 'EvalLessThan':
+        return this.EvalLessThan()
+      case 'EvalMoreThan':
+        return this.EvalMoreThan()
+      case 'EvalAnd':
+        return this.EvalAnd()
+      case 'EvalOr':
+        return this.EvalOr()
+      case 'EvalEor':
+        return this.EvalEor()
+      default:
+        // Unknown handler name; silently ignore (matches previous behaviour of no-op if property missing)
+        return
+    }
   }
 
   private HandleToken(i: integer, oldColumn: integer): void {
@@ -2295,7 +2448,6 @@ export class LineParser {
     bAllowOneMismatchedCloseBracket = false,
   ): number | string {
     // Pre-uppercase the entire line once
-    const lineUpperCase = this._line.toUpperCase()
     LineParser.BuildOperatorIndexes()
     // Reset stacks
     this._valueStackPtr = 0
@@ -2314,7 +2466,7 @@ export class LineParser {
         // Look for unary operator
         let matchedToken = -1
         // Check against unary operator tokens
-        const firstChar = lineUpperCase[this._column]
+        const firstChar = this._lineUpperCase[this._column]
         const candidates =
           (LineParser._unaryOpIndex && LineParser._unaryOpIndex[firstChar]) ||
           []
@@ -2325,7 +2477,7 @@ export class LineParser {
           if (this._column + len > this._line.length) continue
           let j = 0
           for (; j < len; j++) {
-            if (token[j] != lineUpperCase[this._column + j]) break
+            if (token[j] != this._lineUpperCase[this._column + j]) break
           }
           // it matches; advance line pointer and remember token
           if (j === len) {
@@ -2434,7 +2586,7 @@ export class LineParser {
       } else {
         // Get binary operator
         let matchedToken = -1
-        const firstChar = lineUpperCase[this._column]
+        const firstChar = this._lineUpperCase[this._column]
         const candidates =
           (LineParser._binaryOpIndex && LineParser._binaryOpIndex[firstChar]) ||
           []
@@ -2446,7 +2598,7 @@ export class LineParser {
           if (this._column + len > this._line.length) continue
           let j = 0
           for (; j < len; j++) {
-            if (token[j] != lineUpperCase[this._column + j]) break
+            if (token[j] != this._lineUpperCase[this._column + j]) break
           }
           // it matches; advance line pointer and remember token
           if (j === len) {
