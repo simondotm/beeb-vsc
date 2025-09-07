@@ -153,6 +153,42 @@ export class Emulator {
         return this.executeInternalFast()
       }
     }
+    // Patch in some data breakpoint tracking, similar to the instruction breakpoint tracking
+    this.dbgr.readBreakpoints = {}
+    this.dbgr.writeBreakpoints = {}
+    this.dbgr.toggleReadBreakpoint = (address: number) => {
+      if (this.dbgr.readBreakpoints[address]) {
+        console.log(
+          'Removing read breakpoint from address ' + utils.hexword(address),
+        )
+        this.dbgr.readBreakpoints[address].remove()
+        this.dbgr.readBreakpoints[address] = undefined
+      } else {
+        console.log(
+          'Adding read breakpoint to address ' + utils.hexword(address),
+        )
+        this.dbgr.readBreakpoints[address] = this.cpu.debugRead.add(
+          (x) => x === address,
+        )
+      }
+    }
+
+    this.dbgr.toggleWriteBreakpoint = (address: number) => {
+      if (this.dbgr.writeBreakpoints[address]) {
+        console.log(
+          'Removing write breakpoint from address ' + utils.hexword(address),
+        )
+        this.dbgr.writeBreakpoints[address].remove()
+        this.dbgr.writeBreakpoints[address] = undefined
+      } else {
+        console.log(
+          'Adding write breakpoint to address ' + utils.hexword(address),
+        )
+        this.dbgr.writeBreakpoints[address] = this.cpu.debugWrite.add(
+          (x) => x === address,
+        )
+      }
+    }
 
     this.lastFrameTime = 0
     this.onAnimFrame = _.bind(this.frameFunc, this)
@@ -218,7 +254,7 @@ export class Emulator {
       try {
         const fdc = this.cpu.fdc
         const discData = await utils.loadData(discImageFile.url)
-        const discImage = new BaseDisc(fdc, 'disc', discData, () => { })
+        const discImage = new BaseDisc(fdc, 'disc', discData, () => {})
         this.cpu.fdc.loadDisc(0, discImage)
         // notifyHost({
         //   command: ClientCommand.Info,

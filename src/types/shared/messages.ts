@@ -99,12 +99,21 @@ export const enum DebugInstructionType {
   ClearBreakpoint = 'clearbreakpoint',
   StepOver = 'stepover',
   StepOut = 'stepout',
+  SetDataBreakpoint = 'setdatabreakpoint',
+  ClearDataBreakpoint = 'cleardatabreakpoint',
   // TODO - expand to include other debug commands
 }
 
 export type DebugInstruction = {
   address?: number
   instruction: DebugInstructionType
+}
+
+export type DataBreakpointConfig = {
+  id: string
+  address: number
+  accessType: 'read' | 'write' | 'readWrite'
+  size: number // 1 for byte, 2 for word
 }
 
 export const NO_DISC: DiscImageFile = { url: '', name: '-- no disc --' }
@@ -117,6 +126,7 @@ export const enum HostCommand {
   DebugCommand = 'debugCommand',
   DebugRequest = 'debugRequest',
   SetBreakpoints = 'setBreakpoints',
+  SetDataBreakpoints = 'setDataBreakpoints',
   SetDebugMode = 'setDebugMode',
 }
 
@@ -166,6 +176,11 @@ export interface HostMessageSetBreakpoints extends HostMessageBase {
   breakpoints: number[]
 }
 
+export interface HostMessageSetDataBreakpoints extends HostMessageBase {
+  command: HostCommand.SetDataBreakpoints
+  dataBreakpoints: DataBreakpointConfig[]
+}
+
 export interface HostMessageSetDebugMode extends HostMessageBase {
   command: HostCommand.SetDebugMode
 }
@@ -178,4 +193,5 @@ export type HostMessage =
   | HostMessageDebugCommand
   | HostMessageDebugRequest
   | HostMessageSetBreakpoints
+  | HostMessageSetDataBreakpoints
   | HostMessageSetDebugMode

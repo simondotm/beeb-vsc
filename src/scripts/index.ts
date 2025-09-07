@@ -164,6 +164,12 @@ window.addEventListener('message', (event) => {
       }
       break
     }
+    case HostCommand.SetDataBreakpoints: {
+      if (message.dataBreakpoints) {
+        emulatorView.SetDataBreakpoints(message.dataBreakpoints)
+      }
+      break
+    }
     case HostCommand.SetDebugMode: {
       debugMode = true
       break
