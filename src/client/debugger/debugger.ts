@@ -261,7 +261,7 @@ export class JSBeebDebugSession extends LoggingDebugSession {
     response.body.supportsConfigurationDoneRequest = true
 
     // make VS Code use 'evaluate' when hovering over source
-    response.body.supportsEvaluateForHovers = false
+    response.body.supportsEvaluateForHovers = true
 
     // make VS Code support data breakpoints
     response.body.supportsDataBreakpoints = true
@@ -1030,7 +1030,7 @@ export class JSBeebDebugSession extends LoggingDebugSession {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     request?: DebugProtocol.Request,
   ): Promise<void> {
-    if (args.context === 'watch') {
+    if (args.context === 'watch' || args.context === 'hover') {
       const parsedExpression = this.parseMemoryExpression(args.expression)
       if (parsedExpression === null) {
         this.sendErrorResponse(response, 0, '')
@@ -1063,6 +1063,13 @@ export class JSBeebDebugSession extends LoggingDebugSession {
         )
       } else {
         displayValue = `${value}`
+      }
+      if (args.context === 'hover') {
+        displayValue =
+          `$${address.toString(16).toUpperCase().padStart(4, '0')}: ` +
+          `$${value.toString(16).toUpperCase().padStart(2, '0')} ` +
+          `${value.toString(10).padStart(3, '0')} ` +
+          `%${value.toString(2).padStart(8, '0')}`
       }
 
       response.body = {
