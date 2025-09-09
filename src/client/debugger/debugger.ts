@@ -33,11 +33,13 @@ import {
   ClientMessage,
   ClientMessageEmulatorInfo,
   ClientMessageEmulatorMemory,
+  DataBreakpointConfig,
   DebugInstructionType,
   HostCommand,
   HostMessageDebugCommand,
   HostMessageDebugRequest,
   HostMessageSetBreakpoints,
+  HostMessageSetDataBreakpoints,
   HostMessageSetDebugMode,
   StoppedReason,
 } from '../../types/shared/messages'
@@ -52,7 +54,8 @@ import * as fs from 'fs'
 import path from 'path'
 
 export class jsbeebDebugAdapterFactory
-  implements DebugAdapterDescriptorFactory {
+  implements DebugAdapterDescriptorFactory
+{
   private extensionPath: string
   constructor(extensionPath: string) {
     this.extensionPath = extensionPath
@@ -149,6 +152,8 @@ export class JSBeebDebugSession extends LoggingDebugSession {
   private emulatorReadyForBreakpoints = false
   private pendingBreakpoints: number[] = []
   private fileBreakpoints: Map<string, Uint16Array> = new Map()
+  private dataBreakpoints: Map<string, DataBreakpointConfig> = new Map()
+  private pendingDataBreakpoints: DataBreakpointConfig[] = []
   private cwd: string = ''
   private extensionPath: string
   private sourceMapFiles: string[] = []
@@ -256,10 +261,11 @@ export class JSBeebDebugSession extends LoggingDebugSession {
     response.body.supportsConfigurationDoneRequest = true
 
     // make VS Code use 'evaluate' when hovering over source
-    response.body.supportsEvaluateForHovers = false
+    response.body.supportsEvaluateForHovers = true
 
     // make VS Code support data breakpoints
     response.body.supportsDataBreakpoints = true
+    response.body.supportsDataBreakpointBytes = true
 
     // make VS Code send the breakpointLocations request
     response.body.supportsBreakpointLocationsRequest = true
@@ -334,6 +340,16 @@ export class JSBeebDebugSession extends LoggingDebugSession {
       this.sendBreakpointsToEmulator(this.pendingBreakpoints)
       console.log('sending pending breakpoints: ' + this.pendingBreakpoints)
       this.pendingBreakpoints = []
+    }
+
+    // Send any data breakpoints that have been received before the emulator was ready
+    if (this.pendingDataBreakpoints.length > 0) {
+      this.sendDataBreakpointsToEmulator(this.pendingDataBreakpoints)
+      console.log(
+        'sending pending data breakpoints: ' +
+          this.pendingDataBreakpoints.length,
+      )
+      this.pendingDataBreakpoints = []
     }
 
     this.sendResponse(response)
@@ -483,6 +499,241 @@ export class JSBeebDebugSession extends LoggingDebugSession {
     }
     EmulatorPanel.instance?.notifyClient(message)
     // console.log(message)
+  }
+
+  private sendDataBreakpointsToEmulator(
+    dataBreakpoints: DataBreakpointConfig[],
+  ): void {
+    const message: HostMessageSetDataBreakpoints = {
+      command: HostCommand.SetDataBreakpoints,
+      dataBreakpoints: dataBreakpoints,
+    }
+    EmulatorPanel.instance?.notifyClient(message)
+  }
+
+  protected dataBreakpointInfoRequest(
+    response: DebugProtocol.DataBreakpointInfoResponse,
+    args: DebugProtocol.DataBreakpointInfoArguments,
+  ): void {
+    console.log(args)
+    const parsedExpression = this.parseMemoryExpression(args.name)
+    if (parsedExpression === null) {
+      response.body = {
+        dataId: null,
+        description: 'Invalid address expression',
+        accessTypes: [],
+        canPersist: false,
+      }
+    } else {
+      const { address, size } = parsedExpression
+      const padding = address < 0x100 ? 2 : 4
+      response.body = {
+        dataId: `${address}:${size}`,
+        description: `On access ${args.name} (&${address.toString(16).toUpperCase().padStart(padding, '0')})`,
+        accessTypes: ['read', 'write', 'readWrite'],
+        canPersist: true,
+      }
+    }
+    this.sendResponse(response)
+  }
+
+  protected setDataBreakpointsRequest(
+    response: DebugProtocol.SetDataBreakpointsResponse,
+    args: DebugProtocol.SetDataBreakpointsArguments,
+  ): void {
+    console.log(args)
+    const requestedBreakpoints = args.breakpoints || []
+    const responseBreakpoints: DebugProtocol.Breakpoint[] = []
+    const newDataBreakpoints: DataBreakpointConfig[] = []
+
+    // Store existing data breakpoints for comparison
+    const existingDataBreakpoints = Array.from(this.dataBreakpoints.values())
+
+    // Clear existing data breakpoints
+    this.dataBreakpoints.clear()
+
+    // Process each requested data breakpoint
+    for (let i = 0; i < requestedBreakpoints.length; i++) {
+      const bp = requestedBreakpoints[i]
+
+      // Parse address and size from dataId (format: "address:size")
+      const parts = bp.dataId.split(':')
+      const address = parseInt(parts[0], 10)
+      const size = parts.length > 1 ? parseInt(parts[1], 10) : 1
+
+      if (address < 0 || address > 0xffff || size < 1 || size > 4) {
+        responseBreakpoints.push(new Breakpoint(false))
+        continue
+      }
+
+      const dataBreakpoint: DataBreakpointConfig = {
+        id: `${i}`,
+        address: address,
+        accessType: bp.accessType || 'readWrite',
+        size: size,
+      }
+
+      this.dataBreakpoints.set(dataBreakpoint.id, dataBreakpoint)
+      newDataBreakpoints.push(dataBreakpoint)
+
+      responseBreakpoints.push(new Breakpoint(true))
+    }
+
+    // If emulator is ready, send to emulator, otherwise store for later
+    if (!this.emulatorReadyForBreakpoints) {
+      this.pendingDataBreakpoints.push(...newDataBreakpoints)
+    } else {
+      // Compare the data breakpoints set in the emulator with the ones we have
+      // so that we just send the changed ones to the emulator
+      if (existingDataBreakpoints.length > 0) {
+        const changedDataBreakpoints: DataBreakpointConfig[] = []
+
+        // First add all the data breakpoints that are in the new list but not the existing one
+        for (const newBp of newDataBreakpoints) {
+          const exists = existingDataBreakpoints.find(
+            (existing) =>
+              existing.address === newBp.address &&
+              existing.size === newBp.size &&
+              existing.accessType === newBp.accessType,
+          )
+          if (!exists) {
+            changedDataBreakpoints.push(newBp)
+          }
+        }
+
+        // Then add all the data breakpoints that are in the existing list but not the new one
+        // (these will be sent to the emulator to be removed)
+        for (const existingBp of existingDataBreakpoints) {
+          const stillExists = newDataBreakpoints.find(
+            (newBp) =>
+              newBp.address === existingBp.address &&
+              newBp.size === existingBp.size &&
+              newBp.accessType === existingBp.accessType,
+          )
+          if (!stillExists) {
+            changedDataBreakpoints.push(existingBp)
+          }
+        }
+
+        this.sendDataBreakpointsToEmulator(changedDataBreakpoints)
+        console.log(
+          'toggling changed data breakpoints: ' + changedDataBreakpoints.length,
+        )
+      } else {
+        this.sendDataBreakpointsToEmulator(newDataBreakpoints)
+        console.log(
+          'setting all data breakpoints: ' + newDataBreakpoints.length,
+        )
+      }
+    }
+
+    response.body = { breakpoints: responseBreakpoints }
+    this.sendResponse(response)
+  }
+
+  private parseMemoryExpression(expression: string): {
+    address: number
+    size: number
+    format: displayFormat
+  } | null {
+    const validExp =
+      /([$&%.]|\.\*|\.\^)?([a-z][a-z0-9_]*|\([$&][0-9a-f]+\)|\([0-9]+\))(\.[wd]|\.s[0-9]+)?/gi
+    const match = validExp.exec(expression)
+    if (match === null) {
+      return null
+    }
+
+    const formatPrefix = match[1] ?? ''
+    let label = match[2]
+    const sizeSuffix = (match[3] ?? '.b').toLowerCase()
+
+    let format: displayFormat
+    switch (formatPrefix) {
+      case '&':
+      case '$':
+        format = displayFormat.hex
+        break
+      case '%':
+        format = displayFormat.binary
+        break
+      case '.':
+      case '.*':
+      case '.^':
+        format = displayFormat.decimal
+        break
+      default:
+        format = displayFormat.decimal
+        break
+    }
+
+    let bytes: number
+    switch (sizeSuffix) {
+      case '.w':
+        bytes = 2
+        break
+      case '.d':
+        bytes = 4
+        break
+      case '.b':
+        bytes = 1
+        break
+      default:
+        format = displayFormat.string
+        bytes = parseInt(sizeSuffix.slice(2), 10)
+        break
+    }
+
+    // search for label in labels list after removing prefix if necessary
+    if (label.startsWith('.')) {
+      label = label.slice(1)
+    }
+    if (label.startsWith('*') || label.startsWith('^')) {
+      label = label.slice(1)
+    }
+    if (
+      this.labelMap['.' + label] === undefined &&
+      this.symbolMap[label] === undefined &&
+      !label.startsWith('(')
+    ) {
+      return null
+    }
+
+    // check if symbol is an integer between 0 and 0xFFFF
+    if (this.symbolMap[label] !== undefined) {
+      const address = this.symbolMap[label]
+      if (address < 0 || address > 0xffff || address % 1 !== 0) {
+        return null
+      }
+    }
+
+    let address: number
+    if (label.startsWith('(')) {
+      if (label.charAt(1) === '&' || label.charAt(1) === '$') {
+        address = parseInt(label.slice(2, -1), 16)
+      } else {
+        address = parseInt(label.slice(1, -1), 10)
+      }
+    } else if (this.labelMap['.' + label] !== undefined) {
+      address = this.labelMap['.' + label]
+    } else {
+      address = this.symbolMap[label]
+    }
+
+    // Validate address is in valid range
+    if (address < 0 || address > 0xffff) {
+      return null
+    }
+
+    return {
+      address: address,
+      size: bytes,
+      format: format,
+    }
+  }
+
+  private parseDataBreakpointExpression(expression: string): number | null {
+    const result = this.parseMemoryExpression(expression)
+    return result ? result.address : null
   }
 
   protected threadsRequest(response: DebugProtocol.ThreadsResponse): void {
@@ -779,88 +1030,15 @@ export class JSBeebDebugSession extends LoggingDebugSession {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     request?: DebugProtocol.Request,
   ): Promise<void> {
-    const validExp =
-      /([$&%.]|\.\*|\.\^)?([a-z][a-z0-9_]*|\([$&][0-9a-f]+\)|\([0-9]+\))(\.[wd]|\.s[0-9]+)?/gi
-    if (args.context === 'watch') {
-      const match = validExp.exec(args.expression)
-      if (match === null) {
+    if (args.context === 'watch' || args.context === 'hover') {
+      const parsedExpression = this.parseMemoryExpression(args.expression)
+      if (parsedExpression === null) {
         this.sendErrorResponse(response, 0, '')
         return
       }
-      const formatPrefix = match[1] ?? ''
-      let label = match[2]
-      const sizeSuffix = (match[3] ?? '.b').toLowerCase()
-      let format: displayFormat
-      switch (formatPrefix) {
-        case '&':
-        case '$':
-          format = displayFormat.hex
-          break
-        case '%':
-          format = displayFormat.binary
-          break
-        case '.':
-        case '.*':
-        case '.^':
-          format = displayFormat.decimal
-          break
-        default:
-          format = displayFormat.decimal
-          break
-      }
-      let bytes: number
-      switch (sizeSuffix) {
-        case '.w':
-          bytes = 2
-          break
-        case '.d':
-          bytes = 4
-          break
-        case '.b':
-          bytes = 1
-          break
-        default:
-          format = displayFormat.string
-          bytes = parseInt(sizeSuffix.slice(2), 10)
-          break
-      }
 
-      // search for label in labels list after removing prefix if necessary
-      if (label.startsWith('.')) {
-        label = label.slice(1)
-      }
-      if (label.startsWith('*') || label.startsWith('^')) {
-        label = label.slice(1)
-      }
-      if (
-        this.labelMap['.' + label] === undefined &&
-        this.symbolMap[label] === undefined &&
-        !label.startsWith('(')
-      ) {
-        this.sendErrorResponse(response, 0, '')
-        return
-      }
-      // check if symbol is an integer between 0 and 0xFFFF
-      if (this.symbolMap[label] !== undefined) {
-        const address = this.symbolMap[label]
-        if (address < 0 || address > 0xffff || address % 1 !== 0) {
-          this.sendErrorResponse(response, 0, '')
-          return
-        }
-      }
+      const { address, size: bytes, format } = parsedExpression
 
-      let address: number
-      if (label.startsWith('(')) {
-        if (label.charAt(1) === '&' || label.charAt(1) === '$') {
-          address = parseInt(label.slice(2, -1), 16)
-        } else {
-          address = parseInt(label.slice(1, -1), 10)
-        }
-      } else if (this.labelMap['.' + label] !== undefined) {
-        address = this.labelMap['.' + label]
-      } else {
-        address = this.symbolMap[label]
-      }
       // retrieve value at address from emulator
       let value = this.memory[address]
       if (bytes > 1) {
@@ -885,6 +1063,13 @@ export class JSBeebDebugSession extends LoggingDebugSession {
         )
       } else {
         displayValue = `${value}`
+      }
+      if (args.context === 'hover') {
+        displayValue =
+          `$${address.toString(16).toUpperCase().padStart(4, '0')}: ` +
+          `$${value.toString(16).toUpperCase().padStart(2, '0')} ` +
+          `${value.toString(10).padStart(3, '0')} ` +
+          `%${value.toString(2).padStart(8, '0')}`
       }
 
       response.body = {

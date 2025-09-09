@@ -23,7 +23,7 @@ declare module 'jsbeeb/6502' {
   }
 
   export interface DebugHookHandler {
-    (): void
+    (address: number): boolean
   }
 
   export interface DebugHookHandlerOutput extends DebugHookHandler {

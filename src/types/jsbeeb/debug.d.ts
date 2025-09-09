@@ -8,5 +8,9 @@ declare module 'jsbeeb/web/debug' {
     stepOut(): void
     enable(e: boolean): void
     toggleBreakpoint(address: number): void
+    readBreakpoints: { [address: number]: { remove(): void } | undefined }
+    writeBreakpoints: { [address: number]: { remove(): void } | undefined }
+    toggleReadBreakpoint: (address: number) => void
+    toggleWriteBreakpoint: (address: number) => void
   }
 }

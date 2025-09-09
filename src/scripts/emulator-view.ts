@@ -13,6 +13,7 @@ import { DisplayMode, getDisplayModeInfo } from './display-modes'
 import { notifyHost } from './vscode'
 import {
   ClientCommand,
+  DataBreakpointConfig,
   DiscImageFile,
   DiscImageOptions,
   NO_DISC,
@@ -245,6 +246,26 @@ export class EmulatorView {
   SetBreakpoints(addresses: number[]) {
     for (const address of addresses) {
       this.emulator?.dbgr.toggleBreakpoint(address)
+    }
+  }
+  SetDataBreakpoints(breakpoints: DataBreakpointConfig[]) {
+    for (const breakpoint of breakpoints) {
+      if (
+        breakpoint.accessType === 'read' ||
+        breakpoint.accessType === 'readWrite'
+      ) {
+        for (let i = 0; i < breakpoint.size; i++) {
+          this.emulator?.dbgr.toggleReadBreakpoint(breakpoint.address + i)
+        }
+      }
+      if (
+        breakpoint.accessType === 'write' ||
+        breakpoint.accessType === 'readWrite'
+      ) {
+        for (let i = 0; i < breakpoint.size; i++) {
+          this.emulator?.dbgr.toggleWriteBreakpoint(breakpoint.address + i)
+        }
+      }
     }
   }
 }
