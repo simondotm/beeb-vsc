@@ -2,6 +2,12 @@
 
 See [Releases on Github](https://github.com/simondotm/beeb-vsc/releases) for full release history.
 
+### 0.3.6
+ - Support projects with multiple beebasm targets better
+ - Performance optimisations
+ - Add data breakpoint support
+ - Add debug hover support
+
 ### 0.3.5
  - Fix evaluation of division in expressions to not floor the result
  - Avoid infinite loop possibility with FOR loops inside macros
