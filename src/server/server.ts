@@ -273,8 +273,9 @@ connection.onDidChangeWatchedFiles((_change) => {
 // Handle the source map request
 connection.onRequest(SourceMapRequestType, async (params) => {
   console.log(`Received source map request for file: ${params.text}`)
-  const context = FileHandler.Instance.getContext(params.text)
-  const result = await SaveSourceMap(params.text, context)
+  const uri = URItoVSCodeURI(params.text)
+  const context = FileHandler.Instance.getContext(uri)
+  const result = await SaveSourceMap(uri, context)
   const response = `Source map saved: ${result}`
   return response
 })
@@ -283,10 +284,9 @@ async function SaveSourceMap(
   activeFile: string,
   context: DocumentContext,
 ): Promise<string | null> {
-  const uri = URItoVSCodeURI(activeFile)
-  const root = FileHandler.Instance.GetTargetFileName(uri)
+  const root = FileHandler.Instance.GetTargetFileName(activeFile)
   if (root === undefined) {
-    console.log(`No root found for ${uri}`)
+    console.log(`No root found for ${activeFile}`)
     return null
   }
   const currentDir = URItoVSCodeURI(process.cwd())

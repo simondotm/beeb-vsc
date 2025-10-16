@@ -4,14 +4,15 @@ import { readFileSync, statSync } from 'fs'
 import { URI } from 'vscode-uri'
 import { SourceFileMap } from '../types/shared/debugsource'
 import path from 'path'
-import { DocumentContext } from './documentContext';
+import { DocumentContext } from './documentContext'
 
 // The TextDocuments collection is the files managed by vscode
 // For any included files, we manage with the _textDocuments map
 export class FileHandler {
   private static _instance: FileHandler
-  private _textDocuments: Map<string, { contents: string; modified: Date }> = new Map<string, { contents: string; modified: Date }>()
-  private contexts: Map<string, DocumentContext> = new Map();
+  private _textDocuments: Map<string, { contents: string; modified: Date }> =
+    new Map<string, { contents: string; modified: Date }>()
+  private contexts: Map<string, DocumentContext> = new Map()
   private includedToParentMap = new Map<string, string>()
   private workspaceRoot: string | undefined
   public documents: TextDocuments<TextDocument> = new TextDocuments(
@@ -19,19 +20,19 @@ export class FileHandler {
   )
 
   public getContext(uri: string): DocumentContext {
-    const rootUri = this.getRootUri(uri);
-    let context = this.contexts.get(rootUri);
+    const rootUri = this.getRootUri(uri)
+    let context = this.contexts.get(rootUri)
     if (!context) {
-      context = new DocumentContext();
-      this.contexts.set(rootUri, context);
+      context = new DocumentContext()
+      this.contexts.set(rootUri, context)
     }
-    return context;
+    return context
   }
 
   // This is a placeholder. Need to test how to handle context for files without root
   private getRootUri(uri: string): string {
-    const targetFileName = this.GetTargetFileName(uri);
-    return targetFileName !== undefined ? targetFileName : uri;
+    const targetFileName = this.GetTargetFileName(uri)
+    return targetFileName !== undefined ? targetFileName : uri
   }
 
   public static get Instance() {
