@@ -90,7 +90,7 @@
     "labels": {
       "patterns": [
         {
-          "match": "(?i)\\.[a-z_]\\S+\\b",
+          "match": "(?i)\\.[a-z_^*]\\S+\\b",
           "name": "entity.other.attribute-name.struct"
         }
       ]
