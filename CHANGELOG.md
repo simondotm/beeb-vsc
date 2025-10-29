@@ -2,6 +2,10 @@
 
 See [Releases on Github](https://github.com/simondotm/beeb-vsc/releases) for full release history.
 
+### 0.3.7
+ - Add label style syntax highlighting for global and parent scope labels
+ - Fix production of source map
+
 ### 0.3.6
  - Support projects with multiple beebasm targets better
  - Performance optimisations
