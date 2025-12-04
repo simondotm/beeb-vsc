@@ -5,6 +5,8 @@ import { SourceCode } from '../beebasm-ts/sourcecode'
 import * as AsmException from '../beebasm-ts/asmexception'
 import {
   Diagnostic,
+  DiagnosticSeverity,
+  DiagnosticTag,
   DocumentLink,
   TextDocumentPositionParams,
 } from 'vscode-languageserver'
@@ -48,6 +50,46 @@ function Run2Passes(code: string) {
     )
     input.Process()
   }
+}
+
+// Helper to check for unused symbols (mirrors server.ts implementation)
+function checkUnusedSymbols(uri: string): Diagnostic[] {
+  const unusedDiagnostics: Diagnostic[] = []
+  const symbols = context.symbolTable.GetSymbols()
+
+  for (const [name, symbolData] of symbols.entries()) {
+    // Only check symbols defined in the specified file
+    if (symbolData.GetLocation().uri !== uri) continue
+
+    // Skip labels (only check constant declarations)
+    if (symbolData.IsLabel()) continue
+
+    // Skip built-in symbols (PI, P%, TRUE, FALSE, CPU)
+    if (
+      name === 'PI' ||
+      name === 'P%' ||
+      name === 'TRUE' ||
+      name === 'FALSE' ||
+      name === 'CPU'
+    ) {
+      continue
+    }
+
+    // Check if symbol has any references
+    const refs = context.symbolTable.GetReferences(name)
+    if (refs === undefined || refs.length === 0) {
+      const displayName = name.includes('@') ? name.split('@')[0] : name
+      unusedDiagnostics.push({
+        severity: DiagnosticSeverity.Hint,
+        range: symbolData.GetLocation().range,
+        message: `'${displayName}' is declared but never used`,
+        source: 'vscode-beebasm',
+        tags: [DiagnosticTag.Unnecessary],
+      })
+    }
+  }
+
+  return unusedDiagnostics
 }
 
 suite('LineParser', function () {
@@ -178,6 +220,18 @@ suite('LineParser', function () {
     test('Test expression with labels', testInlayHintExpressionWithLabels)
     test('Test multiple statements on line', testInlayHintMultipleStatements)
     test('Test comment after opcode', testInlayHintCommentAfterStatement)
+  })
+
+  suite('Unused Symbols', function () {
+    test('Test unused global', testUnusedGlobalConstant)
+    test('Test used global constant', testUsedGlobalConstantIsNotFlagged)
+    test('Test unused scoped constant', testUnusedScopedConstantIsFlagged)
+    test('Test used scoped constant', testUsedScopedConstantIsNotFlagged)
+    test('Test labels', testLabelsAreNotFlaggedAsUnused)
+    test(
+      'Test multiple unused constants',
+      testMultipleUnusedConstantsAreAllFlagged,
+    )
   })
 })
 
@@ -1784,4 +1838,60 @@ function testNumberTooBigFalsePositive() {
   input.Process()
   // test diagnostics = 0 because should evaluate to 255
   assert.equal(diagnostics.get('')!.length, 0)
+}
+
+function testUnusedGlobalConstant() {
+  const code = 'unused = 42'
+  Run2Passes(code)
+  const unused = checkUnusedSymbols('')
+  assert.equal(unused.length, 1)
+  assert.equal(unused[0].message, "'unused' is declared but never used")
+  assert.deepEqual(unused[0].tags, [DiagnosticTag.Unnecessary])
+  assert.equal(unused[0].severity, DiagnosticSeverity.Hint)
+}
+
+function testUsedGlobalConstantIsNotFlagged() {
+  const code = `used = 42
+  LDA #used`
+  Run2Passes(code)
+  const unused = checkUnusedSymbols('')
+  assert.equal(unused.length, 0)
+}
+
+function testUnusedScopedConstantIsFlagged() {
+  const code = `{
+    scoped = 100
+  }`
+  Run2Passes(code)
+  const unused = checkUnusedSymbols('')
+  assert.equal(unused.length, 1)
+  assert.equal(unused[0].message, "'scoped' is declared but never used")
+}
+
+function testUsedScopedConstantIsNotFlagged() {
+  const code = `{
+    scoped = 100
+    LDA #scoped
+  }`
+  Run2Passes(code)
+  const unused = checkUnusedSymbols('')
+  assert.equal(unused.length, 0)
+}
+
+function testLabelsAreNotFlaggedAsUnused() {
+  const code = `.unusedLabel
+  RTS`
+  Run2Passes(code)
+  const unused = checkUnusedSymbols('')
+  assert.equal(unused.length, 0)
+}
+
+function testMultipleUnusedConstantsAreAllFlagged() {
+  const code = `unused1 = 1
+unused2 = 2
+used = 3
+LDA #used`
+  Run2Passes(code)
+  const unused = checkUnusedSymbols('')
+  assert.equal(unused.length, 2)
 }
