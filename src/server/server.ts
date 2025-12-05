@@ -206,6 +206,7 @@ async function ParseDocument(
   context: DocumentContext,
 ): Promise<void> {
   console.log(`Parsing ${activeFile} from root ${sourceFilePath}`)
+  const startTime = Date.now()
   // map from uri to diagnostics
   const diagnostics = new Map<string, Diagnostic[]>()
   diagnostics.set(sourceFilePath, [])
@@ -259,7 +260,7 @@ async function ParseDocument(
     uri: activeFile,
     diagnostics: thisDiagnostics,
   })
-  console.log(`Parsing ${activeFile} complete`)
+  console.log(`Parsing ${activeFile} complete in ${Date.now() - startTime} ms`)
 }
 
 connection.onDidChangeWatchedFiles((_change) => {
