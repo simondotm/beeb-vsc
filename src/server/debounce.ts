@@ -28,7 +28,6 @@ export function createDebouncer(
 
     // Set a timer. Only when the user stops typing for `delay` ms will we parse
     timeout = setTimeout(() => {
-      console.log(`Debounced: Running parse for ${document.uri}`)
       func(document, newController.signal).catch((err) => {
         if (err.name !== 'AbortError') console.error(err)
       })
