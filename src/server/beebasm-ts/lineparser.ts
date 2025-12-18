@@ -1715,6 +1715,7 @@ export class LineParser {
       { name: 'COPYBLOCK', handler: 'HandleCopyBlock', directiveHandler: '' },
       { name: 'RANDOMIZE', handler: 'HandleRandomize', directiveHandler: '' },
       { name: 'ASM', handler: 'HandleAsm', directiveHandler: '' },
+      { name: 'SOURCELINE', handler: 'HandleSourceLine', directiveHandler: '' },
     ]
     this._tree = {
       type: ASTType.Line,
@@ -2240,6 +2241,8 @@ export class LineParser {
         return this.HandleRandomize()
       case 'HandleAsm':
         return this.HandleAsm()
+      case 'HandleSourceLine':
+        return this.HandleSourceLine()
 
       // Unary / function-like operator handlers
       case 'EvalNegate':
@@ -4664,6 +4667,33 @@ export class LineParser {
         parser._line,
         parser._column,
       )
+    }
+  }
+
+  private HandleSourceLine(): void {
+    // We don't actually change the source line/file in the vscode extension,
+    // but we do need to parse the parameters and check for syntax errors.
+    // Modifying the source line/file would mess up inline error reporting.
+    const args = new ArgListParser(this)
+    const line = args.ParseInt().Range(0, Number.MAX_SAFE_INTEGER).Value() as
+      | number
+      | undefined
+    const fileParam = args.ParseString()
+    args.CheckComplete()
+
+    if (this._column != this._line.length) {
+      // This must be the last thing on the line
+      throw new AsmException.SyntaxError_SourceLineNotLast(
+        this._line,
+        this._column,
+      )
+    }
+
+    if (line !== undefined) {
+      // this._sourceCode.SetLineNumber(line - 1)
+    }
+    if (fileParam.Found()) {
+      // this._sourceCode.SetFileName(fileParam.Value() as string)
     }
   }
 

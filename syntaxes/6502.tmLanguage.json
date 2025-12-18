@@ -82,7 +82,7 @@
           "name": "entity.name.function"
         },
         {
-          "match": "(?i)\\b(print|error|assert)\\b",
+          "match": "(?i)\\b(print|error|assert|sourceline)\\b",
           "name": "keyword.other.debug"
         }
       ]

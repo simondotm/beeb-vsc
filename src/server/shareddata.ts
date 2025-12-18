@@ -1257,6 +1257,22 @@ export const beebasmCommands: beebasmCommand[] = [
     },
     parameters: [{ label: 'str' }],
   },
+  // SOURCELINE <line number> [,<filename>]
+  {
+    command: 'SOURCELINE',
+    label: 'SOURCELINE line_number [,filename]',
+    documentation: {
+      kind: MarkupKind.Markdown,
+      value: [
+        '`SOURCELINE <line number> [,<filename>]`',
+        'For error reporting act as if the following lines started at `<line number>` in `<filename>`.  This is similar to `#line` in C/C++.',
+        '```beebasm',
+        'SOURCELINE 20,"random.asm"',
+        '```',
+      ].join('\n'),
+    },
+    parameters: [{ label: 'line_number' }, { label: 'filename' }],
+  },
 ]
 
 export type opcodeinfo = {
