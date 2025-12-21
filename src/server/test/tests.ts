@@ -233,6 +233,11 @@ suite('LineParser', function () {
       testMultipleUnusedConstantsAreAllFlagged,
     )
   })
+
+  suite('Evaluate macro parameters in outer scope', function () {
+    test('Test evaluate macro parameter', testMacroParamEval)
+    test('Test undefinedness propagates to the macro', testMacroUndefined)
+  })
 })
 
 const assignments = `
@@ -651,9 +656,9 @@ SAVE "code", start, end`
 
 function testSkipAndOrg() {
   const code = `
-	ORG &20
-	.label skip 1
-	`
+  ORG &20
+  .label skip 1
+  `
   try {
     for (let pass = 0; pass < 2; pass++) {
       context.globalData.SetPass(pass)
@@ -686,9 +691,9 @@ function testSkipAndOrg() {
 
 function testForLoop() {
   const code = `
-	FOR n, 0, 10
-	LDA #n
-	NEXT`
+  FOR n, 0, 10
+  LDA #n
+  NEXT`
   for (let pass = 0; pass < 2; pass++) {
     context.globalData.SetPass(pass)
     context.objectCode.InitialisePass()
@@ -734,12 +739,12 @@ function testConditional() {
   const code = `
 \\ build a rather strange table
 FOR n, 0, 9
-	IF (n AND 1) = 0
-	a = n*n
-	ELSE
-	a = -n*n
-	ENDIF
-	EQUB a
+  IF (n AND 1) = 0
+  a = n*n
+  ELSE
+  a = -n*n
+  ENDIF
+  EQUB a
 NEXT`
   const sourceCode = new SourceCode(
     code,
@@ -826,9 +831,9 @@ function testMappedCharExpr() {
 
 function testReferenceError() {
   const code = `
-	.layout skip 11*11
-	LDA layout, Y
-	`
+  .layout skip 11*11
+  LDA layout, Y
+  `
   for (let pass = 0; pass < 2; pass++) {
     context.globalData.SetPass(pass)
     context.objectCode.InitialisePass()
@@ -1894,4 +1899,50 @@ LDA #used`
   Run2Passes(code)
   const unused = checkUnusedSymbols('')
   assert.equal(unused.length, 2)
+}
+
+function testMacroParamEval() {
+  const code = `
+MACRO SHOW x, y
+  PRINT x, y
+  ASSERT(x=5)
+  ASSERT(y=5)
+ENDMACRO
+
+; Check that macro parameters are evaluated in the outer scope
+x=2
+y=3
+SHOW x+y, x+y`
+
+  Run2Passes(code)
+  assert.equal(diagnostics.get('')!.length, 0, diagnostics.get('')![0]?.message)
+}
+
+function testMacroUndefined() {
+  const code = `
+MACRO LOAD address
+LDA address
+ENDMACRO
+
+ORG &2000
+; On the first pass LOAD is called with an undefined symbol.
+; Test that the undefinedness propagates to the macro so
+; that the LDA has the correct width (i.e. not zero page).
+LOAD data
+RTS
+.data
+EQUB 2
+
+; This example fails because zp moves out of zero page between
+; passes.  It would be better if scopes couldn't override symbols
+; from outer scopes.
+;zp=&70
+;{
+;    LDA zp
+;    RTS
+;    .zp
+;    EQUB 3
+;}`
+  Run2Passes(code)
+  assert.equal(diagnostics.get('')!.length, 0, diagnostics.get('')![0]?.message)
 }
