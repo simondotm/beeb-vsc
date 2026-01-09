@@ -22,7 +22,7 @@
 */
 /*************************************************************************************************/
 
-import { Macro, MacroTable } from './macro'
+import { Macro } from './macro'
 import { LineParser } from './lineparser'
 import * as AsmException from './asmexception'
 import {
@@ -36,8 +36,7 @@ import { AST } from '../ast'
 import { SourceMap } from '../../types/shared/debugsource'
 import { DocumentContext } from '../documentContext'
 import { SymbolTable } from './symboltable'
-import { cyrb53, FileHandler } from '../filehandler'
-
+import { cyrb53 } from '../filehandler'
 
 const MAX_FOR_LEVELS = 256
 const MAX_IF_LEVELS = 256
@@ -148,7 +147,12 @@ export class SourceCode {
       // StringUtils::ExpandTabsToSpaces( lineFromFile, 8 );
       const lineParsed = this._lineNumber
       try {
-        const thisLine = new LineParser(this, lineFromFile, this._lineNumber, this._context)
+        const thisLine = new LineParser(
+          this,
+          lineFromFile,
+          this._lineNumber,
+          this._context,
+        )
         thisLine.Process()
         // Should only store tree on first loop if in FOR loop
         if (this._forStackPtr > 0) {
@@ -568,7 +572,11 @@ export class SourceCode {
       this._context.symbolTable.ChangeSymbol(thisFor.varName, thisFor.current)
       this.SetLinePointer(thisFor.filePtr)
       this._context.symbolTable.PopScope()
-      this._context.symbolTable.PushFor(thisFor.varName, thisFor.current, this._uri)
+      this._context.symbolTable.PushFor(
+        thisFor.varName,
+        thisFor.current,
+        this._uri,
+      )
       thisFor.count++
       // If parsing NEXT statement for a second time then no longer in first loop
       if (
