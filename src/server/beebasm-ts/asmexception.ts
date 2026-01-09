@@ -438,6 +438,14 @@ export class SyntaxError_DivisionByZero extends SyntaxError {
   message = 'Division by zero.'
 }
 
+export class SyntaxError_SourceLineNotLast extends SyntaxError {
+  constructor(line: string, column: number) {
+    super(line, column)
+    Object.setPrototypeOf(this, SyntaxError_SourceLineNotLast.prototype)
+  }
+  message = 'SOURCELINE must be the final statement on a line.'
+}
+
 export class AssembleError extends SyntaxError {
   public _line = ''
   public _column = 0
