@@ -229,19 +229,39 @@ export function activate(context: ExtensionContext) {
 
     // Register the custom command
     context.subscriptions.push(
-      commands.registerCommand('beebvsc.createSourceMap', async () => {
-        // get file name of currently displayed file
-        const editor = window.activeTextEditor
-        if (!editor) {
-          window.showInformationMessage('No active file selected')
-          return
-        }
-        const fileName = editor.document.uri.fsPath
-        const response = await client.sendRequest('custom/requestSourceMap', {
-          text: fileName,
-        })
-        window.showInformationMessage(`${response}`)
-      }),
+      commands.registerCommand(
+        'beebvsc.createSourceMap',
+        async (args?: { sourceFile?: string }) => {
+          let filePath = ''
+          // If called from inputs in tasks.json (object with sourceFile)
+          if (
+            args &&
+            typeof args === 'object' &&
+            'sourceFile' in args &&
+            args.sourceFile
+          ) {
+            // Check if it's a relative path and expand to absolute
+            if (path.isAbsolute(args.sourceFile)) {
+              filePath = args.sourceFile
+            } else {
+              filePath = path.join(getWorkspacePath(), args.sourceFile)
+            }
+          } else {
+            // get file name of currently displayed file
+            const editor = window.activeTextEditor
+            if (!editor) {
+              window.showInformationMessage('No active file selected')
+              return
+            }
+            filePath = editor.document.uri.fsPath
+          }
+
+          const response = await client.sendRequest('custom/requestSourceMap', {
+            text: filePath,
+          })
+          window.showInformationMessage(`${response}`)
+        },
+      ),
     )
 
     // Debug the current file
@@ -511,7 +531,7 @@ function setCurrentTarget(
             // no target file specified, so use the default target file
             targetFile = getTargetName(
               workspace.getConfiguration('beebvsc').get<string>('sourceFile') ??
-              'main.asm',
+                'main.asm',
             )
           }
         }
