@@ -181,6 +181,28 @@ Then adding a `"dependsOn"` property to the main build task that calls this one 
             ],
 ```
 
+Note that a limitation of this approach is that we aren't specifying the source file to create a source map for, so the editor window with focus needs to be one of the source files. It is possible to specify a source file within the `tasks.json` file with a bit more scaffolding. We need to create a separate `input` type entry and then modify the "Create source map" task from above to call that `input`:
+```json
+    "inputs": [
+        {
+            "id": "createSourceMap",
+            "type": "command",
+            "command": "beebvsc.createSourceMap",
+            "args": {
+                "sourceFile": "test.6502"
+            }
+        }
+    ],
+    "tasks": [
+        {
+            "label": "Create source map",
+            "type": "shell",
+            "command": "echo",
+            "args": ["'${input:createSourceMap}'"],
+            "problemMatcher": []
+        },
+```
+
 Then the built-in copy of JSBeeb needs to be launched in debug mode. This can be done in two ways. 
 1) Just right-click on the disk image and select `BeebVSC: Debug`
 2) Set up a `launch.json` file so that you can just press `F5` to start debugging with a specific disk image and named source map file(s). A template for this is included, so you can go to the `Run and Debug` panel in VS Code and click `create a launch.json file` to get an initial template, then update the diskImage and sourceMapFiles fields.
@@ -202,6 +224,7 @@ Example `launch.json`
     ]
 }
 ```
+Add a `"preLaunchTask"` if you want to always build before launching the debugger.
 
 Watches can be set for symbols and labels from your code (assuming they relate to 16 bit addresses).
  - Add prefix of `$` or `&` for hex display, `%` for binary display, leave blank for decimal
