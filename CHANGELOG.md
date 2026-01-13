@@ -2,6 +2,11 @@
 
 See [Releases on Github](https://github.com/simondotm/beeb-vsc/releases) for full release history.
 
+### 0.3.8
+ - Add updates for beebasm v1.11
+ - Option to specify file for creating source map in tasks.json
+ - Flag unused symbols in code
+
 ### 0.3.7
  - Add label style syntax highlighting for global and parent scope labels
  - Fix production of source map
