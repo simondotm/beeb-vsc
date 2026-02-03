@@ -7,7 +7,8 @@ import { Canvas, GlCanvas } from 'jsbeeb/canvas'
 import Snapshot from './snapshot'
 import * as utils from 'jsbeeb/utils'
 import { Model } from 'jsbeeb/models'
-import { BaseDisc, emptySsd } from 'jsbeeb/fdc'
+import { Disc } from 'jsbeeb/disc'
+import { discFor } from 'jsbeeb/fdc'
 import { notifyHost } from './vscode'
 import {
   ClientCommand,
@@ -147,7 +148,12 @@ export class Emulator {
       this.targetCycles += numCyclesToRun
       // Any tracing or debugging means we need to run the potentially slower version: the debug read or
       // debug write might change tracing or other debugging while we're running.
-      if (this._debugInstruction || this._debugRead || this._debugWrite) {
+      if (
+        this.forceTracing ||
+        this._debugInstruction ||
+        this._debugRead ||
+        this._debugWrite
+      ) {
         return this.executeInternal()
       } else {
         return this.executeInternalFast()
@@ -254,7 +260,7 @@ export class Emulator {
       try {
         const fdc = this.cpu.fdc
         const discData = await utils.loadData(discImageFile.url)
-        const discImage = new BaseDisc(fdc, 'disc', discData, () => {})
+        const discImage = discFor(fdc, discImageFile.name, discData, () => { })
         this.cpu.fdc.loadDisc(0, discImage)
         // notifyHost({
         //   command: ClientCommand.Info,
@@ -278,9 +284,9 @@ export class Emulator {
 
   ejectDisc() {
     console.log('Disc ejected')
-    const blank = emptySsd(this.cpu.fdc)
+    const blank = Disc.createBlank()
     this.cpu.fdc.loadDisc(0, blank)
-    this.cpu.fdc.loadDisc(2, blank)
+    this.cpu.fdc.loadDisc(1, blank)
   }
 
   /**

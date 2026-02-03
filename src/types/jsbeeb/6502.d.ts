@@ -45,6 +45,7 @@ declare module 'jsbeeb/6502' {
     x: number
     y: number
     s: number
+    forceTracing: boolean
 
     video: Video
     sysvia: SysVia

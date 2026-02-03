@@ -10,6 +10,7 @@ declare module 'jsbeeb/web/audio-handler' {
 
     constructor(
       warningNode: JQuery<HTMLElement>,
+      statsNode: any,
       audioFilterFreq: number,
       audioFilterQ: number,
       noSeek: boolean,

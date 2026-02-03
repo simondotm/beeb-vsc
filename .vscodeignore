@@ -14,3 +14,8 @@ images/**
 out
 docs
 esbuild.config.js
+.eslintignore
+eslint.config.mjs
+tsconfig.tsbuildinfo
+vite.config.mjs
+patches/**

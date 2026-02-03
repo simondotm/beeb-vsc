@@ -10,11 +10,12 @@ export class CustomAudioHandler extends AudioHandler {
 
   constructor(
     public warningNode: JQuery<HTMLElement>,
+    statsNode: any,
     audioFilterFreq: number,
     audioFilterQ: number,
     noSeek: boolean,
   ) {
-    super(warningNode, audioFilterFreq, audioFilterQ, noSeek)
+    super(warningNode, statsNode, audioFilterFreq, audioFilterQ, noSeek)
   }
 
   /**

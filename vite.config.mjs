@@ -1,26 +1,28 @@
-import { defineConfig } from 'vite';
-import { viteStaticCopy } from 'vite-plugin-static-copy';
-import { resolve, dirname } from 'path';
-import { fileURLToPath } from 'url';
-import fs from 'fs';
+import { defineConfig } from 'vite'
+import { viteStaticCopy } from 'vite-plugin-static-copy'
+import { resolve, dirname } from 'path'
+import { fileURLToPath } from 'url'
+import fs from 'fs'
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const pkg = JSON.parse(fs.readFileSync(resolve(__dirname, 'package.json'), 'utf-8'));
-const APP_VERSION = pkg.version;
+const __dirname = dirname(fileURLToPath(import.meta.url))
+const pkg = JSON.parse(
+  fs.readFileSync(resolve(__dirname, 'package.json'), 'utf-8'),
+)
+const APP_VERSION = pkg.version
 
 export default defineConfig(({ mode }) => {
-  const isProd = mode === 'production';
-  const target = process.env.VITE_TARGET || 'node';
+  const isProd = mode === 'production'
+  const target = process.env.VITE_TARGET || 'node'
 
   const commonDefine = {
-    'environment': JSON.stringify(isProd ? 'prod' : 'dev'),
-    'APP_VERSION': JSON.stringify(APP_VERSION),
-  };
+    environment: JSON.stringify(isProd ? 'prod' : 'dev'),
+    APP_VERSION: JSON.stringify(APP_VERSION),
+  }
 
   if (target === 'webview') {
     return {
       build: {
-        outDir: 'dist/webview',
+        outDir: 'dist-webview',
         lib: {
           entry: resolve(__dirname, 'src/scripts/index.ts'),
           name: 'webview',
@@ -29,21 +31,37 @@ export default defineConfig(({ mode }) => {
         },
         sourcemap: true,
         minify: isProd,
-        emptyOutDir: false,
+        emptyOutDir: true,
       },
       define: commonDefine,
+      resolve: {
+        alias: [
+          {
+            find: 'jsbeeb',
+            replacement: resolve(__dirname, 'node_modules/jsbeeb/src'),
+          },
+        ],
+      },
       plugins: [
         viteStaticCopy({
           targets: [
             { src: 'assets/*', dest: '.' },
-            { src: 'node_modules/@vscode/codicons/dist/codicon.css', dest: 'css' },
-            { src: 'node_modules/@vscode/codicons/dist/codicon.ttf', dest: 'css' },
-            { src: 'node_modules/jsbeeb/roms/**/*', dest: 'jsbeeb/roms' },
-            { src: 'node_modules/jsbeeb/sounds/**/*', dest: 'jsbeeb/sounds' },
-          ]
-        })
-      ]
-    };
+            {
+              src: 'node_modules/@vscode/codicons/dist/codicon.{css,ttf}',
+              dest: 'codicons',
+            },
+            {
+              src: 'node_modules/jsbeeb/public/roms/**/*',
+              dest: 'jsbeeb/roms',
+            },
+            {
+              src: 'node_modules/jsbeeb/public/sounds/**/*',
+              dest: 'jsbeeb/sounds',
+            },
+          ],
+        }),
+      ],
+    }
   }
 
   // Node build (Extension + Server)
@@ -70,5 +88,13 @@ export default defineConfig(({ mode }) => {
       noExternal: true, // This forces bundling of dependencies in SSR/Node build
     },
     define: commonDefine,
-  };
-});
+    resolve: {
+      alias: [
+        {
+          find: 'jsbeeb',
+          replacement: resolve(__dirname, 'node_modules/jsbeeb/src'),
+        },
+      ],
+    },
+  }
+})

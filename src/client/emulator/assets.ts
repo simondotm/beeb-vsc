@@ -33,7 +33,7 @@ export function webviewUri(
  * @returns
  */
 export function scriptUri(extensionPath: string, assets: string[]) {
-  return localUri(extensionPath, ['dist', 'webview', ...assets])
+  return localUri(extensionPath, ['dist-webview', ...assets])
 }
 
 /**

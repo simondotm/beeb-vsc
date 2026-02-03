@@ -1,5 +1,5 @@
 import $ from 'jquery'
-import { bestCanvas } from 'jsbeeb/canvas'
+import { bestCanvas, getFilterForMode } from 'jsbeeb/canvas'
 import { Emulator, EmulatorCanvas } from './emulator'
 import { Model } from 'jsbeeb/models'
 import { CustomAudioHandler } from './custom-audio-handler'
@@ -86,7 +86,7 @@ export class EmulatorView {
     }
 
     this.testcard.hide()
-    this.canvas = bestCanvas(this.screen[0])
+    this.canvas = bestCanvas(this.screen[0], getFilterForMode('rgb'))
 
     // forward key events to emulator
     this.screen.on('keyup', (event: JQuery.KeyUpEvent) =>
@@ -100,6 +100,7 @@ export class EmulatorView {
     // create webview audio driver
     this.audioHandler = new CustomAudioHandler(
       $('#audio-warning'),
+      $('#audio-stats')[0], // jsbeeb now expects a stats node (a <div>) for audio performance charts
       audioFilterFreq,
       audioFilterQ,
       noSeek,

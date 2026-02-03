@@ -54,13 +54,11 @@ export class EmulatorPanel {
     this.panel.iconPath = {
       dark: vscode.Uri.joinPath(
         scriptUri(extensionPath, []),
-        'assets',
         'icons',
         'owl-dark.png',
       ),
       light: vscode.Uri.joinPath(
         scriptUri(extensionPath, []),
-        'assets',
         'icons',
         'owl-light.png',
       ),
@@ -273,7 +271,7 @@ export class EmulatorPanel {
       console.log('mainScriptUrl=' + mainScriptUrl)
     }
     const codiconsUrl = scriptUrl(context, webview, [
-      'css',
+      'codicons',
       'codicon.css',
     ]).toString()
     const cssUrl = scriptUrl(context, webview, ['css', 'styles.css']).toString()
@@ -465,7 +463,7 @@ export class EmulatorPanel {
       <vscode-button id="audio-warning" appearance="primary" hidden>
         <span class="codicon codicon-warning"></span>
         &nbsp;Audio is disabled in this webview. Click to enable.
-      </vscode-button>    
+      </vscode-button>            <canvas id="audio-stats" hidden width="200" height="50"></canvas>
     `
   }
 

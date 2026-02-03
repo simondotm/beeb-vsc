@@ -7,9 +7,10 @@ declare module 'jsbeeb/canvas' {
 
   export class GlCanvas {
     fb32: Uint32Array
-    constructor(canvas: any)
+    constructor(canvas: any, filterClass: any)
     paint(minx: number, miny: number, maxx: number, maxy: number): void
   }
 
-  export function bestCanvas(canvas: any): Canvas | GlCanvas
+  export function getFilterForMode(mode: string): any
+  export function bestCanvas(canvas: any, filterClass: any): Canvas | GlCanvas
 }

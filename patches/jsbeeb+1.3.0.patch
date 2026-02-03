@@ -1,11 +1,17 @@
-diff --git a/node_modules/jsbeeb/.DS_Store b/node_modules/jsbeeb/.DS_Store
-new file mode 100644
-index 0000000..e69de29
-diff --git a/node_modules/jsbeeb/utils.js b/node_modules/jsbeeb/utils.js
-index 2bdc511..01b7b02 100644
---- a/node_modules/jsbeeb/utils.js
-+++ b/node_modules/jsbeeb/utils.js
-@@ -836,31 +836,44 @@ function loadDataHttp(url) {
+diff --git a/node_modules/jsbeeb/src/utils.js b/node_modules/jsbeeb/src/utils.js
+index 430346a..d86a032 100644
+--- a/node_modules/jsbeeb/src/utils.js
++++ b/node_modules/jsbeeb/src/utils.js
+@@ -774,7 +774,7 @@ export function signExtend(val) {
+     return val >= 128 ? val - 256 : val;
+ }
+ 
+-export function noop() {}
++export function noop() { }
+ 
+ export function bench() {
+     for (let j = 0; j < 10; ++j) {
+@@ -840,30 +840,32 @@ function loadDataHttp(url) {
      });
  }
  
@@ -22,6 +28,7 @@ index 2bdc511..01b7b02 100644
 -        // Node
 -        const fs = await import("fs");
 -        if (url[0] === "/") url = "." + url;
+-        if (fs.existsSync("public/" + url)) return fs.readFileSync("public/" + url);
 -        return fs.readFileSync(url);
 -    }
 +// SM: disable loadDataNode() so we dont have to patch import "fs"
@@ -38,18 +45,10 @@ index 2bdc511..01b7b02 100644
 +//         // Node
 +//         const fs = await import("fs");
 +//         if (url[0] === "/") url = "." + url;
++//         if (fs.existsSync("public/" + url)) return fs.readFileSync("public/" + url);
 +//         return fs.readFileSync(url);
 +//     }
 +// }
-+
-+// export function loadData(url) {
-+//     if (runningInNode) {
-+//         return loadDataNode(url);
-+//     } else {
-+//         return loadDataHttp(url);
-+//     }
-+// }
-+
 +
 +let urlMap = [];
 +export function setUrlMap(map) {
@@ -65,8 +64,4 @@ index 2bdc511..01b7b02 100644
 +    return loadDataHttp(urlMap[url] ?? url);
  }
  
-+
-+
  export function readInt32(data, offset) {
-     return (data[offset + 3] << 24) | (data[offset + 2] << 16) | (data[offset + 1] << 8) | data[offset + 0];
- }
