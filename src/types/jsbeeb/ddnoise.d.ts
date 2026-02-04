@@ -1,10 +1,10 @@
 declare module 'jsbeeb/ddnoise' {
   export class DdNoise {
-    constructor(context: any)
+    constructor(context: AudioContext)
 
     initialise(): Promise<void>
-    oneShot(sound: any): number
-    play(sound: any, loop: boolean): Promise<any>
+    oneShot(sound: AudioBuffer): number
+    play(sound: AudioBuffer, loop: boolean): Promise<any>
     spinUp(): void
     spinDown(): void
     seek(diff: number): number
@@ -14,8 +14,8 @@ declare module 'jsbeeb/ddnoise' {
 
   export class FakeDdNoise {
     constructor()
+    seek(): number
     initialise(): Promise<void>
-    seek(diff: number): number
     spinUp(): void
     spinDown(): void
     mute(): void

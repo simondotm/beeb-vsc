@@ -86,7 +86,10 @@ export class EmulatorView {
     }
 
     this.testcard.hide()
-    this.canvas = bestCanvas(this.screen[0], getFilterForMode('rgb'))
+    this.canvas = bestCanvas(
+      this.screen[0] as HTMLCanvasElement,
+      getFilterForMode('rgb'),
+    )
 
     // forward key events to emulator
     this.screen.on('keyup', (event: JQuery.KeyUpEvent) =>

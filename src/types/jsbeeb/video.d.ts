@@ -9,18 +9,18 @@ declare module 'jsbeeb/video' {
     USERDISPENABLE = 1 << 4,
     FRAMESKIPENABLE = 1 << 5,
     EVERYTHINGENABLED = VDISPENABLE |
-      HDISPENABLE |
-      SKEWDISPENABLE |
-      SCANLINEDISPENABLE |
-      USERDISPENABLE |
-      FRAMESKIPENABLE,
+    HDISPENABLE |
+    SKEWDISPENABLE |
+    SCANLINEDISPENABLE |
+    USERDISPENABLE |
+    FRAMESKIPENABLE,
   }
 
   export class Video {
     constructor(
       isMaster: boolean,
       fb32_param: Uint32Array,
-      paint_ext_param: any,
+      paint_ext_param: (minx: number, miny: number, maxx: number, maxy: number) => void,
     )
 
     isMaster: boolean
@@ -82,6 +82,6 @@ declare module 'jsbeeb/video' {
     leftBorder: number
     rightBorder: number
 
-    paint_ext: any
+    paint_ext: (context: CanvasRenderingContext2D, params: Record<string, string | number>) => void
   }
 }

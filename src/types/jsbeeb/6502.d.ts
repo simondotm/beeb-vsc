@@ -47,32 +47,37 @@ declare module 'jsbeeb/6502' {
     s: number
     forceTracing: boolean
 
-    video: Video
-    sysvia: SysVia
-    acia: Acia
-
-    fdc: Fdc
-
     econet?: any
+    acia: any
+    scheduler: Scheduler
+    adconverter: any
+    sysvia: any
+    uservia: any
+    fdc: any
+    tube: any
+    video: any
+    soundChip: any
+    music5000: any
+    ddNoise: any
 
     targetCycles: number
     currentCycles: number
     cycleSeconds: number
 
-    debugInstruction: DebugHook
-    debugRead: DebugHook
-    debugWrite: DebugHook
+    debugInstruction: any
+    debugRead: any
+    debugWrite: any
 
-    _debugInstruction: any
-    _debugRead: any
-    _debugWrite: any
+    _debugInstruction: ((pc: number, opcode: number) => boolean) | null
+    _debugRead: ((addr: number, val: number, offset: number) => void) | null
+    _debugWrite: ((addr: number, val: number) => void) | null
 
     ramRomOs: Uint8Array //[4587520] // Not sure benefits to know the size
 
     disassembler: Disassemble6502
 
     constructor(
-      model: Model,
+      model: any,
       dbgr: Debugger,
       video_: Video,
       soundChip_: SoundChip | FakeSoundChip,

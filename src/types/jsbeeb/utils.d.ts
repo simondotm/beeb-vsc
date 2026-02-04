@@ -2,7 +2,6 @@ declare module 'jsbeeb/utils' {
   export let runningInNode: boolean
   export function isFirefox(): boolean
   export function parseAddr(addr: string): number
-  export const userKeymap: any[]
   export type BBCKeyMap = [number, number]
   export type BBCKey =
     | 'SEMICOLON_PLUS'
@@ -214,7 +213,8 @@ declare module 'jsbeeb/utils' {
   export function getKeyMap(keyLayout: string): KeyMap
   export function hexbyte(value: number): string
   export function hexword(value: number): string
-  export function hd(reader: any, start: any, end: any, opts: any): any
+  export const userKeymap: Record<string, number[]>
+  export function hd(reader: (addr: number) => number, start: number, end: number, opts: any): string
   export function signExtend(val: number): number
   export function noop(): void
   export function setBaseUrl(url: string): void

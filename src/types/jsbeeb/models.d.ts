@@ -30,26 +30,41 @@ declare module 'jsbeeb/models' {
   export class Model {
     name: string
     synonyms: string[]
-    os: OsRomTypes[]
-    nmos: boolean
+    os: string[]
+    _cpuModel: number
     isMaster: boolean
-    Fdc: any
-    swram: SWRAM
+    Fdc: any // This is a class constructor
+    swram: boolean[]
     isTest: boolean
     tube: any
-    hasMusic5000: boolean
+    cmosOverride: any
     hasEconet: boolean
+    hasMusic5000: boolean
 
+    get nmos(): boolean
+    get opcodesFactory(): any
     constructor(
       name: string,
       synonyms: string[],
-      os: OsRomTypes[],
-      nmos: boolean,
+      os: string[],
+      cpuModel: number,
       isMaster: boolean,
-      swram: SWRAM,
+      swram: boolean[],
       fdc: any,
-      tube: any,
+      tube?: any,
+      cmosOverride?: any,
     )
+  }
+
+  export interface CpuConfig {
+    keyLayout?: string
+    cpuMultiplier?: number
+    userPort?: any
+    printerPort?: any
+    extraRoms?: any[]
+    debugFlags?: any
+    videoCyclesBatch?: number
+    getGamepads?: () => any
   }
   export function findModel(name: string): Model
   export const allModels: Model[]

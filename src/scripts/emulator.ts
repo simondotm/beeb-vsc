@@ -174,7 +174,7 @@ export class Emulator {
           'Adding read breakpoint to address ' + utils.hexword(address),
         )
         this.dbgr.readBreakpoints[address] = this.cpu.debugRead.add(
-          (x) => x === address,
+          (x: number) => x === address,
         )
       }
     }
@@ -191,7 +191,7 @@ export class Emulator {
           'Adding write breakpoint to address ' + utils.hexword(address),
         )
         this.dbgr.writeBreakpoints[address] = this.cpu.debugWrite.add(
-          (x) => x === address,
+          (x: number) => x === address,
         )
       }
     }
