@@ -20,7 +20,12 @@ declare module 'jsbeeb/video' {
     constructor(
       isMaster: boolean,
       fb32_param: Uint32Array,
-      paint_ext_param: (minx: number, miny: number, maxx: number, maxy: number) => void,
+      paint_ext_param: (
+        minx: number,
+        miny: number,
+        maxx: number,
+        maxy: number,
+      ) => void,
     )
 
     isMaster: boolean
@@ -82,6 +87,9 @@ declare module 'jsbeeb/video' {
     leftBorder: number
     rightBorder: number
 
-    paint_ext: (context: CanvasRenderingContext2D, params: Record<string, string | number>) => void
+    paint_ext: (
+      context: CanvasRenderingContext2D,
+      params: Record<string, string | number>,
+    ) => void
   }
 }

@@ -7,22 +7,42 @@ declare module 'jsbeeb/fdc' {
   export type Fdc = IntelFdc | WdFdc | NoiseAwareIntelFdc | NoiseAwareWdFdc
 
   export class IntelFdc {
-    constructor(cpu: Cpu6502, ddNoise: DdNoise, scheduler: Scheduler, debugFlags?: any)
+    constructor(
+      cpu: Cpu6502,
+      ddNoise: DdNoise,
+      scheduler: Scheduler,
+      debugFlags?: any,
+    )
     loadDisc(drive: number, disc: Disc): void
   }
 
   export class WdFdc {
-    constructor(cpu: Cpu6502, ddNoise: DdNoise, scheduler: Scheduler, debugFlags?: any)
+    constructor(
+      cpu: Cpu6502,
+      ddNoise: DdNoise,
+      scheduler: Scheduler,
+      debugFlags?: any,
+    )
     loadDisc(drive: number, disc: Disc): void
   }
 
   export class NoiseAwareIntelFdc {
-    constructor(cpu: Cpu6502, ddNoise: DdNoise, scheduler: Scheduler, debugFlags?: any)
+    constructor(
+      cpu: Cpu6502,
+      ddNoise: DdNoise,
+      scheduler: Scheduler,
+      debugFlags?: any,
+    )
     loadDisc(drive: number, disc: Disc): void
   }
 
   export class NoiseAwareWdFdc {
-    constructor(cpu: Cpu6502, ddNoise: DdNoise, scheduler: Scheduler, debugFlags?: any)
+    constructor(
+      cpu: Cpu6502,
+      ddNoise: DdNoise,
+      scheduler: Scheduler,
+      debugFlags?: any,
+    )
     loadDisc(drive: number, disc: Disc): void
   }
 

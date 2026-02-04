@@ -37,8 +37,14 @@ declare module 'jsbeeb/via' {
     // but is implied by `SysVia extends Via`
   }
 
-  export class UserVia extends Via { // Changed to extend Via
-    constructor(cpu: Cpu6502, scheduler: Scheduler, isMaster: boolean, userPortPeripheral: any) // Reverted to original constructor signature but with scheduler
+  export class UserVia extends Via {
+    // Changed to extend Via
+    constructor(
+      cpu: Cpu6502,
+      scheduler: Scheduler,
+      isMaster: boolean,
+      userPortPeripheral: any,
+    ) // Reverted to original constructor signature but with scheduler
     reset(): void // Added from snippet
     write(addr: number, val: number): void // Added from snippet
     read(addr: number): number // Added from snippet
@@ -48,7 +54,8 @@ declare module 'jsbeeb/via' {
     setcb2(level: boolean): void // Added from snippet
   }
 
-  export class SysVia extends Via { // Changed to extend Via
+  export class SysVia extends Via {
+    // Changed to extend Via
     capsLockLight: boolean
     shiftLockLight: boolean
 

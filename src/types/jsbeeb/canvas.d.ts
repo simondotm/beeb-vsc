@@ -12,5 +12,8 @@ declare module 'jsbeeb/canvas' {
   }
 
   export function getFilterForMode(mode: string): any
-  export function bestCanvas(canvas: HTMLCanvasElement, filterClass: any): Canvas | GlCanvas
+  export function bestCanvas(
+    canvas: HTMLCanvasElement,
+    filterClass: any,
+  ): Canvas | GlCanvas
 }

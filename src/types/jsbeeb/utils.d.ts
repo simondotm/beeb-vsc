@@ -214,7 +214,12 @@ declare module 'jsbeeb/utils' {
   export function hexbyte(value: number): string
   export function hexword(value: number): string
   export const userKeymap: Record<string, number[]>
-  export function hd(reader: (addr: number) => number, start: number, end: number, opts: any): string
+  export function hd(
+    reader: (addr: number) => number,
+    start: number,
+    end: number,
+    opts: any,
+  ): string
   export function signExtend(val: number): number
   export function noop(): void
   export function setBaseUrl(url: string): void

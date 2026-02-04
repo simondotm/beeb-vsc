@@ -1,12 +1,9 @@
 declare module 'jsbeeb/6502' {
-  import type { Model } from 'jsbeeb/models'
   import type { Cmos } from 'jsbeeb/cmos'
   import type { DdNoise, FakeDdNoise } from 'jsbeeb/ddnoise'
   import type { Debugger } from 'jsbeeb/web/debug'
   import type { FakeSoundChip, SoundChip } from 'jsbeeb/soundchip'
   import type { Video } from 'jsbeeb/video'
-  import type { SysVia } from 'jsbeeb/via'
-  import type { Fdc } from 'jsbeeb/fdc'
   import type { Disassemble6502 } from 'jsbeeb/6502.opcodes'
 
   export class Flags {
