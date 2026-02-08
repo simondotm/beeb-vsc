@@ -39,6 +39,7 @@ import {
   jsbeebDebugAdapterFactory,
   JSBeebConfigurationProvider,
 } from './debugger/debugger'
+import { parse } from 'jsonc-parser'
 
 let client: LanguageClient
 
@@ -352,7 +353,7 @@ function checkSourceFilesSpecified() {
     // settings.json exists, so load it
     let settingsObject: Partial<BeebVSCSettings> = {}
     try {
-      settingsObject = JSON.parse(fs.readFileSync(settingsPath, 'utf8'))
+      settingsObject = parse(fs.readFileSync(settingsPath, 'utf8'))
     } catch (err) {
       settingsIssue = true
       console.log('Error reading ' + settingsPath + ' ' + err)
@@ -502,7 +503,7 @@ function CreateNewLocalSettingsJson(sourceFiles: string[], targetName: string) {
   } else {
     // add the new settings to the existing settings.json file (we know that
     // there is no beebvsc object in the settings.json file as checked by the caller)
-    const currentSettings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'))
+    const currentSettings = parse(fs.readFileSync(settingsPath, 'utf8'))
     currentSettings.beebvsc = settingsObject.beebvsc
     fs.writeFileSync(settingsPath, JSON.stringify(currentSettings, null, 4))
   }
@@ -531,7 +532,7 @@ function setCurrentTarget(
             // no target file specified, so use the default target file
             targetFile = getTargetName(
               workspace.getConfiguration('beebvsc').get<string>('sourceFile') ??
-                'main.asm',
+              'main.asm',
             )
           }
         }
@@ -751,7 +752,7 @@ function SaveJSONFiles(
     // settings.json exists, so load it
     let settingsObject: Partial<BeebVSCSettings> = {}
     try {
-      settingsObject = JSON.parse(fs.readFileSync(settingsPath, 'utf8'))
+      settingsObject = parse(fs.readFileSync(settingsPath, 'utf8'))
       console.log('settings.json loaded')
     } catch (err) {
       window.showErrorMessage('Could not load settings.json file')
@@ -896,7 +897,7 @@ function loadTasks(): VSTasks | null {
   let tasksObject: VSTasks | null = null
   try {
     const contents = fs.readFileSync(tasksPath, 'utf8')
-    tasksObject = JSON.parse(contents)
+    tasksObject = parse(contents)
     console.log('tasks.json loaded')
   } catch (err) {
     window.showErrorMessage('Could not load tasks.json file')

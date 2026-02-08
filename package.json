@@ -314,6 +314,7 @@
     "@vscode/webview-ui-toolkit": "^1.4.0",
     "await-notify": "^1.0.1",
     "jsbeeb": "git+https://github.com/mattgodbolt/jsbeeb.git#bea43f5bf060f666a65d50d91afb4f4e6613aa78",
+    "jsonc-parser": "^3.3.1",
     "resize-observer-polyfill": "^1.5.1",
     "rxjs": "^7.8.2",
     "source-map-support": "^0.5.21",

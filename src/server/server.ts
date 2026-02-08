@@ -24,6 +24,7 @@ import { DocumentContext } from './documentContext'
 import * as path from 'path'
 import { writeFileSync } from 'fs'
 import { createDebouncer } from './debounce'
+import { parse } from 'jsonc-parser'
 
 const connection = createConnection(ProposedFeatures.all)
 
@@ -134,7 +135,7 @@ async function getInfoFromSettings(): Promise<string[]> {
       const settings = await connection.workspace.getConfiguration(item)
       const inlayHints = settings['enableInlayHints']
       if (inlayHints !== undefined) {
-        inlayHintsProvider.enabled = JSON.parse(inlayHints)
+        inlayHintsProvider.enabled = typeof inlayHints === 'string' ? parse(inlayHints) : inlayHints
       }
       let filename = settings['sourceFile']
       if (typeof filename === 'string') {
