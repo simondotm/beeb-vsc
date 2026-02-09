@@ -317,7 +317,7 @@
     "@vscode/extension-telemetry": "^0.9.8",
     "@vscode/webview-ui-toolkit": "^1.4.0",
     "await-notify": "^1.0.1",
-    "jsbeeb": "git+https://github.com/mattgodbolt/jsbeeb.git#bea43f5bf060f666a65d50d91afb4f4e6613aa78",
+    "jsbeeb": "git+https://github.com/mattgodbolt/jsbeeb.git#d7e08a982a0247f2daddac6fb818fdacd24d61b2",
     "jsonc-parser": "^3.3.1",
     "resize-observer-polyfill": "^1.5.1",
     "rxjs": "^7.8.2",
