@@ -308,7 +308,7 @@
     "rimraf": "^6.1.2",
     "ts-mocha": "^11.1.0",
     "typescript": "^5.9.3",
-    "vite": "^7.3.1",
+    "vite": "^7.3.2",
     "vite-plugin-static-copy": "^3.2.0"
   },
   "dependencies": {
