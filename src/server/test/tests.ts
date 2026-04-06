@@ -161,6 +161,7 @@ suite('LineParser', function () {
     test('Test local symbol reference', testLocalSymbolReference)
     test('Test repeated for symbol', testRepeatedForSymbol)
     test('Test multiple files', testMultipleFiles)
+    test('Test P% forward reference', testPCForwardReference)
   })
 
   suite('Commands', function () {
@@ -202,7 +203,7 @@ suite('LineParser', function () {
       'Test multiple statements on line',
       testSourceMapInfoMultipleStatements,
     )
-    test('Test inside of for loop', testSourcMapInfoForLoop)
+    test('Test inside of for loop', testSourceMapInfoForLoop)
     test('Test inside macro call', testSourceMapInfoInsideMacro)
     test(
       'Test inside macro with preceding code',
@@ -232,6 +233,7 @@ suite('LineParser', function () {
       'Test multiple unused constants',
       testMultipleUnusedConstantsAreAllFlagged,
     )
+    test('Test nested FOR loops', testUsedConstantsInNestedForLoops)
   })
 
   suite('Evaluate macro parameters in outer scope', function () {
@@ -645,7 +647,6 @@ PUTTEXT "BOOT.txt", "!BOOT", &FFFF
 SAVE "code", start, end`
   Run2Passes(code)
   const labels = context.symbolTable.GetAllLabels()
-  console.log(labels)
 
   // check labels contains '.start', '.loop', '.exit', '.end'
   assert.ok(labels['.start'] !== undefined)
@@ -691,7 +692,7 @@ function testSkipAndOrg() {
 
 function testForLoop() {
   const code = `
-  FOR n, 0, 10
+  FOR n, 1, 2
   LDA #n
   NEXT`
   for (let pass = 0; pass < 2; pass++) {
@@ -758,7 +759,7 @@ NEXT`
     context,
   )
   sourceCode.Process()
-  assert.equal(diagnostics.get('')!.length, 0)
+  assert.equal(diagnostics.get('')!.length, 0, diagnostics.get('')![0]?.message)
 }
 
 function testAssembler1() {
@@ -891,10 +892,10 @@ function testSymbolLocation() {
   )
   input.Process()
   const syms = context.symbolTable.GetSymbols()
-  let loc = syms.get('a')!.GetLocation()
+  let loc = syms.get('a@-1')!.GetLocation()
   assert.equal(loc.range.start.character, 0)
   assert.equal(loc.range.end.character, 1)
-  loc = syms.get('b')!.GetLocation()
+  loc = syms.get('b@-1')!.GetLocation()
   assert.equal(loc.range.start.character, 5)
   assert.equal(loc.range.end.character, 6)
 }
@@ -1102,6 +1103,16 @@ NEXT`
   assert.equal(result!.range.start.character, 4)
 }
 
+function testPCForwardReference() {
+  const code = `
+SEC
+BCS P% + 2
+INC &80
+INC &81`
+  Run2Passes(code)
+  assert.equal(diagnostics.get('')!.length, 0, diagnostics.get('')![0]?.message)
+}
+
 function testAssertFails() {
   const code = `
 ASSERT 1==2
@@ -1136,13 +1147,13 @@ b = 7283 << 2
 c = 29658 << -2
 d = -1583 << 3`
   Run2Passes(code)
-  const a = context.symbolTable.GetSymbols().get('a')?.GetValue()
+  const a = context.symbolTable.GetSymbols().get('a@-1')?.GetValue()
   assert.equal(a, -16)
-  const b = context.symbolTable.GetSymbols().get('b')?.GetValue()
+  const b = context.symbolTable.GetSymbols().get('b@-1')?.GetValue()
   assert.equal(b, 29132)
-  const c = context.symbolTable.GetSymbols().get('c')?.GetValue()
+  const c = context.symbolTable.GetSymbols().get('c@-1')?.GetValue()
   assert.equal(c, 7414)
-  const d = context.symbolTable.GetSymbols().get('d')?.GetValue()
+  const d = context.symbolTable.GetSymbols().get('d@-1')?.GetValue()
   assert.equal(d, -12664)
 }
 
@@ -1570,7 +1581,7 @@ LDA #10: STA &80`
   assert.equal(info?.parent, null)
 }
 
-function testSourcMapInfoForLoop() {
+function testSourceMapInfoForLoop() {
   const code = `
 ORG &1900
 FOR n, 0, 10
@@ -1899,6 +1910,24 @@ LDA #used`
   Run2Passes(code)
   const unused = checkUnusedSymbols('')
   assert.equal(unused.length, 2)
+}
+
+function testUsedConstantsInNestedForLoops() {
+  const code = `FOR i, 0, 1
+    FOR j, 0, 1
+      b = 9+i-j  
+      LDA #b
+    NEXT
+  NEXT`
+  Run2Passes(code)
+  // print entire symbol table for debugging
+  const symbols = context.symbolTable.GetSymbols()
+  for (const [key, value] of symbols) {
+    console.log(`${key}: ${value.GetValue()}`)
+  }
+  const unused = checkUnusedSymbols('')
+  assert.equal(unused.length, 0, unused![0]?.message)
+  assert.equal(diagnostics.get('')!.length, 0, diagnostics.get('')![0]?.message)
 }
 
 function testMacroParamEval() {

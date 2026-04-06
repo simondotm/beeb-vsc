@@ -272,19 +272,16 @@ export class SourceCode {
     return this._currentMacro
   }
 
-  GetSymbolNameSuffix(level: integer = -1): string {
+  GetScopedSymbolName(symbolName: string, level: integer = -1): string {
     if (level == -1) {
       level = this._forStackPtr
     }
 
-    let suffix = ''
-
-    for (let i = 0; i < level; i++) {
-      // suffix += `@${this._forStack[i].id}_${this._forStack[i].count}`;
-      suffix += `@${this._forStack[i].id}_0` // not finding inner for loop definition without this
+    const i = level - 1
+    if (i >= 0) {
+      return `${symbolName}@${this._forStack[i].id}`
     }
-
-    return suffix
+    return `${symbolName}@-1` // top level symbol, use consistent suffix to avoid clashes with real symbols that don't have a suffix
   }
 
   GetForCount(): integer {
@@ -328,15 +325,27 @@ export class SourceCode {
     location: Location | null = null,
   ): [boolean, number | string] {
     for (let forLevel = this.GetForLevel(); forLevel >= 0; forLevel--) {
-      const fullSymbolName = symbolName + this.GetSymbolNameSuffix(forLevel)
+      const fullSymbolName = this.GetScopedSymbolName(symbolName, forLevel)
 
       if (this._context.symbolTable.IsSymbolDefined(fullSymbolName)) {
         // store symbol reference (fullSymbolName and location) in symbol table
         if (location !== null && this._context.globalData.IsSecondPass()) {
-          this._context.symbolTable.AddReference(fullSymbolName, location)
+          // Check if current level is not the first iteration, if so then don't add reference as
+          // otherwise we would end up with multiple references for the same symbol when it's used in a loop
+          let addReference = true
+          if (forLevel - 1 >= 0 && !this._forStack[forLevel - 1].firstPass) {
+            addReference = false
+          }
+          if (addReference) {
+            this._context.symbolTable.AddReference(fullSymbolName, location)
+          }
         }
         return [true, this._context.symbolTable.GetSymbol(fullSymbolName)]
       }
+    }
+    // Check for built-in symbols like P% since they don't have a level suffix
+    if (this._context.symbolTable.IsSymbolDefined(symbolName)) {
+      return [true, this._context.symbolTable.GetSymbol(symbolName)]
     }
 
     return [false, 0]
@@ -528,7 +537,7 @@ export class SourceCode {
       firstPass: true,
     }
     this._forStackPtr++
-    const symbolname = varName + this.GetSymbolNameSuffix()
+    const symbolname = this.GetScopedSymbolName(varName)
     this._forStack[this._forStackPtr - 1].varName = symbolname // Update for stack to include suffix
     this._context.symbolTable.AddSymbol(symbolname, start, loc)
     this._context.symbolTable.PushFor(

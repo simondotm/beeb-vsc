@@ -135,7 +135,8 @@ async function getInfoFromSettings(): Promise<string[]> {
       const settings = await connection.workspace.getConfiguration(item)
       const inlayHints = settings['enableInlayHints']
       if (inlayHints !== undefined) {
-        inlayHintsProvider.enabled = typeof inlayHints === 'string' ? parse(inlayHints) : inlayHints
+        inlayHintsProvider.enabled =
+          typeof inlayHints === 'string' ? parse(inlayHints) : inlayHints
       }
       let filename = settings['sourceFile']
       if (typeof filename === 'string') {
@@ -318,7 +319,12 @@ async function SaveSourceMap(
   })
   output.sources = FileHandler.Instance.GetURIRefs()
   output.labels = context.symbolTable.GetAllLabels()
-  output.symbols = context.symbolTable.GetAllSymbols()
+  // remove trailing '@-1' from symbols at global level for readability (e.g., "symbol@-1" -> "symbol")
+  const allSymbols = context.symbolTable.GetAllSymbols()
+  Object.keys(allSymbols).forEach((key) => {
+    const newKey = key.endsWith('@-1') ? key.slice(0, -3) : key
+    output.symbols[newKey] = allSymbols[key]
+  })
 
   const sourceMapString = JSON.stringify(output, null, 2)
 

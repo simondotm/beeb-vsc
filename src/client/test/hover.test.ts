@@ -86,7 +86,6 @@ async function testHovers(docUri: Uri, tests: HoverTest[]) {
       expectedHover.position,
     )) as Hover[]
     assert.equal(actualHovers.length, expectedHover.hovers.length)
-    console.log((actualHovers[0].contents[0] as MarkdownString).value)
     const actual = (actualHovers[0].contents[0] as MarkdownString).value
     const expected = (expectedHover.hovers[0].contents[0] as MarkdownString)
       .value

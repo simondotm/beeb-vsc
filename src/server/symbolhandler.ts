@@ -16,7 +16,7 @@ import { DocumentContext } from './documentContext'
 import { FileHandler, URItoReference } from './filehandler'
 
 export class RenameProvider {
-  constructor() { }
+  constructor() {}
 
   onPrepareRename(params: PrepareRenameParams): Range | null {
     const textDocument = FileHandler.Instance.GetDocumentText(
@@ -66,7 +66,7 @@ export class RenameProvider {
     if (symbolname === null) {
       return null
     }
-    const [matched, _] = context.symbolTable.GetSymbolByLine(
+    const [matched, fullSymbolName] = context.symbolTable.GetSymbolByLine(
       symbolname,
       uri,
       position.line,
@@ -74,7 +74,7 @@ export class RenameProvider {
     if (matched === undefined) {
       return null
     }
-    const references = context.symbolTable.GetReferences(symbolname)
+    const references = context.symbolTable.GetReferences(fullSymbolName)
     if (references === undefined) {
       return null
     }
@@ -118,7 +118,7 @@ export class RenameProvider {
 }
 
 export class SymbolProvider {
-  constructor() { }
+  constructor() {}
 
   // TODO - consider to change symbol to type outerLabel.innerLabel instead of label_@...
   // Might not be possible, depends on label style of programmer
@@ -134,7 +134,7 @@ export class SymbolProvider {
       symbols.forEach((symboldata, symbolname) => {
         if (symboldata.GetLocation().uri === uri) {
           symbolList.push({
-            name: symbolname,
+            name: this.JustSymbolName(symbolname),
             detail: '',
             kind: symboldata.IsLabel()
               ? SymbolKind.Function
@@ -160,6 +160,14 @@ export class SymbolProvider {
       return symbolList
     }
     return null
+  }
+
+  private JustSymbolName(fullSymbolName: string): string {
+    // if the symbol name is global scope i.e. ends with @-1 then just return the base name without the scope suffix
+    if (fullSymbolName.endsWith('@-1')) {
+      return fullSymbolName.slice(0, -3)
+    }
+    return fullSymbolName
   }
 
   onReferences(params: ReferenceParams): Location[] | null {
@@ -202,7 +210,7 @@ export class SymbolProvider {
   }
 }
 
-function GetTargetedSymbol(
+export function GetTargetedSymbol(
   currentLine: string,
   location: Position,
 ): string | null {

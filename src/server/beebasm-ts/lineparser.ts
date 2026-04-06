@@ -1799,8 +1799,9 @@ export class LineParser {
         // Deal here with symbol assignment
         let bIsConditionalAssignment = false
         const startLoc = { line: this._lineno, character: this._column }
-        const symbolName =
-          this.GetSymbolName() + this._sourceCode.GetSymbolNameSuffix()
+        const symbolName = this._sourceCode.GetScopedSymbolName(
+          this.GetSymbolName(),
+        )
         const endLoc = { line: this._lineno, character: this._column }
 
         if (!this.AdvanceAndCheckEndOfStatement()) {
@@ -1960,8 +1961,9 @@ export class LineParser {
               // const paramName = this._sourceCode.GetScopedSymbolName(
               //   macro.GetParameter(i),
               // )
-              const paramName =
-                macro.GetParameter(i) + this._sourceCode.GetSymbolNameSuffix()
+              const paramName = this._sourceCode.GetScopedSymbolName(
+                macro.GetParameter(i),
+              )
 
               const loc = {
                 uri: this._sourceCode.GetURI(),
@@ -3830,8 +3832,10 @@ export class LineParser {
       // Get the symbol name
       const symbolName = this.GetSymbolName()
       // ...and mangle it according to whether we are in a FOR loop
-      const fullSymbolName =
-        symbolName + this._sourceCode.GetSymbolNameSuffix(target_level)
+      const fullSymbolName = this._sourceCode.GetScopedSymbolName(
+        symbolName,
+        target_level,
+      )
       if (this._context.globalData.IsFirstPass()) {
         // only add the symbol on the first pass
         if (this._context.symbolTable.IsSymbolDefined(fullSymbolName)) {
