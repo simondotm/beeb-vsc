@@ -160,7 +160,17 @@ export class SymbolProvider {
           })
         }
       })
-      return symbolList
+
+      // Deduplicate symbols that appear multiple times due to FOR loop iterations
+      // Keep only the first occurrence of each symbol at each location
+      const seenSymbols = new Map<string, DocumentSymbol>()
+      for (const symbol of symbolList) {
+        const key = this.createSymbolKey(symbol)
+        if (!seenSymbols.has(key)) {
+          seenSymbols.set(key, symbol)
+        }
+      }
+      return Array.from(seenSymbols.values())
     }
     return null
   }
@@ -171,6 +181,19 @@ export class SymbolProvider {
       return fullSymbolName.slice(0, -3)
     }
     return fullSymbolName
+  }
+
+  private getBaseSymbolName(displayName: string): string {
+    // Extract the base name (everything before @)
+    // E.g., "n@1_0" -> "n", "myVar" -> "myVar"
+    const atIndex = displayName.indexOf('@')
+    return atIndex > 0 ? displayName.substring(0, atIndex) : displayName
+  }
+
+  private createSymbolKey(symbol: DocumentSymbol): string {
+    // Create composite key: baseName|line:character
+    const baseName = this.getBaseSymbolName(symbol.name)
+    return `${baseName}|${symbol.range.start.line}:${symbol.range.start.character}`
   }
 
   onReferences(params: ReferenceParams): Location[] | null {
