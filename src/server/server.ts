@@ -1,8 +1,6 @@
 import {
   createConnection,
   Diagnostic,
-  DiagnosticSeverity,
-  DiagnosticTag,
   ProposedFeatures,
   InitializeParams,
   TextDocumentSyncKind,
@@ -15,7 +13,11 @@ import { TextDocument } from 'vscode-languageserver-textdocument'
 import { CompletionProvider, SignatureProvider } from './completions'
 import { SourceMapFile } from '../types/shared/debugsource'
 import { SourceFile } from './beebasm-ts/sourcefile'
-import { RenameProvider, SymbolProvider } from './symbolhandler'
+import {
+  checkUnusedSymbols,
+  RenameProvider,
+  SymbolProvider,
+} from './symbolhandler'
 import { FileHandler, URItoVSCodeURI } from './filehandler'
 import { HoverProvider } from './hoverprovider'
 import { SemanticTokensProvider } from './semantictokenprovider'
@@ -135,7 +137,8 @@ async function getInfoFromSettings(): Promise<string[]> {
       const settings = await connection.workspace.getConfiguration(item)
       const inlayHints = settings['enableInlayHints']
       if (inlayHints !== undefined) {
-        inlayHintsProvider.enabled = typeof inlayHints === 'string' ? parse(inlayHints) : inlayHints
+        inlayHintsProvider.enabled =
+          typeof inlayHints === 'string' ? parse(inlayHints) : inlayHints
       }
       let filename = settings['sourceFile']
       if (typeof filename === 'string') {
@@ -318,7 +321,12 @@ async function SaveSourceMap(
   })
   output.sources = FileHandler.Instance.GetURIRefs()
   output.labels = context.symbolTable.GetAllLabels()
-  output.symbols = context.symbolTable.GetAllSymbols()
+  // remove trailing '@-1' from symbols at global level for readability (e.g., "symbol@-1" -> "symbol")
+  const allSymbols = context.symbolTable.GetAllSymbols()
+  Object.keys(allSymbols).forEach((key) => {
+    const newKey = key.endsWith('@-1') ? key.slice(0, -3) : key
+    output.symbols[newKey] = allSymbols[key]
+  })
 
   const sourceMapString = JSON.stringify(output, null, 2)
 
@@ -329,41 +337,6 @@ async function SaveSourceMap(
     return null
   }
   return mapFile
-}
-
-function checkUnusedSymbols(
-  context: DocumentContext,
-  activeFile: string,
-): Diagnostic[] {
-  const unusedDiagnostics: Diagnostic[] = []
-  const symbols = context.symbolTable.GetSymbols()
-
-  for (const [name, symbolData] of symbols.entries()) {
-    // Only check symbols defined in the active file
-    if (symbolData.GetLocation().uri !== activeFile) continue
-
-    // Skip labels (only check constant declarations)
-    if (symbolData.IsLabel()) continue
-
-    // Skip built-in symbols (empty uri)
-    if (symbolData.GetLocation().uri === '') continue
-
-    // Check if symbol has any references
-    const refs = context.symbolTable.GetReferences(name)
-    if (refs === undefined || refs.length === 0) {
-      // Strip scope suffix from name for display (e.g., "symbol@0" -> "symbol")
-      const displayName = name.includes('@') ? name.split('@')[0] : name
-      unusedDiagnostics.push({
-        severity: DiagnosticSeverity.Hint,
-        range: symbolData.GetLocation().range,
-        message: `'${displayName}' is declared but never used`,
-        source: 'vscode-beebasm',
-        tags: [DiagnosticTag.Unnecessary],
-      })
-    }
-  }
-
-  return unusedDiagnostics
 }
 
 // Setup completions handling

@@ -37,7 +37,7 @@
 				"${workspaceRoot}/dist/server.js"
 			],
 			"sourceMaps": true,
-			"autoAttachChildProcesses": true,
+			"autoAttachChildProcesses": true
 		}
 	]
 }

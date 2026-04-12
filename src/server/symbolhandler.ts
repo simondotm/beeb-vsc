@@ -1,4 +1,7 @@
 import {
+  Diagnostic,
+  DiagnosticSeverity,
+  DiagnosticTag,
   Location,
   Position,
   Range,
@@ -16,7 +19,7 @@ import { DocumentContext } from './documentContext'
 import { FileHandler, URItoReference } from './filehandler'
 
 export class RenameProvider {
-  constructor() { }
+  constructor() {}
 
   onPrepareRename(params: PrepareRenameParams): Range | null {
     const textDocument = FileHandler.Instance.GetDocumentText(
@@ -66,7 +69,7 @@ export class RenameProvider {
     if (symbolname === null) {
       return null
     }
-    const [matched, _] = context.symbolTable.GetSymbolByLine(
+    const [matched, fullSymbolName] = context.symbolTable.GetSymbolByLine(
       symbolname,
       uri,
       position.line,
@@ -74,7 +77,7 @@ export class RenameProvider {
     if (matched === undefined) {
       return null
     }
-    const references = context.symbolTable.GetReferences(symbolname)
+    const references = context.symbolTable.GetReferences(fullSymbolName)
     if (references === undefined) {
       return null
     }
@@ -118,7 +121,7 @@ export class RenameProvider {
 }
 
 export class SymbolProvider {
-  constructor() { }
+  constructor() {}
 
   // TODO - consider to change symbol to type outerLabel.innerLabel instead of label_@...
   // Might not be possible, depends on label style of programmer
@@ -134,7 +137,7 @@ export class SymbolProvider {
       symbols.forEach((symboldata, symbolname) => {
         if (symboldata.GetLocation().uri === uri) {
           symbolList.push({
-            name: symbolname,
+            name: this.JustSymbolName(symbolname),
             detail: '',
             kind: symboldata.IsLabel()
               ? SymbolKind.Function
@@ -157,9 +160,40 @@ export class SymbolProvider {
           })
         }
       })
-      return symbolList
+
+      // Deduplicate symbols that appear multiple times due to FOR loop iterations
+      // Keep only the first occurrence of each symbol at each location
+      const seenSymbols = new Map<string, DocumentSymbol>()
+      for (const symbol of symbolList) {
+        const key = this.createSymbolKey(symbol)
+        if (!seenSymbols.has(key)) {
+          seenSymbols.set(key, symbol)
+        }
+      }
+      return Array.from(seenSymbols.values())
     }
     return null
+  }
+
+  private JustSymbolName(fullSymbolName: string): string {
+    // if the symbol name is global scope i.e. ends with @-1 then just return the base name without the scope suffix
+    if (fullSymbolName.endsWith('@-1')) {
+      return fullSymbolName.slice(0, -3)
+    }
+    return fullSymbolName
+  }
+
+  private getBaseSymbolName(displayName: string): string {
+    // Extract the base name (everything before @)
+    // E.g., "n@1_0" -> "n", "myVar" -> "myVar"
+    const atIndex = displayName.indexOf('@')
+    return atIndex > 0 ? displayName.substring(0, atIndex) : displayName
+  }
+
+  private createSymbolKey(symbol: DocumentSymbol): string {
+    // Create composite key: baseName|line:character
+    const baseName = this.getBaseSymbolName(symbol.name)
+    return `${baseName}|${symbol.range.start.line}:${symbol.range.start.character}`
   }
 
   onReferences(params: ReferenceParams): Location[] | null {
@@ -202,7 +236,49 @@ export class SymbolProvider {
   }
 }
 
-function GetTargetedSymbol(
+export function checkUnusedSymbols(
+  context: DocumentContext,
+  activeFile: string,
+): Diagnostic[] {
+  const unusedDiagnostics: Diagnostic[] = []
+  const symbols = context.symbolTable.GetSymbols()
+
+  for (const [name, symbolData] of symbols.entries()) {
+    // Only check symbols defined in the active file
+    if (symbolData.GetLocation().uri !== activeFile) continue
+
+    // Skip labels (only check constant declarations)
+    if (symbolData.IsLabel()) continue
+
+    // Skip built-in symbols (PI, P%, TRUE, FALSE, CPU)
+    if (
+      name === 'PI' ||
+      name === 'P%' ||
+      name === 'TRUE' ||
+      name === 'FALSE' ||
+      name === 'CPU'
+    ) {
+      continue
+    }
+    // Check if symbol has any references
+    const refs = context.symbolTable.GetReferences(name)
+    if (refs === undefined || refs.length === 0) {
+      // Strip scope suffix from name for display (e.g., "symbol@0" -> "symbol")
+      const displayName = name.includes('@') ? name.split('@')[0] : name
+      unusedDiagnostics.push({
+        severity: DiagnosticSeverity.Hint,
+        range: symbolData.GetLocation().range,
+        message: `'${displayName}' is declared but never used`,
+        source: 'vscode-beebasm',
+        tags: [DiagnosticTag.Unnecessary],
+      })
+    }
+  }
+
+  return unusedDiagnostics
+}
+
+export function GetTargetedSymbol(
   currentLine: string,
   location: Position,
 ): string | null {

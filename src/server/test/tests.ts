@@ -11,7 +11,11 @@ import {
   TextDocumentPositionParams,
 } from 'vscode-languageserver'
 import { CompletionProvider, SignatureProvider } from '../completions'
-import { FindDefinition, FindReferences } from '../symbolhandler'
+import {
+  FindDefinition,
+  FindReferences,
+  checkUnusedSymbols,
+} from '../symbolhandler'
 import * as AST from '../ast'
 import { InlayHintsProvider } from '../inlayhintsprovider'
 import { FileHandler } from '../filehandler'
@@ -50,46 +54,6 @@ function Run2Passes(code: string) {
     )
     input.Process()
   }
-}
-
-// Helper to check for unused symbols (mirrors server.ts implementation)
-function checkUnusedSymbols(uri: string): Diagnostic[] {
-  const unusedDiagnostics: Diagnostic[] = []
-  const symbols = context.symbolTable.GetSymbols()
-
-  for (const [name, symbolData] of symbols.entries()) {
-    // Only check symbols defined in the specified file
-    if (symbolData.GetLocation().uri !== uri) continue
-
-    // Skip labels (only check constant declarations)
-    if (symbolData.IsLabel()) continue
-
-    // Skip built-in symbols (PI, P%, TRUE, FALSE, CPU)
-    if (
-      name === 'PI' ||
-      name === 'P%' ||
-      name === 'TRUE' ||
-      name === 'FALSE' ||
-      name === 'CPU'
-    ) {
-      continue
-    }
-
-    // Check if symbol has any references
-    const refs = context.symbolTable.GetReferences(name)
-    if (refs === undefined || refs.length === 0) {
-      const displayName = name.includes('@') ? name.split('@')[0] : name
-      unusedDiagnostics.push({
-        severity: DiagnosticSeverity.Hint,
-        range: symbolData.GetLocation().range,
-        message: `'${displayName}' is declared but never used`,
-        source: 'vscode-beebasm',
-        tags: [DiagnosticTag.Unnecessary],
-      })
-    }
-  }
-
-  return unusedDiagnostics
 }
 
 suite('LineParser', function () {
@@ -161,6 +125,7 @@ suite('LineParser', function () {
     test('Test local symbol reference', testLocalSymbolReference)
     test('Test repeated for symbol', testRepeatedForSymbol)
     test('Test multiple files', testMultipleFiles)
+    test('Test P% forward reference', testPCForwardReference)
   })
 
   suite('Commands', function () {
@@ -202,12 +167,13 @@ suite('LineParser', function () {
       'Test multiple statements on line',
       testSourceMapInfoMultipleStatements,
     )
-    test('Test inside of for loop', testSourcMapInfoForLoop)
+    test('Test inside of for loop', testSourceMapInfoForLoop)
     test('Test inside macro call', testSourceMapInfoInsideMacro)
     test(
       'Test inside macro with preceding code',
       SourceMapInfoInsideMacroWithOffset,
     )
+    test('Test labels in FOR loop', SourceMapLabelsInForLoop)
   })
 
   suite('InlayHintsProvider', function () {
@@ -232,6 +198,7 @@ suite('LineParser', function () {
       'Test multiple unused constants',
       testMultipleUnusedConstantsAreAllFlagged,
     )
+    test('Test nested FOR loops', testUsedConstantsInNestedForLoops)
   })
 
   suite('Evaluate macro parameters in outer scope', function () {
@@ -645,7 +612,6 @@ PUTTEXT "BOOT.txt", "!BOOT", &FFFF
 SAVE "code", start, end`
   Run2Passes(code)
   const labels = context.symbolTable.GetAllLabels()
-  console.log(labels)
 
   // check labels contains '.start', '.loop', '.exit', '.end'
   assert.ok(labels['.start'] !== undefined)
@@ -691,7 +657,7 @@ function testSkipAndOrg() {
 
 function testForLoop() {
   const code = `
-  FOR n, 0, 10
+  FOR n, 1, 2
   LDA #n
   NEXT`
   for (let pass = 0; pass < 2; pass++) {
@@ -758,7 +724,7 @@ NEXT`
     context,
   )
   sourceCode.Process()
-  assert.equal(diagnostics.get('')!.length, 0)
+  assert.equal(diagnostics.get('')!.length, 0, diagnostics.get('')![0]?.message)
 }
 
 function testAssembler1() {
@@ -891,10 +857,10 @@ function testSymbolLocation() {
   )
   input.Process()
   const syms = context.symbolTable.GetSymbols()
-  let loc = syms.get('a')!.GetLocation()
+  let loc = syms.get('a@-1')!.GetLocation()
   assert.equal(loc.range.start.character, 0)
   assert.equal(loc.range.end.character, 1)
-  loc = syms.get('b')!.GetLocation()
+  loc = syms.get('b@-1')!.GetLocation()
   assert.equal(loc.range.start.character, 5)
   assert.equal(loc.range.end.character, 6)
 }
@@ -1102,6 +1068,16 @@ NEXT`
   assert.equal(result!.range.start.character, 4)
 }
 
+function testPCForwardReference() {
+  const code = `
+SEC
+BCS P% + 2
+INC &80
+INC &81`
+  Run2Passes(code)
+  assert.equal(diagnostics.get('')!.length, 0, diagnostics.get('')![0]?.message)
+}
+
 function testAssertFails() {
   const code = `
 ASSERT 1==2
@@ -1136,13 +1112,13 @@ b = 7283 << 2
 c = 29658 << -2
 d = -1583 << 3`
   Run2Passes(code)
-  const a = context.symbolTable.GetSymbols().get('a')?.GetValue()
+  const a = context.symbolTable.GetSymbols().get('a@-1')?.GetValue()
   assert.equal(a, -16)
-  const b = context.symbolTable.GetSymbols().get('b')?.GetValue()
+  const b = context.symbolTable.GetSymbols().get('b@-1')?.GetValue()
   assert.equal(b, 29132)
-  const c = context.symbolTable.GetSymbols().get('c')?.GetValue()
+  const c = context.symbolTable.GetSymbols().get('c@-1')?.GetValue()
   assert.equal(c, 7414)
-  const d = context.symbolTable.GetSymbols().get('d')?.GetValue()
+  const d = context.symbolTable.GetSymbols().get('d@-1')?.GetValue()
   assert.equal(d, -12664)
 }
 
@@ -1570,7 +1546,7 @@ LDA #10: STA &80`
   assert.equal(info?.parent, null)
 }
 
-function testSourcMapInfoForLoop() {
+function testSourceMapInfoForLoop() {
   const code = `
 ORG &1900
 FOR n, 0, 10
@@ -1613,6 +1589,21 @@ TEMP 1`
   const sourceMap = context.objectCode.GetSourceMap()
   const info = sourceMap[0x1900]
   assert.equal(info?.line, 6)
+}
+
+function SourceMapLabelsInForLoop() {
+  const code = `
+ORG &1900
+  FOR i, 0, 1
+    FOR j, 0, 2
+    .label
+    LDA #i+j
+  NEXT
+NEXT`
+  Run2Passes(code)
+  const labels = context.symbolTable.GetAllLabels()
+  assert.equal(diagnostics.get('')!.length, 0, diagnostics.get('')![0]?.message)
+  assert.equal(Object.keys(labels).length, 6)
 }
 
 function testInlayHintEasy() {
@@ -1848,7 +1839,7 @@ function testNumberTooBigFalsePositive() {
 function testUnusedGlobalConstant() {
   const code = 'unused = 42'
   Run2Passes(code)
-  const unused = checkUnusedSymbols('')
+  const unused = checkUnusedSymbols(context, '')
   assert.equal(unused.length, 1)
   assert.equal(unused[0].message, "'unused' is declared but never used")
   assert.deepEqual(unused[0].tags, [DiagnosticTag.Unnecessary])
@@ -1859,7 +1850,7 @@ function testUsedGlobalConstantIsNotFlagged() {
   const code = `used = 42
   LDA #used`
   Run2Passes(code)
-  const unused = checkUnusedSymbols('')
+  const unused = checkUnusedSymbols(context, '')
   assert.equal(unused.length, 0)
 }
 
@@ -1868,7 +1859,7 @@ function testUnusedScopedConstantIsFlagged() {
     scoped = 100
   }`
   Run2Passes(code)
-  const unused = checkUnusedSymbols('')
+  const unused = checkUnusedSymbols(context, '')
   assert.equal(unused.length, 1)
   assert.equal(unused[0].message, "'scoped' is declared but never used")
 }
@@ -1879,7 +1870,7 @@ function testUsedScopedConstantIsNotFlagged() {
     LDA #scoped
   }`
   Run2Passes(code)
-  const unused = checkUnusedSymbols('')
+  const unused = checkUnusedSymbols(context, '')
   assert.equal(unused.length, 0)
 }
 
@@ -1887,7 +1878,7 @@ function testLabelsAreNotFlaggedAsUnused() {
   const code = `.unusedLabel
   RTS`
   Run2Passes(code)
-  const unused = checkUnusedSymbols('')
+  const unused = checkUnusedSymbols(context, '')
   assert.equal(unused.length, 0)
 }
 
@@ -1897,8 +1888,22 @@ unused2 = 2
 used = 3
 LDA #used`
   Run2Passes(code)
-  const unused = checkUnusedSymbols('')
+  const unused = checkUnusedSymbols(context, '')
   assert.equal(unused.length, 2)
+}
+
+function testUsedConstantsInNestedForLoops() {
+  const code = `FOR i, 0, 1
+    FOR j, 0, 1
+      b = 9+i-j  
+      LDA #b
+    NEXT
+  NEXT`
+  Run2Passes(code)
+  const unused = checkUnusedSymbols(context, '')
+
+  assert.equal(unused.length, 0, unused![0]?.message)
+  assert.equal(diagnostics.get('')!.length, 0, diagnostics.get('')![0]?.message)
 }
 
 function testMacroParamEval() {

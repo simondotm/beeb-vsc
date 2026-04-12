@@ -81,9 +81,9 @@ export class SymbolTable {
   private _context: DocumentContext
 
   constructor(context: DocumentContext) {
-    this._context = context;
-    this.Reset();
-    this._labelScopes = 0;
+    this._context = context
+    this.Reset()
+    this._labelScopes = 0
   }
 
   // get all symbols where location is not noLocation
@@ -99,34 +99,25 @@ export class SymbolTable {
   // Get all symbols in scope for a particular location
   GetSymbolsByLocation(uri: string, line: number): Map<string, SymbolData> {
     const symbols = new Map<string, SymbolData>()
-    const uriSanitised = uri
     for (const [name, symbolData] of this._map.entries()) {
-      if (!name.includes('@')) {
+      if (name.endsWith('@-1')) {
         // global symbols always included
-        symbols.set(name, symbolData)
+        const justName = this.ScopedSymbolBaseName(name)
+        symbols.set(justName, symbolData)
       } else {
-        if (symbolData.GetLocation().uri === uriSanitised) {
-          // local symbols only included if they are in the same file
-          // and the line number is within the scope of the symbol
-          let suffix = ''
-          for (
-            let scopeLevel = 0;
-            scopeLevel < this._labelScopes;
-            scopeLevel++
+        if (symbolData.GetLocation().uri === uri) {
+          // Extract the scope ID from the symbol name and check
+          // if the given line falls within that scope
+          const id = this.ScopedSymbolId(name)
+          if (
+            id >= 0 &&
+            id < this._scopeDetails.length &&
+            line >= this._scopeDetails[id].startLine &&
+            line <= this._scopeDetails[id].endLine &&
+            this._scopeDetails[id].uri === uri
           ) {
-            if (
-              scopeLevel < this._scopeDetails.length &&
-              line >= this._scopeDetails[scopeLevel].startLine &&
-              line <= this._scopeDetails[scopeLevel].endLine &&
-              this._scopeDetails[scopeLevel].uri === uriSanitised
-            ) {
-              suffix = suffix + `@${scopeLevel}_0`
-              if (name.endsWith(suffix)) {
-                // Strip off the suffix
-                const justName = name.split('@')[0]
-                symbols.set(justName, symbolData)
-              }
-            }
+            const justName = this.ScopedSymbolBaseName(name)
+            symbols.set(justName, symbolData)
           }
         }
       }
@@ -140,30 +131,24 @@ export class SymbolTable {
     line: number,
   ): [SymbolData | undefined, string] {
     // Relies on scopeLevel matching ForScopePtr when each scopeDetail was created
-    let search = ''
-    for (
-      let scopeLevel = this._labelScopes - 1;
-      scopeLevel >= 0;
-      scopeLevel--
-    ) {
+    // Search scopes from innermost (highest ID) to outermost
+    for (let scopeId = this._scopeDetails.length - 1; scopeId >= 0; scopeId--) {
+      const scope = this._scopeDetails[scopeId]
       if (
-        scopeLevel < this._scopeDetails.length &&
-        line >= this._scopeDetails[scopeLevel].startLine &&
-        line <= this._scopeDetails[scopeLevel].endLine &&
-        this._scopeDetails[scopeLevel].uri === uri
+        scope.uri === uri &&
+        line >= scope.startLine &&
+        line <= scope.endLine
       ) {
-        search = `@${scopeLevel}_0` + search
+        const search = `${symbolname}@${scopeId}_0`
+        if (this.IsSymbolDefined(search)) {
+          return [this._map.get(search), search]
+        }
       }
     }
-    search = symbolname + search
-    if (this.IsSymbolDefined(search)) {
-      // console.log("Found symbol " + search);
-      return [this._map.get(search), search]
-    }
     // now check global level (no suffix after symbol name and need exact match)
-    if (this.IsSymbolDefined(symbolname)) {
-      // console.log("Found symbol " + symbolname);
-      return [this._map.get(symbolname), symbolname]
+    const globalSearch = `${symbolname}@-1`
+    if (this.IsSymbolDefined(globalSearch)) {
+      return [this._map.get(globalSearch), globalSearch] // need full name as second part of return value?
     }
     return [undefined, '']
   }
@@ -238,8 +223,6 @@ export class SymbolTable {
   }
 
   AddLabel(symbol: string): void {
-    // Note: this data is not used (beebasm uses it for dumping label list to file)
-    // Keeping around for now in case it's useful in debugging
     if (this._context.globalData.IsSecondPass()) {
       const addr = this._context.objectCode.GetPC()
       const identifier =
@@ -275,17 +258,17 @@ export class SymbolTable {
       this._lastLabel!._scope = this._labelScopes
       this._scopeDetails.push({ uri: uri, startLine: startLine, endLine: -1 })
       this._labelScopes++
-      this._labelStack.push(this._lastLabel!)
+      this._labelStack.push({ ...this._lastLabel! })
     }
   }
 
   PopScope(endLine = -1, forID = -1): void {
     if (this._context.globalData.IsSecondPass()) {
       this._labelStack.pop()
-      this._lastLabel =
+      this._lastLabel = this._lastLabel =
         this._labelStack.length === 0
           ? { _addr: 0, _scope: 0, _identifier: '' }
-          : this._labelStack[this._labelStack.length - 1]
+          : { ...this._labelStack[this._labelStack.length - 1] }
       if (forID !== -1) {
         this._scopeDetails[forID].endLine = endLine
       }
@@ -310,7 +293,7 @@ export class SymbolTable {
         this._scopeDetails.push({ uri: uri, startLine: startLine, endLine: -1 })
       }
       this._labelScopes++
-      this._labelStack.push(this._lastLabel!)
+      this._labelStack.push({ ...this._lastLabel! })
     }
   }
 
@@ -329,6 +312,7 @@ export class SymbolTable {
     // Only interested in user defined symbols with numeric values
     // Since these might represent memory locations
     // Could further filter for non-integer values, negative values, etc.
+    // Should remove FOR loop counters too since definitely not memory locations, but how to identify them?
     for (const [name, symbolData] of this._map.entries()) {
       if (!symbolData.IsLabel() && symbolData.GetLocation() !== noLocation) {
         if (typeof symbolData.GetValue() === 'number') {
@@ -338,5 +322,18 @@ export class SymbolTable {
     }
 
     return symbols
+  }
+
+  // Helpers to extract parts from a scoped symbol name string
+  ScopedSymbolBaseName(scopedName: string): string {
+    const atIndex = scopedName.indexOf('@')
+    return atIndex === -1 ? scopedName : scopedName.substring(0, atIndex)
+  }
+
+  ScopedSymbolId(scopedName: string): number {
+    const atIndex = scopedName.indexOf('@')
+    if (atIndex === -1) return -1
+    const underscoreIndex = scopedName.indexOf('_', atIndex)
+    return parseInt(scopedName.substring(atIndex + 1, underscoreIndex))
   }
 }
