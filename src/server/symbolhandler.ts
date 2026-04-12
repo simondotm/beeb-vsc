@@ -1,4 +1,7 @@
 import {
+  Diagnostic,
+  DiagnosticSeverity,
+  DiagnosticTag,
   Location,
   Position,
   Range,
@@ -208,6 +211,48 @@ export class SymbolProvider {
     }
     return null
   }
+}
+
+export function checkUnusedSymbols(
+  context: DocumentContext,
+  activeFile: string,
+): Diagnostic[] {
+  const unusedDiagnostics: Diagnostic[] = []
+  const symbols = context.symbolTable.GetSymbols()
+
+  for (const [name, symbolData] of symbols.entries()) {
+    // Only check symbols defined in the active file
+    if (symbolData.GetLocation().uri !== activeFile) continue
+
+    // Skip labels (only check constant declarations)
+    if (symbolData.IsLabel()) continue
+
+    // Skip built-in symbols (PI, P%, TRUE, FALSE, CPU)
+    if (
+      name === 'PI' ||
+      name === 'P%' ||
+      name === 'TRUE' ||
+      name === 'FALSE' ||
+      name === 'CPU'
+    ) {
+      continue
+    }
+    // Check if symbol has any references
+    const refs = context.symbolTable.GetReferences(name)
+    if (refs === undefined || refs.length === 0) {
+      // Strip scope suffix from name for display (e.g., "symbol@0" -> "symbol")
+      const displayName = name.includes('@') ? name.split('@')[0] : name
+      unusedDiagnostics.push({
+        severity: DiagnosticSeverity.Hint,
+        range: symbolData.GetLocation().range,
+        message: `'${displayName}' is declared but never used`,
+        source: 'vscode-beebasm',
+        tags: [DiagnosticTag.Unnecessary],
+      })
+    }
+  }
+
+  return unusedDiagnostics
 }
 
 export function GetTargetedSymbol(

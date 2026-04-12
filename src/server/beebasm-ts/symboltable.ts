@@ -139,7 +139,7 @@ export class SymbolTable {
         line >= scope.startLine &&
         line <= scope.endLine
       ) {
-        const search = `${symbolname}@${scopeId}`
+        const search = `${symbolname}@${scopeId}_0`
         if (this.IsSymbolDefined(search)) {
           return [this._map.get(search), search]
         }
@@ -258,17 +258,17 @@ export class SymbolTable {
       this._lastLabel!._scope = this._labelScopes
       this._scopeDetails.push({ uri: uri, startLine: startLine, endLine: -1 })
       this._labelScopes++
-      this._labelStack.push(this._lastLabel!)
+      this._labelStack.push({ ...this._lastLabel! })
     }
   }
 
   PopScope(endLine = -1, forID = -1): void {
     if (this._context.globalData.IsSecondPass()) {
       this._labelStack.pop()
-      this._lastLabel =
+      this._lastLabel = this._lastLabel =
         this._labelStack.length === 0
           ? { _addr: 0, _scope: 0, _identifier: '' }
-          : this._labelStack[this._labelStack.length - 1]
+          : { ...this._labelStack[this._labelStack.length - 1] }
       if (forID !== -1) {
         this._scopeDetails[forID].endLine = endLine
       }
@@ -293,7 +293,7 @@ export class SymbolTable {
         this._scopeDetails.push({ uri: uri, startLine: startLine, endLine: -1 })
       }
       this._labelScopes++
-      this._labelStack.push(this._lastLabel!)
+      this._labelStack.push({ ...this._lastLabel! })
     }
   }
 

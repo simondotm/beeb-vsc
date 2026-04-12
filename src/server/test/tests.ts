@@ -11,7 +11,11 @@ import {
   TextDocumentPositionParams,
 } from 'vscode-languageserver'
 import { CompletionProvider, SignatureProvider } from '../completions'
-import { FindDefinition, FindReferences } from '../symbolhandler'
+import {
+  FindDefinition,
+  FindReferences,
+  checkUnusedSymbols,
+} from '../symbolhandler'
 import * as AST from '../ast'
 import { InlayHintsProvider } from '../inlayhintsprovider'
 import { FileHandler } from '../filehandler'
@@ -50,46 +54,6 @@ function Run2Passes(code: string) {
     )
     input.Process()
   }
-}
-
-// Helper to check for unused symbols (mirrors server.ts implementation)
-function checkUnusedSymbols(uri: string): Diagnostic[] {
-  const unusedDiagnostics: Diagnostic[] = []
-  const symbols = context.symbolTable.GetSymbols()
-
-  for (const [name, symbolData] of symbols.entries()) {
-    // Only check symbols defined in the specified file
-    if (symbolData.GetLocation().uri !== uri) continue
-
-    // Skip labels (only check constant declarations)
-    if (symbolData.IsLabel()) continue
-
-    // Skip built-in symbols (PI, P%, TRUE, FALSE, CPU)
-    if (
-      name === 'PI' ||
-      name === 'P%' ||
-      name === 'TRUE' ||
-      name === 'FALSE' ||
-      name === 'CPU'
-    ) {
-      continue
-    }
-
-    // Check if symbol has any references
-    const refs = context.symbolTable.GetReferences(name)
-    if (refs === undefined || refs.length === 0) {
-      const displayName = name.includes('@') ? name.split('@')[0] : name
-      unusedDiagnostics.push({
-        severity: DiagnosticSeverity.Hint,
-        range: symbolData.GetLocation().range,
-        message: `'${displayName}' is declared but never used`,
-        source: 'vscode-beebasm',
-        tags: [DiagnosticTag.Unnecessary],
-      })
-    }
-  }
-
-  return unusedDiagnostics
 }
 
 suite('LineParser', function () {
@@ -209,6 +173,7 @@ suite('LineParser', function () {
       'Test inside macro with preceding code',
       SourceMapInfoInsideMacroWithOffset,
     )
+    test('Test labels in FOR loop', SourceMapLabelsInForLoop)
   })
 
   suite('InlayHintsProvider', function () {
@@ -1626,6 +1591,21 @@ TEMP 1`
   assert.equal(info?.line, 6)
 }
 
+function SourceMapLabelsInForLoop() {
+  const code = `
+ORG &1900
+  FOR i, 0, 1
+    FOR j, 0, 2
+    .label
+    LDA #i+j
+  NEXT
+NEXT`
+  Run2Passes(code)
+  const labels = context.symbolTable.GetAllLabels()
+  assert.equal(diagnostics.get('')!.length, 0, diagnostics.get('')![0]?.message)
+  assert.equal(Object.keys(labels).length, 6)
+}
+
 function testInlayHintEasy() {
   const code = 'INX'
   const input = new SourceCode(
@@ -1859,7 +1839,7 @@ function testNumberTooBigFalsePositive() {
 function testUnusedGlobalConstant() {
   const code = 'unused = 42'
   Run2Passes(code)
-  const unused = checkUnusedSymbols('')
+  const unused = checkUnusedSymbols(context, '')
   assert.equal(unused.length, 1)
   assert.equal(unused[0].message, "'unused' is declared but never used")
   assert.deepEqual(unused[0].tags, [DiagnosticTag.Unnecessary])
@@ -1870,7 +1850,7 @@ function testUsedGlobalConstantIsNotFlagged() {
   const code = `used = 42
   LDA #used`
   Run2Passes(code)
-  const unused = checkUnusedSymbols('')
+  const unused = checkUnusedSymbols(context, '')
   assert.equal(unused.length, 0)
 }
 
@@ -1879,7 +1859,7 @@ function testUnusedScopedConstantIsFlagged() {
     scoped = 100
   }`
   Run2Passes(code)
-  const unused = checkUnusedSymbols('')
+  const unused = checkUnusedSymbols(context, '')
   assert.equal(unused.length, 1)
   assert.equal(unused[0].message, "'scoped' is declared but never used")
 }
@@ -1890,7 +1870,7 @@ function testUsedScopedConstantIsNotFlagged() {
     LDA #scoped
   }`
   Run2Passes(code)
-  const unused = checkUnusedSymbols('')
+  const unused = checkUnusedSymbols(context, '')
   assert.equal(unused.length, 0)
 }
 
@@ -1898,7 +1878,7 @@ function testLabelsAreNotFlaggedAsUnused() {
   const code = `.unusedLabel
   RTS`
   Run2Passes(code)
-  const unused = checkUnusedSymbols('')
+  const unused = checkUnusedSymbols(context, '')
   assert.equal(unused.length, 0)
 }
 
@@ -1908,7 +1888,7 @@ unused2 = 2
 used = 3
 LDA #used`
   Run2Passes(code)
-  const unused = checkUnusedSymbols('')
+  const unused = checkUnusedSymbols(context, '')
   assert.equal(unused.length, 2)
 }
 
@@ -1920,12 +1900,8 @@ function testUsedConstantsInNestedForLoops() {
     NEXT
   NEXT`
   Run2Passes(code)
-  // print entire symbol table for debugging
-  const symbols = context.symbolTable.GetSymbols()
-  for (const [key, value] of symbols) {
-    console.log(`${key}: ${value.GetValue()}`)
-  }
-  const unused = checkUnusedSymbols('')
+  const unused = checkUnusedSymbols(context, '')
+
   assert.equal(unused.length, 0, unused![0]?.message)
   assert.equal(diagnostics.get('')!.length, 0, diagnostics.get('')![0]?.message)
 }

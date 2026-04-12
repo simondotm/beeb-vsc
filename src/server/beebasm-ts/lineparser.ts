@@ -4250,7 +4250,7 @@ export class LineParser {
     // Symbol starts with a valid character
     const oldColumn = this._column
     // Change from c++ original: wait to add suffix after entered for loop
-    const symbolName = this.GetSymbolName() // + this._sourceCode.GetSymbolNameSuffix();
+    const symbolName = this.GetSymbolName()
     // Check variable has not yet been defined
     // Should not need this check since creating a new unique symbol including the new for stack pointer
     // if (this._context.symbolTable.IsSymbolDefined(symbolName)) {
