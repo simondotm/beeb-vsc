@@ -11,6 +11,7 @@ import {
   DebugConfiguration,
   WorkspaceFolder,
   CancellationToken,
+  Disposable,
   Uri,
 } from 'vscode'
 import {
@@ -53,9 +54,7 @@ import {
 import * as fs from 'fs'
 import path from 'path'
 
-export class jsbeebDebugAdapterFactory
-  implements DebugAdapterDescriptorFactory
-{
+export class jsbeebDebugAdapterFactory implements DebugAdapterDescriptorFactory {
   private extensionPath: string
   constructor(extensionPath: string) {
     this.extensionPath = extensionPath
@@ -79,8 +78,10 @@ export class JSBeebConfigurationProvider implements DebugConfigurationProvider {
     const updatedConfig: ProviderResult<DebugConfiguration> = {
       ...config,
     }
+    const isAttachRequest = updatedConfig.request === 'attach'
+
     // if no disk image specified, use first .ssd file in the directory
-    if (updatedConfig.diskImage === undefined) {
+    if (!isAttachRequest && updatedConfig.diskImage === undefined) {
       if (folder) {
         const files = fs
           .readdirSync(folder.uri.fsPath)
@@ -109,8 +110,14 @@ export class JSBeebConfigurationProvider implements DebugConfigurationProvider {
 }
 
 interface JSBeebLaunchRequestArguments
-  extends DebugProtocol.LaunchRequestArguments {
+  extends DebugProtocol.LaunchRequestArguments, JSBeebSessionRequestArguments {
   diskImage: string
+}
+
+interface JSBeebAttachRequestArguments
+  extends DebugProtocol.AttachRequestArguments, JSBeebSessionRequestArguments {}
+
+interface JSBeebSessionRequestArguments {
   sourceMapFiles: Array<string>
   cwd: string
 }
@@ -145,7 +152,13 @@ const enum displayFormat {
 // export class JSBeebDebugSession implements DebugAdapter {
 export class JSBeebDebugSession extends LoggingDebugSession {
   private requestId: number = 0
-  private pendingRequests: Map<number, (response: unknown) => void> = new Map()
+  private pendingRequests: Map<
+    number,
+    {
+      resolve: (response: unknown) => void
+      reject: (error: Error) => void
+    }
+  > = new Map()
   private webview = EmulatorPanel.instance?.GetWebview()
   private configurationDone = new Subject()
   private emulatorReady = new Subject()
@@ -164,13 +177,151 @@ export class JSBeebDebugSession extends LoggingDebugSession {
   private fileLineToAddressMap: Map<number, Map<number, number>> = new Map()
   private internals: Variable[] = []
   private memory: Uint8Array = new Uint8Array(0x10000)
+  private messageSubscription: Disposable | undefined
+  private panelDisposeSubscription: Disposable | undefined
+  private sessionEnded = false
+  private sessionStarted = false
 
   public constructor(extensionPath: string) {
     super()
     this.extensionPath = extensionPath
-    // The runtime is the jsbeeb instance in the webview, we tell it to start, step, stop, etc.
+  }
+
+  private bindToEmulatorPanel() {
+    this.messageSubscription?.dispose()
+    this.messageSubscription = undefined
+
+    this.panelDisposeSubscription?.dispose()
+    this.panelDisposeSubscription = undefined
+
+    this.webview = EmulatorPanel.instance?.GetWebview()
     if (this.webview) {
-      this.webview.onDidReceiveMessage(this.handleMessageFromWebview.bind(this))
+      this.messageSubscription = this.webview.onDidReceiveMessage(
+        this.handleMessageFromWebview.bind(this),
+      )
+    }
+
+    this.panelDisposeSubscription = EmulatorPanel.onDidDispose(() => {
+      this.webview = undefined
+      if (!this.sessionStarted || this.sessionEnded) {
+        return
+      }
+      this.finalizeSession({ sendTerminatedEvent: true })
+    })
+  }
+
+  private resetSourceMapState() {
+    this.addressesMap = new Array(0x10000)
+    this.sourceFileMap = {}
+    this.labelMap = {}
+    this.symbolMap = {}
+    this.fileLineToAddressMap = new Map()
+  }
+
+  private initializeSession(args: JSBeebSessionRequestArguments) {
+    this.sessionStarted = true
+    this.sessionEnded = false
+    this.cwd = args.cwd
+    this.sourceMapFiles = [...args.sourceMapFiles]
+    this.emulatorReadyForBreakpoints = false
+    this.resetSourceMapState()
+    this.loadSourceMap()
+    this.bindToEmulatorPanel()
+    this.setDebugMode(true)
+  }
+
+  private flushPendingBreakpoints() {
+    if (this.pendingBreakpoints.length > 0) {
+      this.sendBreakpointsToEmulator(this.pendingBreakpoints)
+      console.log('sending pending breakpoints: ' + this.pendingBreakpoints)
+      this.pendingBreakpoints = []
+    }
+
+    if (this.pendingDataBreakpoints.length > 0) {
+      this.sendDataBreakpointsToEmulator(this.pendingDataBreakpoints)
+      console.log(
+        'sending pending data breakpoints: ' +
+          this.pendingDataBreakpoints.length,
+      )
+      this.pendingDataBreakpoints = []
+    }
+  }
+
+  private async startDebugSession(
+    args: JSBeebSessionRequestArguments,
+    options: { waitForEmulatorReady: boolean },
+  ) {
+    this.initializeSession(args)
+
+    const waits = [this.configurationDone.wait(5000)]
+    if (options.waitForEmulatorReady) {
+      waits.push(this.emulatorReady.wait(5000))
+    } else {
+      this.emulatorReadyForBreakpoints = true
+    }
+
+    await Promise.all(waits)
+
+    if (this.sessionEnded) {
+      return false
+    }
+
+    this.flushPendingBreakpoints()
+    return true
+  }
+
+  private setDebugMode(enabled: boolean) {
+    const message: HostMessageSetDebugMode = {
+      command: HostCommand.SetDebugMode,
+      enabled,
+    }
+    EmulatorPanel.instance?.notifyClient(message)
+  }
+
+  private rejectPendingRequests(reason: string) {
+    const error = new Error(reason)
+    for (const pendingRequest of this.pendingRequests.values()) {
+      pendingRequest.reject(error)
+    }
+    this.pendingRequests.clear()
+  }
+
+  private finalizeSession(options?: {
+    disableDebugMode?: boolean
+    disposePanel?: boolean
+    sendTerminatedEvent?: boolean
+  }) {
+    if (this.sessionEnded) {
+      return
+    }
+
+    this.sessionEnded = true
+
+    if (options?.disableDebugMode) {
+      this.setDebugMode(false)
+    }
+
+    this.messageSubscription?.dispose()
+    this.messageSubscription = undefined
+    this.panelDisposeSubscription?.dispose()
+    this.panelDisposeSubscription = undefined
+    this.webview = undefined
+
+    this.emulatorReadyForBreakpoints = false
+    this.pendingBreakpoints = []
+    this.pendingDataBreakpoints = []
+    this.fileBreakpoints.clear()
+    this.dataBreakpoints.clear()
+    this.rejectPendingRequests('Debug session ended')
+    this.configurationDone.notify()
+    this.emulatorReady.notify()
+
+    if (options?.disposePanel) {
+      EmulatorPanel.instance?.dispose()
+    }
+
+    if (options?.sendTerminatedEvent) {
+      this.sendEvent(new TerminatedEvent())
     }
   }
 
@@ -229,21 +380,30 @@ export class JSBeebDebugSession extends LoggingDebugSession {
   ) {
     const id = response.info.id
     if (this.pendingRequests.has(id)) {
-      const resolve = this.pendingRequests.get(id)
-      if (resolve) {
-        resolve(response)
+      const pendingRequest = this.pendingRequests.get(id)
+      if (pendingRequest) {
+        pendingRequest.resolve(response)
         this.pendingRequests.delete(id)
       }
     }
   }
 
   private getFromEmulator(request: HostMessageDebugRequest): Promise<unknown> {
+    if (!this.webview) {
+      return Promise.reject(new Error('Emulator webview is not available'))
+    }
+
     request.id = this.requestId++
-    return new Promise((resolve) => {
-      this.pendingRequests.set(request.id, resolve)
-      if (this.webview) {
-        this.webview.postMessage(request)
-      }
+    return new Promise((resolve, reject) => {
+      this.pendingRequests.set(request.id, { resolve, reject })
+      this.webview?.postMessage(request).then((posted) => {
+        if (posted) {
+          return
+        }
+
+        this.pendingRequests.delete(request.id)
+        reject(new Error('Failed to send message to emulator'))
+      })
     })
   }
 
@@ -255,32 +415,33 @@ export class JSBeebDebugSession extends LoggingDebugSession {
     args: DebugProtocol.InitializeRequestArguments,
   ): void {
     // build and return the capabilities of this debug adapter:
-    response.body = response.body || {}
+    response.body = (response.body || {}) as DebugProtocol.Capabilities
+    const capabilities = response.body as DebugProtocol.Capabilities
 
     // the adapter implements the configurationDone request.
-    response.body.supportsConfigurationDoneRequest = true
+    capabilities.supportsConfigurationDoneRequest = true
 
     // make VS Code use 'evaluate' when hovering over source
-    response.body.supportsEvaluateForHovers = true
+    capabilities.supportsEvaluateForHovers = true
 
     // make VS Code support data breakpoints
-    response.body.supportsDataBreakpoints = true
-    response.body.supportsDataBreakpointBytes = true
+    capabilities.supportsDataBreakpoints = true
+    capabilities.supportsDataBreakpointBytes = true
 
     // make VS Code send the breakpointLocations request
-    response.body.supportsBreakpointLocationsRequest = true
+    capabilities.supportsBreakpointLocationsRequest = true
 
-    // shut down emulator panel when debug session ends
-    response.body.supportsTerminateRequest = true
-    response.body.supportsRestartRequest = false // What process would we use? User can just reboot the emulated machine already
+    // allow terminate semantics in the VS Code debug UI
+    capabilities.supportsTerminateRequest = true
+    capabilities.supportsRestartRequest = false // What process would we use? User can just reboot the emulated machine already
 
     // make VS Code send disassemble request
-    response.body.supportsDisassembleRequest = false // Do we want this? We're starting with assembly but useful for self-modifying code?
-    response.body.supportsInstructionBreakpoints = false // Generally set from dissasembly but assembly basically the same
+    capabilities.supportsDisassembleRequest = false // Do we want this? We're starting with assembly but useful for self-modifying code?
+    capabilities.supportsInstructionBreakpoints = false // Generally set from dissasembly but assembly basically the same
 
-    response.body.supportsSteppingGranularity = false
+    capabilities.supportsSteppingGranularity = false
 
-    response.body.supportsReadMemoryRequest = true
+    capabilities.supportsReadMemoryRequest = true
 
     this.sendResponse(response)
 
@@ -310,52 +471,31 @@ export class JSBeebDebugSession extends LoggingDebugSession {
     request?: DebugProtocol.Request | undefined,
   ): Promise<void> {
     console.log('launchRequest called')
-    this.cwd = args.cwd
-    this.sourceMapFiles = args.sourceMapFiles
-    // load sourcemap
-    this.loadSourceMap()
-    const needToBind = EmulatorPanel.instance === undefined
     EmulatorPanel.show(this.extensionPath, Uri.file(args.diskImage), [])
-    const message: HostMessageSetDebugMode = {
-      command: HostCommand.SetDebugMode,
-    }
-    EmulatorPanel.instance?.notifyClient(message)
-    if (needToBind) {
-      this.webview = EmulatorPanel.instance?.GetWebview()
-      if (this.webview) {
-        this.webview.onDidReceiveMessage(
-          this.handleMessageFromWebview.bind(this),
-        )
-      }
-    }
-    // Wait up to 5 seconds until configuration has finished
-    // (and configurationDoneRequest has been called)
-    // At the same time, wait for ClientCommand.EmulatorReady message to be received
-    await Promise.all([
-      this.configurationDone.wait(5000),
-      this.emulatorReady.wait(5000),
-    ])
-    // Send any breakpoints that have been received before the emulator was ready
-    if (this.pendingBreakpoints.length > 0) {
-      this.sendBreakpointsToEmulator(this.pendingBreakpoints)
-      console.log('sending pending breakpoints: ' + this.pendingBreakpoints)
-      this.pendingBreakpoints = []
-    }
-
-    // Send any data breakpoints that have been received before the emulator was ready
-    if (this.pendingDataBreakpoints.length > 0) {
-      this.sendDataBreakpointsToEmulator(this.pendingDataBreakpoints)
-      console.log(
-        'sending pending data breakpoints: ' +
-          this.pendingDataBreakpoints.length,
-      )
-      this.pendingDataBreakpoints = []
-    }
+    await this.startDebugSession(args, { waitForEmulatorReady: true })
 
     this.sendResponse(response)
   }
 
-  // TODO - add attach request option? What would be the workflow?
+  protected async attachRequest(
+    response: DebugProtocol.AttachResponse,
+    args: JSBeebAttachRequestArguments,
+    _request?: DebugProtocol.Request | undefined,
+  ): Promise<void> {
+    console.log('attachRequest called')
+    if (!EmulatorPanel.instance) {
+      this.sendErrorResponse(
+        response,
+        1,
+        'No JSBeeb emulator webview is open to attach to. Open the emulator first.',
+      )
+      return
+    }
+
+    await this.startDebugSession(args, { waitForEmulatorReady: false })
+
+    this.sendResponse(response)
+  }
 
   private loadSourceMap(): void {
     // Load a specific file (or files), e.g. main.6502.map, specified in launch.json
@@ -827,9 +967,21 @@ export class JSBeebDebugSession extends LoggingDebugSession {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     request?: DebugProtocol.Request | undefined,
   ): void {
-    EmulatorPanel.instance?.dispose()
-    this.sendEvent(new TerminatedEvent())
+    this.finalizeSession({ disposePanel: true, sendTerminatedEvent: true })
     this.sendResponse(response)
+  }
+
+  protected disconnectRequest(
+    response: DebugProtocol.DisconnectResponse,
+    args: DebugProtocol.DisconnectArguments,
+    request?: DebugProtocol.Request | undefined,
+  ): void {
+    super.disconnectRequest(response, args, request)
+    this.finalizeSession({
+      disableDebugMode: !args.terminateDebuggee,
+      disposePanel: args.terminateDebuggee === true,
+      sendTerminatedEvent: true,
+    })
   }
 
   protected scopesRequest(
@@ -987,8 +1139,15 @@ export class JSBeebDebugSession extends LoggingDebugSession {
     const startFrame = args.startFrame || 0
     let frameId = STACKFRAME
     // Get information from emulator
-    this.internals = await this.getInternals()
-    this.memory = await this.getMemory()
+    try {
+      this.internals = await this.getInternals()
+      this.memory = await this.getMemory()
+    } catch (error) {
+      console.error('Error retrieving emulator state:', error)
+      response.body = { stackFrames: [], totalFrames: 0 }
+      this.sendResponse(response)
+      return
+    }
     const pc = this.internals.find((reg) => reg.name === 'PC')
     if (args.threadId === THREAD_ID && startFrame === STACKFRAME && pc) {
       const pcAddress = parseInt(pc.value.replace('$', '').toString(), 16)
