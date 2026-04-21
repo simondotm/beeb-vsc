@@ -229,6 +229,20 @@
                 }
               }
             }
+          },
+          "attach": {
+            "required": [
+              "sourceMapFiles"
+            ],
+            "properties": {
+              "sourceMapFiles": {
+                "type": "array",
+                "description": "Source map files",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
           }
         },
         "initialConfigurations": [
@@ -249,6 +263,16 @@
               "request": "launch",
               "name": "Debug in built-in jsbeeb emulator",
               "diskImage": "${workspaceFolder}/disk.ssd",
+              "sourceMapFiles": []
+            }
+          },
+          {
+            "label": "Attach to built-in jsbeeb emulator",
+            "description": "Attach to built-in jsbeeb emulator",
+            "body": {
+              "type": "jsbeebdebugger",
+              "request": "attach",
+              "name": "Attach to built-in jsbeeb emulator",
               "sourceMapFiles": []
             }
           }

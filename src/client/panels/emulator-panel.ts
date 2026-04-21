@@ -17,10 +17,12 @@ const glob = '**/*.{ssd,dsd}'
 
 export class EmulatorPanel {
   static instance: EmulatorPanel | undefined
+  private static readonly panelDisposedEmitter = new vscode.EventEmitter<void>()
 
   private readonly panel: vscode.WebviewPanel
   private readonly extensionPath: string
   private disposables: vscode.Disposable[] = []
+  private isDisposed = false
 
   private discImageFile: DiscImageFile = NO_DISC
 
@@ -63,7 +65,11 @@ export class EmulatorPanel {
         'owl-light.png',
       ),
     }
-    this.panel.onDidDispose(() => this.dispose(), null, this.disposables)
+    this.panel.onDidDispose(
+      () => this.handlePanelDisposed(),
+      null,
+      this.disposables,
+    )
     this.setWebviewMessageListener(this.panel.webview)
     this.panel.webview.html = this.getWebviewContent()
 
@@ -77,6 +83,10 @@ export class EmulatorPanel {
         },
       })
     })
+  }
+
+  static onDidDispose(listener: () => void): vscode.Disposable {
+    return EmulatorPanel.panelDisposedEmitter.event(listener)
   }
 
   /**
@@ -137,13 +147,31 @@ export class EmulatorPanel {
   }
 
   dispose() {
-    EmulatorPanel.instance = undefined
-
-    if (this.watcher) {
-      this.watcher.dispose()
+    if (this.isDisposed) {
+      return
     }
 
     this.panel.dispose()
+    this.handlePanelDisposed()
+  }
+
+  private handlePanelDisposed() {
+    if (this.isDisposed) {
+      return
+    }
+
+    this.isDisposed = true
+
+    if (EmulatorPanel.instance === this) {
+      EmulatorPanel.instance = undefined
+    }
+
+    if (this.watcher) {
+      this.watcher.dispose()
+      this.watcher = undefined
+    }
+
+    EmulatorPanel.panelDisposedEmitter.fire()
 
     while (this.disposables.length) {
       const disposable = this.disposables.pop()
@@ -226,6 +254,10 @@ export class EmulatorPanel {
    * @param message
    */
   notifyClient(message: HostMessage) {
+    if (this.isDisposed) {
+      return
+    }
+
     this.panel.webview.postMessage(message).then((result) => {
       if (!result) {
         vscode.window.showInformationMessage(

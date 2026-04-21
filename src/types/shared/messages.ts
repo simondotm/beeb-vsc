@@ -183,6 +183,7 @@ export interface HostMessageSetDataBreakpoints extends HostMessageBase {
 
 export interface HostMessageSetDebugMode extends HostMessageBase {
   command: HostCommand.SetDebugMode
+  enabled: boolean
 }
 
 export type HostMessage =

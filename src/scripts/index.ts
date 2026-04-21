@@ -171,7 +171,14 @@ window.addEventListener('message', (event) => {
       break
     }
     case HostCommand.SetDebugMode: {
-      debugMode = true
+      debugMode = message.enabled
+      if (!debugMode) {
+        if (document.visibilityState === 'visible') {
+          emulatorView.resume()
+        } else {
+          emulatorView.suspend()
+        }
+      }
       break
     }
   }
