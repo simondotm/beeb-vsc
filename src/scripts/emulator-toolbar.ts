@@ -7,6 +7,7 @@ import { ClientCommand, DiscImageFile, NO_DISC } from '../types/shared/messages'
 export class EmulatorToolBar {
   buttonControl: JQuery<HTMLElement>
   buttonRestart: JQuery<HTMLElement>
+  buttonRewind: JQuery<HTMLElement>
   buttonSound: JQuery<HTMLElement>
   buttonExpand: JQuery<HTMLElement>
 
@@ -16,6 +17,7 @@ export class EmulatorToolBar {
   constructor(public emulatorView: EmulatorView) {
     this.buttonControl = $('#toolbar-control')
     this.buttonRestart = $('#toolbar-restart')
+    this.buttonRewind = $('#toolbar-rewind')
     this.buttonSound = $('#toolbar-sound')
     this.buttonExpand = $('#toolbar-expand')
 
@@ -78,6 +80,8 @@ export class EmulatorToolBar {
     this.emulatorView.emulatorRunning$.subscribe((isRunning) =>
       this.onEmulatorRunStateChange(isRunning),
     )
+    this.emulatorView.debugMode$.subscribe(() => this.updateRewindButton())
+    this.emulatorView.rewindAvailable$.subscribe(() => this.updateRewindButton())
   }
 
   private async onModelChange(event: JQuery.ChangeEvent) {
@@ -176,6 +180,13 @@ export class EmulatorToolBar {
       this.emulatorView.focusInput()
     }
   }
+
+  private updateRewindButton() {
+    const debugMode = this.emulatorView.debugMode
+    this.buttonRewind.prop('hidden', !debugMode)
+    this.buttonRewind.prop('disabled', !debugMode || !this.emulatorView.rewindAvailable)
+  }
+
   private updateSoundButton() {
     const audioEnabled = this.emulatorView.audioHandler.isEnabled()
     const buttonEnabled = audioEnabled && this.emulatorView.emulatorRunning

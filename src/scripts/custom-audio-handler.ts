@@ -15,7 +15,13 @@ export class CustomAudioHandler extends AudioHandler {
     audioFilterQ: number,
     noSeek: boolean,
   ) {
-    super(warningNode, statsNode, audioFilterFreq, audioFilterQ, noSeek)
+    super({
+      warningNode,
+      statsNode,
+      audioFilterFreq,
+      audioFilterQ,
+      noSeek,
+    })
   }
 
   /**

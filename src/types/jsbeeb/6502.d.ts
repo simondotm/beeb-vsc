@@ -75,14 +75,17 @@ declare module 'jsbeeb/6502' {
 
     constructor(
       model: any,
-      dbgr: Debugger,
-      video_: Video,
-      soundChip_: SoundChip | FakeSoundChip,
-      ddNoise_: DdNoise | FakeDdNoise,
-      music5000_: any,
-      cmos: Cmos,
-      config: any,
-      econet_: any,
+      options?: {
+        dbgr?: Debugger
+        video?: Video
+        soundChip?: SoundChip | FakeSoundChip
+        ddNoise?: DdNoise | FakeDdNoise
+        music5000?: any
+        cmos?: Cmos
+        config?: any
+        econet?: any
+        cycleAccurate?: boolean
+      },
     )
 
     initialise(): Promise<void>
@@ -91,6 +94,8 @@ declare module 'jsbeeb/6502' {
     executeInternalFast(): boolean
     executeInternal(): boolean
     stop(): void
+    snapshotState(): unknown
+    restoreState(state: unknown): void
     readmem(addr: number): number
     peekmem(addr: number): number
     writemem(addr: number, b: number): void

@@ -46,6 +46,18 @@ export class EmulatorView {
     return this._emulatorRunning$.value
   }
 
+  private _debugMode$ = new BehaviorSubject<boolean>(false)
+  debugMode$ = this._debugMode$.pipe(distinctUntilChanged())
+  get debugMode(): boolean {
+    return this._debugMode$.value
+  }
+
+  private _rewindAvailable$ = new BehaviorSubject<boolean>(false)
+  rewindAvailable$ = this._rewindAvailable$.pipe(distinctUntilChanged())
+  get rewindAvailable(): boolean {
+    return this._rewindAvailable$.value
+  }
+
   // currently selected disc image
   private _discImageFile$ = new BehaviorSubject<DiscImageFile>(NO_DISC)
   discImageFile$: Observable<DiscImageFile> = this._discImageFile$
@@ -128,10 +140,12 @@ export class EmulatorView {
       if (this.emulator) {
         this.emulator.shutdown()
         this._displayMode$.next(null)
+        this._rewindAvailable$.next(false)
       }
 
       this.emulator = new Emulator(model, this.canvas, this.audioHandler)
       await this.emulator.initialise()
+      this.emulator.setDebugMode(this.debugMode)
 
       // re-mount any existing disc if we change model
       this.mountDisc(this.discImageFile)
@@ -144,6 +158,9 @@ export class EmulatorView {
       // forward emulator running state to our own observable
       this.emulator.emulatorRunning$.subscribe((running) => {
         this._emulatorRunning$.next(running)
+      })
+      this.emulator.rewindAvailable$.subscribe((rewindAvailable) => {
+        this._rewindAvailable$.next(rewindAvailable)
       })
     } catch (e) {
       notifyHost({ command: ClientCommand.Error, text: (e as Error).message })
@@ -245,6 +262,15 @@ export class EmulatorView {
 
   stepOut() {
     this.emulator?.dbgr.stepOut()
+  }
+
+  setDebugMode(enabled: boolean) {
+    this._debugMode$.next(enabled)
+    this.emulator?.setDebugMode(enabled)
+  }
+
+  openRewind() {
+    this.emulator?.openRewind()
   }
 
   SetBreakpoints(addresses: number[]) {

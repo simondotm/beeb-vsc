@@ -55,7 +55,7 @@ export default defineConfig(({ mode }) => {
               dest: 'jsbeeb/roms',
             },
             {
-              src: 'node_modules/jsbeeb/public/sounds/**/*',
+              src: 'assets/jsbeeb/sounds/**/*',
               dest: 'jsbeeb/sounds',
             },
           ],

@@ -29,6 +29,14 @@ let emulatorToolBar: EmulatorToolBar | undefined
 let emulatorLedBar: EmulatorLedBar | undefined
 let debugMode: boolean = false
 
+function withEmulatorView(callback: (emulatorView: EmulatorView) => void) {
+  if (!emulatorView) {
+    return
+  }
+
+  callback(emulatorView)
+}
+
 async function initialise() {
   sendTelemetryEvent('emulatorActivated')
 
@@ -71,19 +79,37 @@ window.addEventListener('load', (_event) => {
 window.addEventListener(
   'focus',
   (_event) => {
-    emulatorView.focusInput()
+    withEmulatorView((view) => view.focusInput())
   },
   false,
+)
+
+window.addEventListener(
+  'keydown',
+  (event) => {
+    if (debugMode && event.altKey && event.key === 'PageDown') {
+      event.preventDefault()
+      event.stopPropagation()
+      withEmulatorView((view) => view.openRewind())
+    }
+  },
+  true,
 )
 
 // Handle messages received from the host extension
 window.addEventListener('message', (event) => {
   const message = event.data as HostMessage // The JSON data our extension sent
+  if (!emulatorView && message.command !== HostCommand.SetDebugMode) {
+    return
+  }
+
   switch (message.command) {
     case HostCommand.LoadDisc:
       // user has invoked a dsd/ssd file context menu for the emulator
-      emulatorView.mountDisc(message.discImageFile, message.discImageOptions)
-      emulatorView.focusInput()
+      withEmulatorView((view) => {
+        view.mountDisc(message.discImageFile, message.discImageOptions)
+        view.focusInput()
+      })
       break
     case HostCommand.ViewFocus:
       // Emulator panel has changed active or visible state
@@ -91,15 +117,17 @@ window.addEventListener('message', (event) => {
       // since these can arrive before the webview is ready
       // but we may want to do something with visibility or active state later
       if (!debugMode) {
-        if (message.focus.visible) {
-          emulatorView.resume()
-        } else {
-          emulatorView.suspend()
-        }
+        withEmulatorView((view) => {
+          if (message.focus.visible) {
+            view.resume()
+          } else {
+            view.suspend()
+          }
+        })
       }
       break
     case HostCommand.DiscImages:
-      emulatorView.setDiscImages(message.discImages)
+      withEmulatorView((view) => view.setDiscImages(message.discImages))
       break
     case HostCommand.DiscImageChanges:
       //TODO: Listener logic here, in case we need to do something with modified disc images
@@ -107,27 +135,27 @@ window.addEventListener('message', (event) => {
     case HostCommand.DebugCommand: {
       const instructiontype = message.instruction.instruction
       if (instructiontype === DebugInstructionType.Pause) {
-        emulatorView.suspend()
+        withEmulatorView((view) => view.suspend())
         notifyHost({
           command: ClientCommand.Stopped,
           reason: StoppedReason.Pause,
         })
       } else if (instructiontype === DebugInstructionType.Continue) {
-        emulatorView.resume()
+        withEmulatorView((view) => view.resume())
       } else if (instructiontype === DebugInstructionType.Step) {
-        emulatorView.step()
+        withEmulatorView((view) => view.step())
         notifyHost({
           command: ClientCommand.Stopped,
           reason: StoppedReason.Step,
         })
       } else if (instructiontype === DebugInstructionType.StepOver) {
-        emulatorView.stepOver()
+        withEmulatorView((view) => view.stepOver())
         notifyHost({
           command: ClientCommand.Stopped,
           reason: StoppedReason.Step,
         })
       } else if (instructiontype === DebugInstructionType.StepOut) {
-        emulatorView.stepOut()
+        withEmulatorView((view) => view.stepOut())
         notifyHost({
           command: ClientCommand.Stopped,
           reason: StoppedReason.Step,
@@ -137,47 +165,56 @@ window.addEventListener('message', (event) => {
     }
     case HostCommand.DebugRequest: {
       if (message.request === 'registers') {
-        const registers = emulatorView.GetInternals()
-        notifyHost({
-          command: ClientCommand.EmulatorInfo,
-          info: {
-            id: message.id,
-            type: 'registers',
-            values: registers,
-          },
+        withEmulatorView((view) => {
+          const registers = view.GetInternals()
+          notifyHost({
+            command: ClientCommand.EmulatorInfo,
+            info: {
+              id: message.id,
+              type: 'registers',
+              values: registers,
+            },
+          })
         })
       } else if (message.request === 'memory') {
-        const memory = emulatorView.GetMemory()
-        notifyHost({
-          command: ClientCommand.EmulatorMemory,
-          info: {
-            id: message.id,
-            values: memory,
-          },
+        withEmulatorView((view) => {
+          const memory = view.GetMemory()
+          notifyHost({
+            command: ClientCommand.EmulatorMemory,
+            info: {
+              id: message.id,
+              values: memory,
+            },
+          })
         })
       }
       break
     }
     case HostCommand.SetBreakpoints: {
       if (message.breakpoints) {
-        emulatorView.SetBreakpoints(message.breakpoints)
+        withEmulatorView((view) => view.SetBreakpoints(message.breakpoints))
       }
       break
     }
     case HostCommand.SetDataBreakpoints: {
       if (message.dataBreakpoints) {
-        emulatorView.SetDataBreakpoints(message.dataBreakpoints)
+        withEmulatorView((view) =>
+          view.SetDataBreakpoints(message.dataBreakpoints),
+        )
       }
       break
     }
     case HostCommand.SetDebugMode: {
       debugMode = message.enabled
+      withEmulatorView((view) => view.setDebugMode(debugMode))
       if (!debugMode) {
-        if (document.visibilityState === 'visible') {
-          emulatorView.resume()
-        } else {
-          emulatorView.suspend()
-        }
+        withEmulatorView((view) => {
+          if (document.visibilityState === 'visible') {
+            view.resume()
+          } else {
+            view.suspend()
+          }
+        })
       }
       break
     }
