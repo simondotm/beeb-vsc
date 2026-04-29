@@ -1,17 +1,18 @@
 import ResizeObserver from 'resize-observer-polyfill'
 
 export class ScreenResizer {
-  screen: JQuery<HTMLElement>
+  screen: HTMLElement
   desiredAspectRatio: number
   minHeight: number
   minWidth: number
   observer: ResizeObserver
 
-  constructor(screen: JQuery<HTMLElement>) {
+  constructor(screen: HTMLElement) {
     this.screen = screen
-    const origHeight = screen.height()
-    const origWidth = screen.width()
-    if (origWidth === undefined || origHeight === undefined) {
+    const rect = screen.getBoundingClientRect()
+    const origHeight = rect.height
+    const origWidth = rect.width
+    if (origWidth === 0 || origHeight === 0) {
       throw new Error(
         'ScreenResizer: screen must have a defined height and width',
       )
@@ -20,19 +21,22 @@ export class ScreenResizer {
     this.minHeight = origHeight / 4
     this.minWidth = origWidth / 4
     this.observer = new ResizeObserver(() => this.resizeScreen())
-    this.observer.observe(this.screen.parent()[0])
+    if (!this.screen.parentElement) {
+      throw new Error('ScreenResizer: screen must have a parent element')
+    }
+    this.observer.observe(this.screen.parentElement)
     this.resizeScreen()
   }
 
   resizeScreen() {
     const InnerBorder = 0
-    const parent = this.screen.parent()
-    if (parent === undefined) {
+    const parent = this.screen.parentElement
+    if (!parent) {
       return
     }
-    const innerWidth = parent.innerWidth()
-    const innerHeight = parent.innerHeight()
-    if (innerWidth === undefined || innerHeight === undefined) {
+    const innerWidth = parent.clientWidth
+    const innerHeight = parent.clientHeight
+    if (innerWidth === 0 || innerHeight === 0) {
       throw new Error(
         'ScreenResizer: screen must have a defined height and width',
       )
@@ -44,6 +48,7 @@ export class ScreenResizer {
     } else {
       width = height * this.desiredAspectRatio
     }
-    this.screen.height(height).width(width)
+    this.screen.style.height = `${height}px`
+    this.screen.style.width = `${width}px`
   }
 }

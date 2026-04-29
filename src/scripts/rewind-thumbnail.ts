@@ -119,7 +119,9 @@ export function renderThumbnails(
       results.push({
         canvas: captureThumbnail(video.fb32 as Uint32Array),
         index,
-        ageSeconds: Math.round(((snapshots.length - 1 - index) * captureInterval) / 50),
+        ageSeconds: Math.round(
+          ((snapshots.length - 1 - index) * captureInterval) / 50,
+        ),
       })
     }
   } finally {

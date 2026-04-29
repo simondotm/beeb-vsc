@@ -1,30 +1,43 @@
-import $ from 'jquery'
 import { EmulatorView } from './emulator-view'
 import { allModels, findModel } from 'jsbeeb/models'
 import { notifyHost } from './vscode'
 import { ClientCommand, DiscImageFile, NO_DISC } from '../types/shared/messages'
 
-export class EmulatorToolBar {
-  buttonControl: JQuery<HTMLElement>
-  buttonRestart: JQuery<HTMLElement>
-  buttonRewind: JQuery<HTMLElement>
-  buttonSound: JQuery<HTMLElement>
-  buttonExpand: JQuery<HTMLElement>
+type ControlElement = HTMLElement & {
+  appearance?: string
+  disabled?: boolean
+  value?: string
+}
 
-  modelSelector: JQuery<HTMLElement>
-  discSelector: JQuery<HTMLElement>
+export class EmulatorToolBar {
+  buttonControl: ControlElement
+  buttonRestart: ControlElement
+  buttonRewind: ControlElement
+  buttonSound: ControlElement
+  buttonExpand: ControlElement
+  buttonControlIcon: HTMLElement
+  buttonSoundIcon: HTMLElement
+  buttonExpandIcon: HTMLElement
+
+  modelSelector: ControlElement
+  discSelector: ControlElement
 
   constructor(public emulatorView: EmulatorView) {
-    this.buttonControl = $('#toolbar-control')
-    this.buttonRestart = $('#toolbar-restart')
-    this.buttonRewind = $('#toolbar-rewind')
-    this.buttonSound = $('#toolbar-sound')
-    this.buttonExpand = $('#toolbar-expand')
+    this.buttonControl = this.getRequiredElement('toolbar-control')
+    this.buttonRestart = this.getRequiredElement('toolbar-restart')
+    this.buttonRewind = this.getRequiredElement('toolbar-rewind')
+    this.buttonSound = this.getRequiredElement('toolbar-sound')
+    this.buttonExpand = this.getRequiredElement('toolbar-expand')
+    this.buttonControlIcon = this.getRequiredButtonIcon('toolbar-control')
+    this.buttonSoundIcon = this.getRequiredButtonIcon('toolbar-sound')
+    this.buttonExpandIcon = this.getRequiredButtonIcon('toolbar-expand')
 
-    this.buttonControl.on('click', () => this.onControlClick())
-    this.buttonRestart.on('click', async () => this.onRestartClick())
-    this.buttonSound.on('click', () => this.onSoundClick())
-    this.buttonExpand.on('click', () => this.onExpandClick())
+    this.buttonControl.addEventListener('click', () => this.onControlClick())
+    this.buttonRestart.addEventListener('click', async () =>
+      this.onRestartClick(),
+    )
+    this.buttonSound.addEventListener('click', () => this.onSoundClick())
+    this.buttonExpand.addEventListener('click', () => this.onExpandClick())
 
     // listener for audio handler state changes
     emulatorView.audioHandler.enabled$.subscribe((_enabled) => {
@@ -32,38 +45,43 @@ export class EmulatorToolBar {
     })
     // listener for audio handler mute state changes
     emulatorView.audioHandler.muted$.subscribe((muted) => {
-      const element = $('span:first', this.buttonSound)
-      element.addClass(muted ? 'codicon-mute' : 'codicon-unmute')
-      element.removeClass(muted ? 'codicon-unmute' : 'codicon-mute')
+      const element = this.buttonSoundIcon
+      element.classList.add(muted ? 'codicon-mute' : 'codicon-unmute')
+      element.classList.remove(muted ? 'codicon-unmute' : 'codicon-mute')
     })
 
     emulatorView.fullscreen$.subscribe((fullscreen) => {
-      const element = $('span:first', this.buttonExpand)
-      element.addClass(
+      const element = this.buttonExpandIcon
+      element.classList.add(
         fullscreen ? 'codicon-screen-full' : 'codicon-screen-normal',
       )
-      element.removeClass(
+      element.classList.remove(
         fullscreen ? 'codicon-screen-normal' : 'codicon-screen-full',
       )
     })
 
     // populate the model selector
-    const modelSelector = (this.modelSelector = $('#model-selector'))
+    const modelSelector = (this.modelSelector =
+      this.getRequiredElement('model-selector'))
     const model = emulatorView.model
-    $.each(allModels, function () {
-      const name = this.name // 'this' is a Model inside the each() iterator
+    for (const availableModel of allModels) {
+      const name = availableModel.name
       const selected = name === model?.name ? 'selected' : ''
-      modelSelector.append(
-        $(`<vscode-option ${selected} />`).val(name).text(name),
-      )
-    })
+      const option = document.createElement('vscode-option') as ControlElement
+      if (selected) {
+        option.setAttribute('selected', '')
+      }
+      option.value = name
+      option.textContent = name
+      modelSelector.appendChild(option)
+    }
 
-    this.modelSelector.on('change', async (event: JQuery.ChangeEvent) =>
+    this.modelSelector.addEventListener('change', async (event: Event) =>
       this.onModelChange(event),
     )
 
     // populate the disc image selector
-    this.discSelector = $('#disc-selector')
+    this.discSelector = this.getRequiredElement('disc-selector')
     this.emulatorView.discImages$.subscribe((discImages) =>
       this.onDiscImagesUpdate(discImages),
     )
@@ -73,7 +91,7 @@ export class EmulatorToolBar {
       this.onDiscImageUpdate(discImage),
     )
 
-    this.discSelector.on('change', async (event: JQuery.ChangeEvent) =>
+    this.discSelector.addEventListener('change', async (event: Event) =>
       this.onDiscChange(event),
     )
 
@@ -81,11 +99,13 @@ export class EmulatorToolBar {
       this.onEmulatorRunStateChange(isRunning),
     )
     this.emulatorView.debugMode$.subscribe(() => this.updateRewindButton())
-    this.emulatorView.rewindAvailable$.subscribe(() => this.updateRewindButton())
+    this.emulatorView.rewindAvailable$.subscribe(() =>
+      this.updateRewindButton(),
+    )
   }
 
-  private async onModelChange(event: JQuery.ChangeEvent) {
-    const value = $(event.target).val() as string
+  private async onModelChange(event: Event) {
+    const value = this.getElementValue(event.target)
     console.log(value)
     const model = findModel(value)
     if (model === null) {
@@ -105,8 +125,8 @@ export class EmulatorToolBar {
     // })
   }
 
-  private async onDiscChange(event: JQuery.ChangeEvent) {
-    const value = $(event.target).val() as string
+  private async onDiscChange(event: Event) {
+    const value = this.getElementValue(event.target)
     const [url, name] = value.split('|')
     await this.emulatorView.mountDisc(
       {
@@ -119,38 +139,44 @@ export class EmulatorToolBar {
   }
 
   private onDiscImagesUpdate(discImages: DiscImageFile[]) {
-    // dont use empty, because we have a span child node for the icon
-    this.discSelector.find('vscode-option').remove().end()
-    this.discSelector.val('')
+    this.discSelector.querySelectorAll('vscode-option').forEach((option) => {
+      option.remove()
+    })
+    this.discSelector.value = ''
     const options = [...discImages, NO_DISC]
     const currentDiscName = this.emulatorView.discImageFile.name ?? NO_DISC.name
     for (const discImage of options) {
       const selected = discImage.name === currentDiscName ? 'selected' : ''
-      const option = $(`<vscode-option ${selected} />`)
-        .val(`${discImage.url}|${discImage.name}`)
-        .text(`${discImage.name}`)
-      this.discSelector.append(option)
+      const option = document.createElement('vscode-option') as ControlElement
+      if (selected) {
+        option.setAttribute('selected', '')
+      }
+      option.value = `${discImage.url}|${discImage.name}`
+      option.textContent = `${discImage.name}`
+      this.discSelector.appendChild(option)
     }
   }
 
   private onDiscImageUpdate(discImage: DiscImageFile) {
-    this.discSelector.val(`${discImage.url}|${discImage.name}`)
+    this.discSelector.value = `${discImage.url}|${discImage.name}`
   }
 
   private onEmulatorRunStateChange(isRunning: boolean) {
     if (isRunning) {
-      $('span:first', this.buttonControl).removeClass('codicon-debug-start')
-      $('span:first', this.buttonControl).addClass('codicon-debug-pause')
+      const icon = this.buttonControlIcon
+      icon.classList.remove('codicon-debug-start')
+      icon.classList.add('codicon-debug-pause')
     } else {
-      $('span:first', this.buttonControl).removeClass('codicon-debug-pause')
-      $('span:first', this.buttonControl).addClass('codicon-debug-start')
+      const icon = this.buttonControlIcon
+      icon.classList.remove('codicon-debug-pause')
+      icon.classList.add('codicon-debug-start')
     }
-    this.buttonRestart.prop('disabled', !isRunning)
-    this.buttonExpand.prop('disabled', !isRunning)
-    this.buttonControl.prop('appearance', isRunning ? 'secondary' : 'primary')
+    this.setDisabled(this.buttonRestart, !isRunning)
+    this.setDisabled(this.buttonExpand, !isRunning)
+    this.buttonControl.appearance = isRunning ? 'secondary' : 'primary'
 
     // bit of a hack to disable the audio warning so we dont get mute state messed up if not running emulator
-    this.emulatorView.audioHandler.warningNode.prop('disabled', !isRunning)
+    this.setDisabled(this.emulatorView.audioHandler.warningNode, !isRunning)
     this.updateSoundButton()
   }
 
@@ -183,14 +209,46 @@ export class EmulatorToolBar {
 
   private updateRewindButton() {
     const debugMode = this.emulatorView.debugMode
-    this.buttonRewind.prop('hidden', !debugMode)
-    this.buttonRewind.prop('disabled', !debugMode || !this.emulatorView.rewindAvailable)
+    this.buttonRewind.hidden = !debugMode
+    this.setDisabled(
+      this.buttonRewind,
+      !debugMode || !this.emulatorView.rewindAvailable,
+    )
   }
 
   private updateSoundButton() {
     const audioEnabled = this.emulatorView.audioHandler.isEnabled()
     const buttonEnabled = audioEnabled && this.emulatorView.emulatorRunning
-    this.buttonSound.prop('appearance', audioEnabled ? 'secondary' : 'primary')
-    this.buttonSound.prop('disabled', !buttonEnabled)
+    this.buttonSound.appearance = audioEnabled ? 'secondary' : 'primary'
+    this.setDisabled(this.buttonSound, !buttonEnabled)
+  }
+
+  private getRequiredElement(id: string): ControlElement {
+    const element = document.getElementById(id) as ControlElement | null
+    if (!element) {
+      throw new Error(`Missing toolbar element '${id}'`)
+    }
+
+    return element
+  }
+
+  private getRequiredButtonIcon(buttonId: string): HTMLElement {
+    const button = this.getRequiredElement(buttonId)
+    const icon = button.querySelector('span')
+    if (!icon) {
+      throw new Error(`Expected toolbar button icon span for '${buttonId}'`)
+    }
+
+    return icon as HTMLElement
+  }
+
+  private getElementValue(target: EventTarget | null): string {
+    const element = target as ControlElement | null
+    return element?.value ?? ''
+  }
+
+  private setDisabled(element: ControlElement, disabled: boolean) {
+    element.disabled = disabled
+    element.toggleAttribute('disabled', disabled)
   }
 }

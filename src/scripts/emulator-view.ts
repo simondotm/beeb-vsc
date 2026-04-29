@@ -1,4 +1,3 @@
-import $ from 'jquery'
 import { bestCanvas, getFilterForMode } from 'jsbeeb/canvas'
 import { Emulator, EmulatorCanvas } from './emulator'
 import { Model } from 'jsbeeb/models'
@@ -24,9 +23,9 @@ const audioFilterQ = 5
 const noSeek = false
 
 export class EmulatorView {
-  readonly root: JQuery<HTMLElement> // root element
-  readonly screen: JQuery<HTMLElement> // screen element
-  readonly testcard: JQuery<HTMLElement> // testcard element
+  readonly root: HTMLElement // root element
+  readonly screen: HTMLCanvasElement // screen element
+  readonly testcard: HTMLImageElement // testcard element
   readonly canvas: EmulatorCanvas
   readonly audioHandler: CustomAudioHandler
 
@@ -84,38 +83,26 @@ export class EmulatorView {
   }
 
   constructor() {
-    this.root = $('#emulator')
-    if (!this.root) {
-      throw new Error('No emulator element found')
-    }
-    this.screen = $('#screen')
-    if (!this.screen) {
-      throw new Error('No screen element found')
-    }
-    this.testcard = $('#testcard')
-    if (!this.testcard) {
-      throw new Error('No testcard element found')
-    }
+    this.root = this.getRequiredElement('emulator')
+    this.screen = this.getRequiredCanvas('screen')
+    this.testcard = this.getRequiredImage('testcard')
 
-    this.testcard.hide()
-    this.canvas = bestCanvas(
-      this.screen[0] as HTMLCanvasElement,
-      getFilterForMode('rgb'),
-    )
+    this.testcard.hidden = true
+    this.canvas = bestCanvas(this.screen, getFilterForMode('rgb'))
 
     // forward key events to emulator
-    this.screen.on('keyup', (event: JQuery.KeyUpEvent) =>
+    this.screen.addEventListener('keyup', (event: KeyboardEvent) =>
       this.emulator?.onKeyUp(event),
     )
-    this.screen.on('keydown', (event: JQuery.KeyDownEvent) =>
+    this.screen.addEventListener('keydown', (event: KeyboardEvent) =>
       this.emulator?.onKeyDown(event),
     )
-    this.screen.on('blur', () => this.emulator?.clearKeys())
+    this.screen.addEventListener('blur', () => this.emulator?.clearKeys())
 
     // create webview audio driver
     this.audioHandler = new CustomAudioHandler(
-      $('#audio-warning'),
-      $('#audio-stats')[0], // jsbeeb now expects a stats node (a <div>) for audio performance charts
+      this.getRequiredElement('audio-warning'),
+      this.getRequiredElement('audio-stats'), // jsbeeb now expects a stats node (a <div>) for audio performance charts
       audioFilterFreq,
       audioFilterQ,
       noSeek,
@@ -214,11 +201,11 @@ export class EmulatorView {
 
   showTestCard(show: boolean = true) {
     if (show) {
-      this.screen.hide()
-      this.testcard.show()
+      this.screen.hidden = true
+      this.testcard.hidden = false
     } else {
-      this.screen.show()
-      this.testcard.hide()
+      this.screen.hidden = false
+      this.testcard.hidden = true
     }
   }
 
@@ -297,5 +284,32 @@ export class EmulatorView {
         }
       }
     }
+  }
+
+  private getRequiredElement(id: string): HTMLElement {
+    const element = document.getElementById(id)
+    if (!element) {
+      throw new Error(`No ${id} element found`)
+    }
+
+    return element
+  }
+
+  private getRequiredCanvas(id: string): HTMLCanvasElement {
+    const element = this.getRequiredElement(id)
+    if (!(element instanceof HTMLCanvasElement)) {
+      throw new Error(`Element '${id}' is not a canvas`)
+    }
+
+    return element
+  }
+
+  private getRequiredImage(id: string): HTMLImageElement {
+    const element = this.getRequiredElement(id)
+    if (!(element instanceof HTMLImageElement)) {
+      throw new Error(`Element '${id}' is not an image`)
+    }
+
+    return element
   }
 }

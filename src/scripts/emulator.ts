@@ -1,7 +1,7 @@
 import _ from 'underscore'
 import { Cpu6502 } from 'jsbeeb/6502'
 import { Video } from 'jsbeeb/video'
-import { Debugger } from 'jsbeeb/web/debug'
+import { Debugger } from './emulator-debugger'
 import { Cmos, CmosData } from 'jsbeeb/cmos'
 import { Canvas, GlCanvas } from 'jsbeeb/canvas'
 import Snapshot from './snapshot'
@@ -229,6 +229,12 @@ export class Emulator {
           reason: StoppedReason.Pause,
         })
       },
+      onSelectionChanged: () => {
+        notifyHost({
+          command: ClientCommand.Stopped,
+          reason: StoppedReason.Pause,
+        })
+      },
       onRestore: () => {
         notifyHost({
           command: ClientCommand.Stopped,
@@ -299,7 +305,7 @@ export class Emulator {
       try {
         const fdc = this.cpu.fdc
         const discData = await utils.loadData(discImageFile.url)
-        const discImage = discFor(fdc, discImageFile.name, discData, () => { })
+        const discImage = discFor(fdc, discImageFile.name, discData, () => {})
         this.cpu.fdc.loadDisc(0, discImage)
         // notifyHost({
         //   command: ClientCommand.Info,
@@ -487,7 +493,7 @@ export class Emulator {
     this.margin = margins[margin]
   }
 
-  onKeyDown(event: JQuery.KeyDownEvent) {
+  onKeyDown(event: KeyboardEvent) {
     if (!this.emulatorRunning) return
 
     const code = this.getKeyCode(event)
@@ -507,7 +513,7 @@ export class Emulator {
     if (processor && processor.sysvia) processor.sysvia.clearKeys()
   }
 
-  onKeyUp(event: JQuery.KeyUpEvent) {
+  onKeyUp(event: KeyboardEvent) {
     // Always let the key ups come through.
     const code = this.getKeyCode(event)
     const processor = this.cpu
@@ -519,8 +525,8 @@ export class Emulator {
     event.preventDefault()
   }
 
-  private getKeyCode(event: JQuery.KeyDownEvent | JQuery.KeyUpEvent): number {
-    const ret = event.which || event.charCode || event.keyCode
+  private getKeyCode(event: KeyboardEvent): number {
+    const ret = event.keyCode || event.which
     const keyCodes = utils.keyCodes
     switch ((event as any).location) {
       default:

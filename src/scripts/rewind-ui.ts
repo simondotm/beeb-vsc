@@ -12,6 +12,7 @@ type RewindUiOptions = {
   openButton?: HTMLElement | null
   shouldResumeAfterClose?: () => boolean
   onPause?: () => void
+  onSelectionChanged?: () => void
   onRestore?: () => void
 }
 
@@ -22,6 +23,7 @@ export class RewindUI {
   private readonly openButton: HTMLElement | null
   private readonly shouldResumeAfterClose: () => boolean
   private readonly onPause?: () => void
+  private readonly onSelectionChanged?: () => void
   private readonly onRestore?: () => void
 
   private isOpen = false
@@ -40,9 +42,12 @@ export class RewindUI {
     this.panel = panel
     this.filmstrip = filmstrip
     this.closeButton = document.getElementById('rewind-close')
-    this.openButton = options.openButton ?? document.getElementById('rewind-open')
-    this.shouldResumeAfterClose = options.shouldResumeAfterClose ?? (() => this.wasRunning)
+    this.openButton =
+      options.openButton ?? document.getElementById('rewind-open')
+    this.shouldResumeAfterClose =
+      options.shouldResumeAfterClose ?? (() => this.wasRunning)
     this.onPause = options.onPause
+    this.onSelectionChanged = options.onSelectionChanged
     this.onRestore = options.onRestore
 
     this.onKeyDown = this.onKeyDown.bind(this)
@@ -142,6 +147,7 @@ export class RewindUI {
 
     this.selectedIndex = index
     this.restoreAndPaint(index)
+    this.onSelectionChanged?.()
     this.updateSelectionHighlight()
     this.scrollToSelected()
   }
@@ -187,7 +193,9 @@ export class RewindUI {
   }
 
   private scrollToSelected() {
-    const selected = this.filmstrip.querySelector<HTMLElement>('.rewind-thumb.selected')
+    const selected = this.filmstrip.querySelector<HTMLElement>(
+      '.rewind-thumb.selected',
+    )
     selected?.scrollIntoView({
       block: 'nearest',
       inline: 'nearest',
@@ -196,7 +204,11 @@ export class RewindUI {
   }
 
   private populateFilmstrip(
-    thumbnails: Array<{ canvas: HTMLCanvasElement; index: number; ageSeconds: number }>,
+    thumbnails: Array<{
+      canvas: HTMLCanvasElement
+      index: number
+      ageSeconds: number
+    }>,
   ) {
     this.filmstrip.innerHTML = ''
 

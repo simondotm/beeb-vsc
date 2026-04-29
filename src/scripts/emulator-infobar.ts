@@ -1,25 +1,24 @@
-import $ from 'jquery'
 import { EmulatorView } from './emulator-view'
 import { DisplayModeInfo } from './display-modes'
 
 const EMPTY_CHAR = '⌀'
 
 export class EmulatorInfoBar {
-  textCoords: JQuery<HTMLElement>
-  graphicsCoords: JQuery<HTMLElement>
-  runTime: JQuery<HTMLElement>
-  mode: JQuery<HTMLElement>
+  textCoords: HTMLElement
+  graphicsCoords: HTMLElement
+  runTime: HTMLElement
+  mode: HTMLElement
 
   constructor(public emulatorView: EmulatorView) {
-    this.runTime = $('#infobar-runtime')
-    this.mode = $('#infobar-mode')
-    this.textCoords = $('#infobar-text-coords')
-    this.graphicsCoords = $('#infobar-graphics-coords')
+    this.runTime = this.getRequiredElement('infobar-runtime')
+    this.mode = this.getRequiredElement('infobar-mode')
+    this.textCoords = this.getRequiredElement('infobar-text-coords')
+    this.graphicsCoords = this.getRequiredElement('infobar-graphics-coords')
 
     // coords handlers
     const screen = this.emulatorView.screen
-    screen.on('mousemove', (event: JQuery.Event) => this.mouseMove(event))
-    screen.on('mouseleave', () => this.mouseLeave())
+    screen.addEventListener('mousemove', (event) => this.mouseMove(event))
+    screen.addEventListener('mouseleave', () => this.mouseLeave())
 
     setInterval(this.timer.bind(this), 1000)
 
@@ -52,27 +51,26 @@ export class EmulatorInfoBar {
       const et = `${showDays ? days + 'd ' : ''}${showHours ? hours + 'h ' : ''}${showMinutes ? minutes + 'm ' : ''}${seconds}s`
       html = `Runtime: ${et}`
     }
-    this.runTime.html(html)
+    this.runTime.textContent = html
   }
 
   private updateScreenMode(displayInfo: DisplayModeInfo | null) {
-    this.mode.html(displayInfo ? `Mode ${displayInfo.mode}` : EMPTY_CHAR)
+    this.mode.textContent = displayInfo ? `Mode ${displayInfo.mode}` : EMPTY_CHAR
   }
 
   private updateTextCoords(coords?: { x: number; y: number }) {
-    this.textCoords.html(
-      coords ? `Ln ${coords.y}, Col ${coords.x}` : EMPTY_CHAR,
-    )
+    this.textCoords.textContent = coords
+      ? `Ln ${coords.y}, Col ${coords.x}`
+      : EMPTY_CHAR
   }
 
   private updateGraphicsCoords(coords?: { x: number; y: number }) {
-    this.graphicsCoords.html(
-      coords ? `X ${coords.x}, Y ${coords.y}` : EMPTY_CHAR,
-    )
+    this.graphicsCoords.textContent = coords
+      ? `X ${coords.x}, Y ${coords.y}`
+      : EMPTY_CHAR
   }
 
-  private mouseMove(event: JQuery.Event) {
-    if (!event) return
+  private mouseMove(event: MouseEvent) {
     const screen = this.emulatorView.screen
     const displayInfo = this.emulatorView.displayMode
     if (!displayInfo) return
@@ -87,10 +85,11 @@ export class EmulatorInfoBar {
 
     // 8 and 16 here are fudges to allow for a margin around the screen
     // canvas - not sure exactly where that comes from...
-    let x = (event.offsetX ?? 0) - 8
-    let y = (event.offsetY ?? 0) - 8
-    const sw = (screen.width() ?? 16) - 16
-    const sh = (screen.height() ?? 16) - 16
+    let x = event.offsetX - 8
+    let y = event.offsetY - 8
+    const rect = screen.getBoundingClientRect()
+    const sw = (rect.width || 16) - 16
+    const sh = (rect.height || 16) - 16
     const X = clamp(Math.floor((x * W) / sw), 0, Math.floor(W) - 1)
     const Y = clamp(Math.floor((y * H) / sh), 0, Math.floor(H) - 1)
     this.updateTextCoords({ x: X, y: Y })
@@ -104,5 +103,14 @@ export class EmulatorInfoBar {
     } else {
       this.updateGraphicsCoords()
     }
+  }
+
+  private getRequiredElement(id: string): HTMLElement {
+    const element = document.getElementById(id)
+    if (!element) {
+      throw new Error(`Missing infobar element '${id}'`)
+    }
+
+    return element
   }
 }

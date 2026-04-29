@@ -20,7 +20,8 @@ export class RewindBuffer<T> {
       return null
     }
 
-    this.writeIndex = (this.writeIndex - 1 + this.maxSnapshots) % this.maxSnapshots
+    this.writeIndex =
+      (this.writeIndex - 1 + this.maxSnapshots) % this.maxSnapshots
     this.count--
 
     const snapshot = this.snapshots[this.writeIndex]
@@ -45,7 +46,8 @@ export class RewindBuffer<T> {
 
   getAll(): T[] {
     const result = new Array<T>(this.count)
-    const start = (this.writeIndex - this.count + this.maxSnapshots) % this.maxSnapshots
+    const start =
+      (this.writeIndex - this.count + this.maxSnapshots) % this.maxSnapshots
     for (let index = 0; index < this.count; index++) {
       result[index] = this.snapshots[(start + index) % this.maxSnapshots] as T
     }
