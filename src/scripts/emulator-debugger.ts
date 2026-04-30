@@ -1,4 +1,4 @@
-// Minimal Debugger class based on src/web/debug.js. JSBeeb version is deeply tied to the DOM and tricky to integrate.
+// Minimal Debugger class based on jsbeeb/src/web/debug.js. JSBeeb version is deeply tied to the DOM and tricky to integrate.
 import type { Cpu6502 } from 'jsbeeb/6502'
 
 type BreakpointHandle = { remove(): void }
@@ -26,14 +26,6 @@ export class Debugger {
 
   enable(enabled: boolean) {
     this._enabled = enabled
-  }
-
-  enabled() {
-    return this._enabled
-  }
-
-  hide() {
-    this.enable(false)
   }
 
   step() {
@@ -80,22 +72,6 @@ export class Debugger {
     )
   }
 
-  keyPress(key: number) {
-    switch (String.fromCharCode(key)) {
-      case 'n':
-        this.step()
-        return true
-      case 'm':
-        this.stepOver()
-        return true
-      case 'o':
-        this.stepOut()
-        return true
-      default:
-        return false
-    }
-  }
-
   private stepUntil(stop: () => boolean) {
     const cpu = this.requireCpu()
     cpu.targetCycles = cpu.currentCycles
@@ -110,47 +86,6 @@ export class Debugger {
 
   private nextInstruction(address: number) {
     return this.disassemble(address)[1] & 0xffff
-  }
-
-  private prevInstruction(address: number) {
-    const cpu = this.requireCpu()
-    const commonInstructions =
-      /^(RTS|B..|JMP|JSR|LD[AXY]|ST[AXY]|TA[XY]|T[XY]A|AD[DC]|SUB|SBC|CLC|SEC|CMP|EOR|ORR|AND|INC|DEC).*/
-    const uncommonInstructions = /.*,\s*([XY]|X\))$/
-
-    address &= 0xffff
-    let bestAddr = address - 1
-    let bestScore = 0
-    for (
-      let startingPoint = address - 20;
-      startingPoint !== address;
-      startingPoint++
-    ) {
-      let score = 0
-      let currentAddress = startingPoint & 0xffff
-      while (currentAddress < address) {
-        const result = this.disassemble(currentAddress)
-        if (currentAddress === cpu.pc) {
-          score += 10
-        }
-        if (
-          result[0].match(commonInstructions) &&
-          !result[0].match(uncommonInstructions)
-        ) {
-          score++
-        }
-        if (result[1] === address) {
-          if (score > bestScore) {
-            bestScore = score
-            bestAddr = currentAddress
-          }
-          break
-        }
-        currentAddress = result[1]
-      }
-    }
-
-    return bestAddr
   }
 
   private isReturn(address: number) {
