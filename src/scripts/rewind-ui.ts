@@ -1,5 +1,5 @@
 import { RewindBuffer } from './rewind-buffer'
-import { executeUntilFrame, renderThumbnails } from './rewind-thumbnail'
+import { executeUntilFrame, renderThumbnails } from 'jsbeeb/rewind-thumbnail'
 
 type RewindUiOptions = {
   rewindBuffer: RewindBuffer<unknown>

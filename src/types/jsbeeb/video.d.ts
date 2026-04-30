@@ -9,11 +9,11 @@ declare module 'jsbeeb/video' {
     USERDISPENABLE = 1 << 4,
     FRAMESKIPENABLE = 1 << 5,
     EVERYTHINGENABLED = VDISPENABLE |
-    HDISPENABLE |
-    SKEWDISPENABLE |
-    SCANLINEDISPENABLE |
-    USERDISPENABLE |
-    FRAMESKIPENABLE,
+      HDISPENABLE |
+      SKEWDISPENABLE |
+      SCANLINEDISPENABLE |
+      USERDISPENABLE |
+      FRAMESKIPENABLE,
   }
 
   export class Video {
@@ -91,5 +91,7 @@ declare module 'jsbeeb/video' {
       context: CanvasRenderingContext2D,
       params: Record<string, string | number>,
     ) => void
+
+    clearPaintBuffer(): void
   }
 }
