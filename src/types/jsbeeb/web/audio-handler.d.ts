@@ -1,6 +1,15 @@
 declare module 'jsbeeb/web/audio-handler' {
   import type { DdNoise, FakeDdNoise } from 'jsbeeb/ddnoise'
   import type { FakeSoundChip, SoundChip } from 'jsbeeb/soundchip'
+
+  interface AudioHandlerOptions {
+    warningNode?: any
+    statsNode?: HTMLElement
+    audioFilterFreq?: number
+    audioFilterQ?: number
+    noSeek?: boolean
+  }
+
   export class AudioHandler {
     soundChip: SoundChip | FakeSoundChip
     ddNoise: DdNoise | FakeDdNoise
@@ -8,13 +17,7 @@ declare module 'jsbeeb/web/audio-handler' {
 
     audioContext: AudioContext | webkitAudioContext | null
 
-    constructor(
-      warningNode: any, // Changed from JQuery<HTMLElement> to any as per 'Code Edit'
-      statsNode: HTMLElement, // Changed from any to HTMLElement as per 'Code Edit'
-      audioFilterFreq: number,
-      audioFilterQ: number,
-      noSeek: boolean,
-    )
+    constructor(options?: AudioHandlerOptions)
 
     async tryResume(): Promise<void>
     checkStatus(): void

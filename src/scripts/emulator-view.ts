@@ -1,4 +1,3 @@
-import $ from 'jquery'
 import { bestCanvas, getFilterForMode } from 'jsbeeb/canvas'
 import { Emulator, EmulatorCanvas } from './emulator'
 import { Model } from 'jsbeeb/models'
@@ -24,9 +23,9 @@ const audioFilterQ = 5
 const noSeek = false
 
 export class EmulatorView {
-  readonly root: JQuery<HTMLElement> // root element
-  readonly screen: JQuery<HTMLElement> // screen element
-  readonly testcard: JQuery<HTMLElement> // testcard element
+  readonly root: HTMLElement // root element
+  readonly screen: HTMLCanvasElement // screen element
+  readonly testcard: HTMLImageElement // testcard element
   readonly canvas: EmulatorCanvas
   readonly audioHandler: CustomAudioHandler
 
@@ -44,6 +43,18 @@ export class EmulatorView {
   emulatorRunning$ = this._emulatorRunning$.pipe(distinctUntilChanged())
   get emulatorRunning(): boolean {
     return this._emulatorRunning$.value
+  }
+
+  private _debugMode$ = new BehaviorSubject<boolean>(false)
+  debugMode$ = this._debugMode$.pipe(distinctUntilChanged())
+  get debugMode(): boolean {
+    return this._debugMode$.value
+  }
+
+  private _rewindAvailable$ = new BehaviorSubject<boolean>(false)
+  rewindAvailable$ = this._rewindAvailable$.pipe(distinctUntilChanged())
+  get rewindAvailable(): boolean {
+    return this._rewindAvailable$.value
   }
 
   // currently selected disc image
@@ -72,38 +83,26 @@ export class EmulatorView {
   }
 
   constructor() {
-    this.root = $('#emulator')
-    if (!this.root) {
-      throw new Error('No emulator element found')
-    }
-    this.screen = $('#screen')
-    if (!this.screen) {
-      throw new Error('No screen element found')
-    }
-    this.testcard = $('#testcard')
-    if (!this.testcard) {
-      throw new Error('No testcard element found')
-    }
+    this.root = this.getRequiredElement('emulator')
+    this.screen = this.getRequiredCanvas('screen')
+    this.testcard = this.getRequiredImage('testcard')
 
-    this.testcard.hide()
-    this.canvas = bestCanvas(
-      this.screen[0] as HTMLCanvasElement,
-      getFilterForMode('rgb'),
-    )
+    this.testcard.hidden = true
+    this.canvas = bestCanvas(this.screen, getFilterForMode('rgb'))
 
     // forward key events to emulator
-    this.screen.on('keyup', (event: JQuery.KeyUpEvent) =>
+    this.screen.addEventListener('keyup', (event: KeyboardEvent) =>
       this.emulator?.onKeyUp(event),
     )
-    this.screen.on('keydown', (event: JQuery.KeyDownEvent) =>
+    this.screen.addEventListener('keydown', (event: KeyboardEvent) =>
       this.emulator?.onKeyDown(event),
     )
-    this.screen.on('blur', () => this.emulator?.clearKeys())
+    this.screen.addEventListener('blur', () => this.emulator?.clearKeys())
 
     // create webview audio driver
     this.audioHandler = new CustomAudioHandler(
-      $('#audio-warning'),
-      $('#audio-stats')[0], // jsbeeb now expects a stats node (a <div>) for audio performance charts
+      this.getRequiredElement('audio-warning'),
+      this.getRequiredElement('audio-stats'), // jsbeeb now expects a stats node (a <div>) for audio performance charts
       audioFilterFreq,
       audioFilterQ,
       noSeek,
@@ -128,10 +127,12 @@ export class EmulatorView {
       if (this.emulator) {
         this.emulator.shutdown()
         this._displayMode$.next(null)
+        this._rewindAvailable$.next(false)
       }
 
       this.emulator = new Emulator(model, this.canvas, this.audioHandler)
       await this.emulator.initialise()
+      this.emulator.setDebugMode(this.debugMode)
 
       // re-mount any existing disc if we change model
       this.mountDisc(this.discImageFile)
@@ -144,6 +145,9 @@ export class EmulatorView {
       // forward emulator running state to our own observable
       this.emulator.emulatorRunning$.subscribe((running) => {
         this._emulatorRunning$.next(running)
+      })
+      this.emulator.rewindAvailable$.subscribe((rewindAvailable) => {
+        this._rewindAvailable$.next(rewindAvailable)
       })
     } catch (e) {
       notifyHost({ command: ClientCommand.Error, text: (e as Error).message })
@@ -197,11 +201,11 @@ export class EmulatorView {
 
   showTestCard(show: boolean = true) {
     if (show) {
-      this.screen.hide()
-      this.testcard.show()
+      this.screen.hidden = true
+      this.testcard.hidden = false
     } else {
-      this.screen.show()
-      this.testcard.hide()
+      this.screen.hidden = false
+      this.testcard.hidden = true
     }
   }
 
@@ -247,6 +251,15 @@ export class EmulatorView {
     this.emulator?.dbgr.stepOut()
   }
 
+  setDebugMode(enabled: boolean) {
+    this._debugMode$.next(enabled)
+    this.emulator?.setDebugMode(enabled)
+  }
+
+  openRewind() {
+    this.emulator?.openRewind()
+  }
+
   SetBreakpoints(addresses: number[]) {
     for (const address of addresses) {
       this.emulator?.dbgr.toggleBreakpoint(address)
@@ -271,5 +284,32 @@ export class EmulatorView {
         }
       }
     }
+  }
+
+  private getRequiredElement(id: string): HTMLElement {
+    const element = document.getElementById(id)
+    if (!element) {
+      throw new Error(`No ${id} element found`)
+    }
+
+    return element
+  }
+
+  private getRequiredCanvas(id: string): HTMLCanvasElement {
+    const element = this.getRequiredElement(id)
+    if (!(element instanceof HTMLCanvasElement)) {
+      throw new Error(`Element '${id}' is not a canvas`)
+    }
+
+    return element
+  }
+
+  private getRequiredImage(id: string): HTMLImageElement {
+    const element = this.getRequiredElement(id)
+    if (!(element instanceof HTMLImageElement)) {
+      throw new Error(`Element '${id}' is not an image`)
+    }
+
+    return element
   }
 }

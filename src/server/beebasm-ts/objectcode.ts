@@ -50,8 +50,8 @@ export class ObjectCode {
   private _context: DocumentContext
 
   constructor(context: DocumentContext) {
-    this._context = context;
-    this.Reset();
+    this._context = context
+    this.Reset()
   }
 
   public Reset(): void {

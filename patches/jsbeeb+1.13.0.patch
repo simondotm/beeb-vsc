@@ -1,18 +1,9 @@
 diff --git a/node_modules/jsbeeb/src/utils.js b/node_modules/jsbeeb/src/utils.js
-index 430346a..d86a032 100644
+index d4c3c1c..f8c4875 100644
 --- a/node_modules/jsbeeb/src/utils.js
 +++ b/node_modules/jsbeeb/src/utils.js
-@@ -774,7 +774,7 @@ export function signExtend(val) {
-     return val >= 128 ? val - 256 : val;
- }
- 
--export function noop() {}
-+export function noop() { }
- 
- export function bench() {
-     for (let j = 0; j < 10; ++j) {
-@@ -840,30 +840,32 @@ function loadDataHttp(url) {
-     });
+@@ -1054,36 +1054,39 @@ export function setNodeBasePath(basePath) {
+     _nodeBasePath = basePath;
  }
  
 -async function loadDataNode(url) {
@@ -27,6 +18,12 @@ index 430346a..d86a032 100644
 -    } else {
 -        // Node
 -        const fs = await import("fs");
+-        const nodePath = await import("path");
+-        if (_nodeBasePath) {
+-            const publicPath = nodePath.join(_nodeBasePath, "public", url);
+-            if (fs.existsSync(publicPath)) return fs.readFileSync(publicPath);
+-            return fs.readFileSync(nodePath.join(_nodeBasePath, url));
+-        }
 -        if (url[0] === "/") url = "." + url;
 -        if (fs.existsSync("public/" + url)) return fs.readFileSync("public/" + url);
 -        return fs.readFileSync(url);
@@ -44,6 +41,12 @@ index 430346a..d86a032 100644
 +//     } else {
 +//         // Node
 +//         const fs = await import("fs");
++//         const nodePath = await import("path");
++//         if (_nodeBasePath) {
++//             const publicPath = nodePath.join(_nodeBasePath, "public", url);
++//             if (fs.existsSync(publicPath)) return fs.readFileSync(publicPath);
++//             return fs.readFileSync(nodePath.join(_nodeBasePath, url));
++//         }
 +//         if (url[0] === "/") url = "." + url;
 +//         if (fs.existsSync("public/" + url)) return fs.readFileSync("public/" + url);
 +//         return fs.readFileSync(url);
@@ -51,6 +54,7 @@ index 430346a..d86a032 100644
 +// }
 +
 +let urlMap = [];
++
 +export function setUrlMap(map) {
 +    urlMap = map;
  }

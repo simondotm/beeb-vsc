@@ -9,13 +9,19 @@ export class CustomAudioHandler extends AudioHandler {
   enabled$ = new BehaviorSubject<boolean>(false)
 
   constructor(
-    public warningNode: JQuery<HTMLElement>,
-    statsNode: any,
+    public warningNode: HTMLElement,
+    statsNode: HTMLElement,
     audioFilterFreq: number,
     audioFilterQ: number,
     noSeek: boolean,
   ) {
-    super(warningNode, statsNode, audioFilterFreq, audioFilterQ, noSeek)
+    super({
+      warningNode,
+      statsNode,
+      audioFilterFreq,
+      audioFilterQ,
+      noSeek,
+    })
   }
 
   /**

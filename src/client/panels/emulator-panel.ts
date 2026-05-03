@@ -352,6 +352,10 @@ export class EmulatorPanel {
           <span class="codicon codicon-debug-restart"></span>
         </vscode-button>
 
+        <vscode-button id="toolbar-rewind" appearance="secondary" hidden>
+          <span class="codicon codicon-history"></span>
+        </vscode-button>
+
 
         <vscode-dropdown id="model-selector">
           <span slot="indicator" class="codicon codicon-vm"></span>
@@ -380,6 +384,13 @@ export class EmulatorPanel {
       <div id="emulator" class="emulator-container">
         <canvas id="screen" width="720px" height="576px" tabindex="1"></canvas>
         <img id="testcard" src="${scriptUrl(this.extensionPath, this.panel.webview, ['images', 'test-card.webp'])}" hidden>
+        <div id="rewind-panel" class="rewind-panel" hidden>
+          <div class="rewind-header">
+            <span class="rewind-title">Rewind</span>
+            <vscode-button id="rewind-close" appearance="secondary">Close</vscode-button>
+          </div>
+          <div class="rewind-filmstrip" id="rewind-filmstrip"></div>
+        </div>
       </div>
 		`
   }

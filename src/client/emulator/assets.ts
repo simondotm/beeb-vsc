@@ -101,6 +101,8 @@ export function getJsBeebResources(extensionPath: string, webview: Webview) {
     'sounds/disc525/seek.wav',
     'sounds/disc525/seek2.wav',
     'sounds/disc525/seek3.wav',
+    'sounds/tape/motor_on.mp3',
+    'sounds/tape/motor_off.mp3',
     'discs/elite.ssd',
   ])
 }

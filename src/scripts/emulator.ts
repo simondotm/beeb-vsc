@@ -1,7 +1,7 @@
 import _ from 'underscore'
 import { Cpu6502 } from 'jsbeeb/6502'
 import { Video } from 'jsbeeb/video'
-import { Debugger } from 'jsbeeb/web/debug'
+import { Debugger } from './emulator-debugger'
 import { Cmos, CmosData } from 'jsbeeb/cmos'
 import { Canvas, GlCanvas } from 'jsbeeb/canvas'
 import Snapshot from './snapshot'
@@ -10,6 +10,8 @@ import { Model } from 'jsbeeb/models'
 import { Disc } from 'jsbeeb/disc'
 import { discFor } from 'jsbeeb/fdc'
 import { notifyHost } from './vscode'
+import { RewindBuffer } from './rewind-buffer'
+import { RewindUI } from './rewind-ui'
 import {
   ClientCommand,
   DiscImageFile,
@@ -92,6 +94,18 @@ export class Emulator {
     return this._emulatorRunning$.value
   }
 
+  private readonly rewindBuffer = new RewindBuffer<unknown>(30)
+  private readonly rewindCaptureInterval = 50
+  private rewindFrameAccumulator = 0
+  private debugMode = false
+  private readonly rewindUI: RewindUI
+
+  private _rewindAvailable$ = new BehaviorSubject<boolean>(false)
+  rewindAvailable$ = this._rewindAvailable$.pipe(distinctUntilChanged())
+  get rewindAvailable(): boolean {
+    return this._rewindAvailable$.value
+  }
+
   constructor(
     public model: Model,
     public canvas: EmulatorCanvas,
@@ -129,17 +143,16 @@ export class Emulator {
       },
     })
     const config = {}
-    this.cpu = new Cpu6502(
-      model,
-      this.dbgr,
-      this.video,
-      this.audioHandler.soundChip,
-      this.audioHandler.ddNoise,
-      model.hasMusic5000 ? this.audioHandler.music5000 : null,
+    this.cpu = new Cpu6502(model, {
+      dbgr: this.dbgr,
+      video: this.video,
+      soundChip: this.audioHandler.soundChip,
+      ddNoise: this.audioHandler.ddNoise,
+      music5000: model.hasMusic5000 ? this.audioHandler.music5000 : null,
       cmos,
       config,
-      undefined, // econet
-    )
+      econet: undefined,
+    })
 
     // Patch this version of JSbeeb to stop it reseting cycle count.
     // Number.MAX_SAFE_INTEGER should gives us plenty of headroom
@@ -200,6 +213,36 @@ export class Emulator {
     this.onAnimFrame = _.bind(this.frameFunc, this)
     this.ready = false
 
+    this.rewindUI = new RewindUI({
+      rewindBuffer: this.rewindBuffer,
+      processor: this.cpu,
+      video: this.video,
+      captureInterval: this.rewindCaptureInterval,
+      stop: () => this.pause(),
+      go: () => this.resume(),
+      isRunning: () => this.emulatorRunning,
+      openButton: document.getElementById('toolbar-rewind'),
+      shouldResumeAfterClose: () => !this.debugMode,
+      onPause: () => {
+        notifyHost({
+          command: ClientCommand.Stopped,
+          reason: StoppedReason.Pause,
+        })
+      },
+      onSelectionChanged: () => {
+        notifyHost({
+          command: ClientCommand.Stopped,
+          reason: StoppedReason.Pause,
+        })
+      },
+      onRestore: () => {
+        notifyHost({
+          command: ClientCommand.Stopped,
+          reason: StoppedReason.Pause,
+        })
+      },
+    })
+
     this.lastShiftLocation = this.lastAltLocation = this.lastCtrlLocation = 0
   }
 
@@ -237,8 +280,10 @@ export class Emulator {
     // any previously running emulator must be paused
     // before tear down, otherwise it will continue to paint itself
     this.pause()
+    this.clearRewindHistory()
     // all subscribers will be unsubscribed
     this._emulatorUpdate$.complete()
+    this._rewindAvailable$.complete()
   }
 
   /**
@@ -260,7 +305,7 @@ export class Emulator {
       try {
         const fdc = this.cpu.fdc
         const discData = await utils.loadData(discImageFile.url)
-        const discImage = discFor(fdc, discImageFile.name, discData, () => { })
+        const discImage = discFor(fdc, discImageFile.name, discData, () => {})
         this.cpu.fdc.loadDisc(0, discImage)
         // notifyHost({
         //   command: ClientCommand.Info,
@@ -295,6 +340,37 @@ export class Emulator {
    */
   resetCpu(hard: boolean = false) {
     this.cpu.reset(hard)
+    if (hard) {
+      this.clearRewindHistory()
+    }
+  }
+
+  setDebugMode(enabled: boolean) {
+    this.debugMode = enabled
+    if (!enabled) {
+      this.clearRewindHistory()
+    }
+    this.updateRewindAvailability()
+  }
+
+  openRewind() {
+    if (!this.debugMode) {
+      return
+    }
+
+    this.rewindUI.open()
+  }
+
+  private clearRewindHistory() {
+    this.rewindUI.close()
+    this.rewindBuffer.clear()
+    this.rewindFrameAccumulator = 0
+    this.updateRewindAvailability()
+  }
+
+  private updateRewindAvailability() {
+    this._rewindAvailable$.next(this.debugMode && this.rewindBuffer.length > 0)
+    this.rewindUI.updateButtonState()
   }
 
   async runProgram(tokenised: any) {
@@ -370,6 +446,7 @@ export class Emulator {
         const sinceLast = now - this.lastFrameTime
         let cycles = ((sinceLast * ClocksPerSecond) / 1000) | 0
         cycles = Math.min(cycles, MaxCyclesPerFrame)
+        const startFrameCount = this.video.frameCount
         try {
           if (!this.cpu.execute(cycles)) {
             this._emulatorRunning$.next(false)
@@ -377,6 +454,17 @@ export class Emulator {
               command: ClientCommand.Stopped,
               reason: StoppedReason.Breakpoint,
             })
+          } else if (this.debugMode) {
+            const framesElapsed = this.video.frameCount - startFrameCount
+            if (framesElapsed > 0) {
+              this.rewindFrameAccumulator += framesElapsed
+            }
+
+            if (this.rewindFrameAccumulator >= this.rewindCaptureInterval) {
+              this.rewindFrameAccumulator %= this.rewindCaptureInterval
+              this.rewindBuffer.push(this.cpu.snapshotState())
+              this.updateRewindAvailability()
+            }
           }
         } catch (e) {
           this._emulatorRunning$.next(false)
@@ -410,7 +498,7 @@ export class Emulator {
     this.margin = margins[margin]
   }
 
-  onKeyDown(event: JQuery.KeyDownEvent) {
+  onKeyDown(event: KeyboardEvent) {
     if (!this.emulatorRunning) return
 
     const code = this.getKeyCode(event)
@@ -430,7 +518,7 @@ export class Emulator {
     if (processor && processor.sysvia) processor.sysvia.clearKeys()
   }
 
-  onKeyUp(event: JQuery.KeyUpEvent) {
+  onKeyUp(event: KeyboardEvent) {
     // Always let the key ups come through.
     const code = this.getKeyCode(event)
     const processor = this.cpu
@@ -442,8 +530,8 @@ export class Emulator {
     event.preventDefault()
   }
 
-  private getKeyCode(event: JQuery.KeyDownEvent | JQuery.KeyUpEvent): number {
-    const ret = event.which || event.charCode || event.keyCode
+  private getKeyCode(event: KeyboardEvent): number {
+    const ret = event.keyCode || event.which
     const keyCodes = utils.keyCodes
     switch ((event as any).location) {
       default:

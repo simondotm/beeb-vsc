@@ -1,33 +1,34 @@
-import $ from 'jquery'
 import { Emulator } from './emulator'
 import { EmulatorView } from './emulator-view'
 
 class LedIcon {
   private isOn = false
-  private parent: JQuery<HTMLElement>
-  private img: JQuery<HTMLElement>
+  private parent: HTMLElement
+  private images: HTMLImageElement[]
 
   constructor(private id: string) {
-    this.parent = $(id)
-    if (!this.parent) {
+    const parent = document.querySelector<HTMLElement>(id)
+    if (!parent) {
       throw new Error(`LedIcon '${id}' not found`)
     }
-    this.img = this.parent.find('img')
-    if (!this.img) {
+
+    this.parent = parent
+    this.images = Array.from(this.parent.querySelectorAll('img'))
+    if (this.images.length < 2) {
       throw new Error(`LedIcon '${id}' img not found`)
     }
   }
 
   on() {
-    if (this.parent && !this.isOn) {
-      this.parent.find('img').toggle()
+    if (!this.isOn) {
+      this.setImageState(true)
       this.isOn = true
     }
   }
 
   off() {
-    if (this.parent && this.isOn) {
-      this.parent.find('img').toggle()
+    if (this.isOn) {
+      this.setImageState(false)
       this.isOn = false
     }
   }
@@ -38,6 +39,12 @@ class LedIcon {
     } else {
       this.off()
     }
+  }
+
+  private setImageState(isOn: boolean) {
+    const [onImage, offImage] = this.images
+    onImage.hidden = !isOn
+    offImage.hidden = isOn
   }
 }
 
