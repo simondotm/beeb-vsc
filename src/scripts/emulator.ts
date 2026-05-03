@@ -96,7 +96,7 @@ export class Emulator {
 
   private readonly rewindBuffer = new RewindBuffer<unknown>(30)
   private readonly rewindCaptureInterval = 50
-  private rewindFrameCounter = 0
+  private rewindFrameAccumulator = 0
   private debugMode = false
   private readonly rewindUI: RewindUI
 
@@ -364,7 +364,7 @@ export class Emulator {
   private clearRewindHistory() {
     this.rewindUI.close()
     this.rewindBuffer.clear()
-    this.rewindFrameCounter = 0
+    this.rewindFrameAccumulator = 0
     this.updateRewindAvailability()
   }
 
@@ -446,6 +446,7 @@ export class Emulator {
         const sinceLast = now - this.lastFrameTime
         let cycles = ((sinceLast * ClocksPerSecond) / 1000) | 0
         cycles = Math.min(cycles, MaxCyclesPerFrame)
+        const startFrameCount = this.video.frameCount
         try {
           if (!this.cpu.execute(cycles)) {
             this._emulatorRunning$.next(false)
@@ -454,9 +455,13 @@ export class Emulator {
               reason: StoppedReason.Breakpoint,
             })
           } else if (this.debugMode) {
-            this.rewindFrameCounter++
-            if (this.rewindFrameCounter >= this.rewindCaptureInterval) {
-              this.rewindFrameCounter = 0
+            const framesElapsed = this.video.frameCount - startFrameCount
+            if (framesElapsed > 0) {
+              this.rewindFrameAccumulator += framesElapsed
+            }
+
+            if (this.rewindFrameAccumulator >= this.rewindCaptureInterval) {
+              this.rewindFrameAccumulator %= this.rewindCaptureInterval
               this.rewindBuffer.push(this.cpu.snapshotState())
               this.updateRewindAvailability()
             }

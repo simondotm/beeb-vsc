@@ -91,6 +91,7 @@ declare module 'jsbeeb/video' {
       context: CanvasRenderingContext2D,
       params: Record<string, string | number>,
     ) => void
+    paint(): void
 
     clearPaintBuffer(): void
   }

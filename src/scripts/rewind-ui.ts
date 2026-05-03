@@ -1,10 +1,12 @@
+import { Cpu6502 } from 'jsbeeb/6502'
 import { RewindBuffer } from './rewind-buffer'
 import { executeUntilFrame, renderThumbnails } from 'jsbeeb/rewind-thumbnail'
+import { Video } from 'jsbeeb/video'
 
 type RewindUiOptions = {
   rewindBuffer: RewindBuffer<unknown>
-  processor: any
-  video: any
+  processor: Cpu6502
+  video: Video
   captureInterval: number
   stop: () => void
   go: () => void
