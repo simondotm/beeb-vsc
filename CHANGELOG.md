@@ -2,6 +2,11 @@
 
 See [Releases on Github](https://github.com/simondotm/beeb-vsc/releases) for full release history.
 
+### 0.3.9
+ - Integrate JSBeeb's rewind panel (press enter to activate thumbnail)
+ - Better debug session management
+ - Local label scoping updated closer to latest BeebAsm
+
 ### 0.3.8
  - Add updates for beebasm v1.11
  - Option to specify file for creating source map in tasks.json
