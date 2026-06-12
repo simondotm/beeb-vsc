@@ -331,8 +331,8 @@
     "rimraf": "^6.1.2",
     "ts-mocha": "^11.1.0",
     "typescript": "^5.9.3",
-    "vite": "^7.3.1",
-    "vite-plugin-static-copy": "^3.2.0"
+    "vite": "^8.0.16",
+    "vite-plugin-static-copy": "^3.4.0"
   },
   "dependencies": {
     "@microsoft/applicationinsights-web": "^3.3.11",
