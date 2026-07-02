@@ -56,6 +56,24 @@ function Run2Passes(code: string) {
   }
 }
 
+function diagnosticAssertMessage(message: unknown): string {
+  if (typeof message === 'string') {
+    return message
+  }
+  if (message && typeof message === 'object') {
+    const maybeMarkup = message as { value?: unknown }
+    if (typeof maybeMarkup.value === 'string') {
+      return maybeMarkup.value
+    }
+    try {
+      return JSON.stringify(message)
+    } catch {
+      return String(message)
+    }
+  }
+  return ''
+}
+
 suite('LineParser', function () {
   suite('Assignments', function () {
     test('test symbol assignment number', testSymbolAssignmentNumber)
@@ -589,7 +607,11 @@ ALIGN &100
 EQUB 0,0,1,1,3,3,3,3
 `
   Run2Passes(code)
-  assert.equal(diagnostics.get('')!.length, 0, diagnostics.get('')![0]?.message)
+  assert.equal(
+    diagnostics.get('')!.length,
+    0,
+    diagnosticAssertMessage(diagnostics.get('')![0]?.message),
+  )
 }
 
 function testLabelsWithForLoop() {
@@ -677,7 +699,11 @@ function testForLoop() {
     )
     input.Process()
   }
-  assert.equal(diagnostics.get('')!.length, 0, diagnostics.get('')![0]?.message)
+  assert.equal(
+    diagnostics.get('')!.length,
+    0,
+    diagnosticAssertMessage(diagnostics.get('')![0]?.message),
+  )
 }
 
 function testForLevel() {
@@ -724,7 +750,11 @@ NEXT`
     context,
   )
   sourceCode.Process()
-  assert.equal(diagnostics.get('')!.length, 0, diagnostics.get('')![0]?.message)
+  assert.equal(
+    diagnostics.get('')!.length,
+    0,
+    diagnosticAssertMessage(diagnostics.get('')![0]?.message),
+  )
 }
 
 function testAssembler1() {
@@ -839,7 +869,11 @@ function testLOFunction() {
     )
     input.Process()
   }
-  assert.equal(diagnostics.get('')!.length, 0, diagnostics.get('')![0]?.message)
+  assert.equal(
+    diagnostics.get('')!.length,
+    0,
+    diagnosticAssertMessage(diagnostics.get('')![0]?.message),
+  )
 }
 
 function testSymbolLocation() {
@@ -1075,7 +1109,11 @@ BCS P% + 2
 INC &80
 INC &81`
   Run2Passes(code)
-  assert.equal(diagnostics.get('')!.length, 0, diagnostics.get('')![0]?.message)
+  assert.equal(
+    diagnostics.get('')!.length,
+    0,
+    diagnosticAssertMessage(diagnostics.get('')![0]?.message),
+  )
 }
 
 function testAssertFails() {
@@ -1101,7 +1139,11 @@ bar = "Bar"
 ASSERT foo + " " + bar == "Foo Bar"
 `
   Run2Passes(code)
-  assert.equal(diagnostics.get('')!.length, 0, diagnostics.get('')![0]?.message)
+  assert.equal(
+    diagnostics.get('')!.length,
+    0,
+    diagnosticAssertMessage(diagnostics.get('')![0]?.message),
+  )
 }
 
 function testEvalShiftLeft() {
@@ -1126,14 +1168,22 @@ function testTIME$() {
   const code = `
 ASSERT TIME$ == TIME$("%a,%d %b %Y.%H:%M:%S")`
   Run2Passes(code)
-  assert.equal(diagnostics.get('')!.length, 0, diagnostics.get('')![0]?.message)
+  assert.equal(
+    diagnostics.get('')!.length,
+    0,
+    diagnosticAssertMessage(diagnostics.get('')![0]?.message),
+  )
 }
 
 function testExpressionlessERROR() {
   const code = `
 ERROR`
   Run2Passes(code)
-  assert.equal(diagnostics.get('')!.length, 0, diagnostics.get('')![0]?.message)
+  assert.equal(
+    diagnostics.get('')!.length,
+    0,
+    diagnosticAssertMessage(diagnostics.get('')![0]?.message),
+  )
 }
 
 function testFindFunctionName() {
@@ -1602,7 +1652,11 @@ ORG &1900
 NEXT`
   Run2Passes(code)
   const labels = context.symbolTable.GetAllLabels()
-  assert.equal(diagnostics.get('')!.length, 0, diagnostics.get('')![0]?.message)
+  assert.equal(
+    diagnostics.get('')!.length,
+    0,
+    diagnosticAssertMessage(diagnostics.get('')![0]?.message),
+  )
   assert.equal(Object.keys(labels).length, 6)
 }
 
@@ -1902,8 +1956,12 @@ function testUsedConstantsInNestedForLoops() {
   Run2Passes(code)
   const unused = checkUnusedSymbols(context, '')
 
-  assert.equal(unused.length, 0, unused![0]?.message)
-  assert.equal(diagnostics.get('')!.length, 0, diagnostics.get('')![0]?.message)
+  assert.equal(unused.length, 0, diagnosticAssertMessage(unused[0]?.message))
+  assert.equal(
+    diagnostics.get('')!.length,
+    0,
+    diagnosticAssertMessage(diagnostics.get('')![0]?.message),
+  )
 }
 
 function testMacroParamEval() {
@@ -1920,7 +1978,11 @@ y=3
 SHOW x+y, x+y`
 
   Run2Passes(code)
-  assert.equal(diagnostics.get('')!.length, 0, diagnostics.get('')![0]?.message)
+  assert.equal(
+    diagnostics.get('')!.length,
+    0,
+    diagnosticAssertMessage(diagnostics.get('')![0]?.message),
+  )
 }
 
 function testMacroUndefined() {
@@ -1949,5 +2011,9 @@ EQUB 2
 ;    EQUB 3
 ;}`
   Run2Passes(code)
-  assert.equal(diagnostics.get('')!.length, 0, diagnostics.get('')![0]?.message)
+  assert.equal(
+    diagnostics.get('')!.length,
+    0,
+    diagnosticAssertMessage(diagnostics.get('')![0]?.message),
+  )
 }

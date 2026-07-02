@@ -1,6 +1,5 @@
 import { Hover, MarkupContent, HoverParams } from 'vscode-languageserver'
 import {
-  AST,
   GetOpcodeFromAST,
   GetCommandFromAST,
   GetUnaryOpFromAST,
@@ -16,9 +15,7 @@ import {
 import { FileHandler } from './filehandler'
 
 export class HoverProvider {
-
-  constructor() {
-  }
+  constructor() {}
 
   onHover(params: HoverParams): Hover | null {
     const uri = params.textDocument.uri
