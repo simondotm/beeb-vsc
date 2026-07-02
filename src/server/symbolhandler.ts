@@ -240,12 +240,18 @@ export function checkUnusedSymbols(
   context: DocumentContext,
   activeFile: string,
 ): Diagnostic[] {
-  const unusedDiagnostics: Diagnostic[] = []
+  const diagnosticsByFile = checkUnusedSymbolsByFile(context)
+  return diagnosticsByFile.get(activeFile) ?? []
+}
+
+export function checkUnusedSymbolsByFile(
+  context: DocumentContext,
+): Map<string, Diagnostic[]> {
+  const diagnosticsByFile = new Map<string, Diagnostic[]>()
   const symbols = context.symbolTable.GetSymbols()
 
   for (const [name, symbolData] of symbols.entries()) {
-    // Only check symbols defined in the active file
-    if (symbolData.GetLocation().uri !== activeFile) continue
+    const symbolUri = symbolData.GetLocation().uri
 
     // Skip labels (only check constant declarations)
     if (symbolData.IsLabel()) continue
@@ -265,17 +271,20 @@ export function checkUnusedSymbols(
     if (refs === undefined || refs.length === 0) {
       // Strip scope suffix from name for display (e.g., "symbol@0" -> "symbol")
       const displayName = name.includes('@') ? name.split('@')[0] : name
-      unusedDiagnostics.push({
+      const diagnostic: Diagnostic = {
         severity: DiagnosticSeverity.Hint,
         range: symbolData.GetLocation().range,
         message: `'${displayName}' is declared but never used`,
         source: 'vscode-beebasm',
         tags: [DiagnosticTag.Unnecessary],
-      })
+      }
+      const fileDiagnostics = diagnosticsByFile.get(symbolUri) ?? []
+      fileDiagnostics.push(diagnostic)
+      diagnosticsByFile.set(symbolUri, fileDiagnostics)
     }
   }
 
-  return unusedDiagnostics
+  return diagnosticsByFile
 }
 
 export function GetTargetedSymbol(

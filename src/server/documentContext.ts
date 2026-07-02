@@ -12,6 +12,7 @@ export class DocumentContext {
   public objectCode: ObjectCode
   public trees: Map<string, AST[]>
   public links: Map<string, DocumentLink[]>
+  public lastDiagnosticUris: Set<string>
 
   constructor() {
     this.globalData = new GlobalData()
@@ -20,6 +21,7 @@ export class DocumentContext {
     this.objectCode = new ObjectCode(this)
     this.trees = new Map<string, AST[]>()
     this.links = new Map<string, DocumentLink[]>()
+    this.lastDiagnosticUris = new Set<string>()
   }
 
   public reset(): void {
