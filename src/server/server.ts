@@ -14,7 +14,7 @@ import { CompletionProvider, SignatureProvider } from './completions'
 import { SourceMapFile } from '../types/shared/debugsource'
 import { SourceFile } from './beebasm-ts/sourcefile'
 import {
-  checkUnusedSymbols,
+  checkUnusedSymbolsByFile,
   RenameProvider,
   SymbolProvider,
 } from './symbolhandler'
@@ -241,29 +241,45 @@ async function ParseDocument(
     )
     input.Process()
   }
-  // Check for unused symbols
-  const unusedDiagnostics = checkUnusedSymbols(context, activeFile)
-  const activeDiagnostics = diagnostics.get(activeFile) ?? []
-  activeDiagnostics.push(...unusedDiagnostics)
-  diagnostics.set(activeFile, activeDiagnostics)
-  // Remove duplicate diagnostics (due to 2-passes)
-  // We keep both passes so that we can report errors that only occur in one pass
-  const currentDiagnostics = diagnostics.get(activeFile) ?? ([] as Diagnostic[])
-  let thisDiagnostics: Diagnostic[] = []
-  thisDiagnostics = currentDiagnostics.filter((value, index) => {
-    const _value = JSON.stringify(value)
-    return (
-      index ===
-      currentDiagnostics.findIndex((obj) => {
-        return JSON.stringify(obj) === _value
-      })
-    )
+  // Check for unused symbols and merge with existing diagnostics for each file
+  const unusedByFile = checkUnusedSymbolsByFile(context)
+  unusedByFile.forEach((unusedDiagnostics, uri) => {
+    const existingDiagnostics = diagnostics.get(uri) ?? []
+    existingDiagnostics.push(...unusedDiagnostics)
+    diagnostics.set(uri, existingDiagnostics)
   })
 
-  connection.sendDiagnostics({
-    uri: activeFile,
-    diagnostics: thisDiagnostics,
+  // Remove duplicate diagnostics per file (due to 2-passes)
+  // We keep both passes so that we can report errors that only occur in one pass
+  diagnostics.forEach((currentDiagnostics, uri) => {
+    const dedupedDiagnostics = currentDiagnostics.filter((value, index) => {
+      const valueKey = JSON.stringify(value)
+      return (
+        index ===
+        currentDiagnostics.findIndex((obj) => {
+          return JSON.stringify(obj) === valueKey
+        })
+      )
+    })
+
+    connection.sendDiagnostics({
+      uri,
+      diagnostics: dedupedDiagnostics,
+    })
   })
+
+  // Clear diagnostics for files that were published in the previous parse,
+  // but are not part of the current parse graph.
+  diagnostics.forEach((_value, uri) => {
+    context.lastDiagnosticUris.delete(uri)
+  })
+  context.lastDiagnosticUris.forEach((uri) => {
+    connection.sendDiagnostics({
+      uri,
+      diagnostics: [],
+    })
+  })
+  context.lastDiagnosticUris = new Set(diagnostics.keys())
   console.log(`Parsing ${activeFile} complete in ${Date.now() - startTime} ms`)
 }
 
