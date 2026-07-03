@@ -33,7 +33,10 @@ export default defineConfig(({ mode }) => {
         minify: isProd,
         emptyOutDir: true,
       },
-      define: commonDefine,
+      define: {
+        ...commonDefine,
+        'import.meta.url': 'window.location.href',
+      },
       resolve: {
         alias: [
           {
