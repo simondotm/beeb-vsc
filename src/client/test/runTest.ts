@@ -25,6 +25,7 @@ async function main() {
     })
   } catch (err) {
     console.error('Failed to run tests')
+    console.error(err instanceof Error ? (err.stack ?? err.message) : err)
     process.exit(1)
   }
 }

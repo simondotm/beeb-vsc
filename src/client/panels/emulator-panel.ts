@@ -503,7 +503,7 @@ export class EmulatorPanel {
 
   getAudioWarningHtml() {
     return `
-      <vscode-button id="audio-warning" appearance="primary" hidden>
+      <vscode-button id="audio-warning" appearance="primary">
         <span class="codicon codicon-warning"></span>
         &nbsp;Audio is disabled in this webview. Click to enable.
       </vscode-button>            <canvas id="audio-stats" hidden width="200" height="50"></canvas>

@@ -1,3 +1,5 @@
+/// <reference types="vscode-webview" />
+
 import {
   provideVSCodeDesignSystem,
   vsCodeButton,

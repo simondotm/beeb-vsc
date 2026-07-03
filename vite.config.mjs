@@ -33,7 +33,10 @@ export default defineConfig(({ mode }) => {
         minify: isProd,
         emptyOutDir: true,
       },
-      define: commonDefine,
+      define: {
+        ...commonDefine,
+        'import.meta.url': 'window.location.href',
+      },
       resolve: {
         alias: [
           {
@@ -45,18 +48,35 @@ export default defineConfig(({ mode }) => {
       plugins: [
         viteStaticCopy({
           targets: [
-            { src: 'assets/*', dest: '.' },
+            {
+              src: 'assets/css/**/*',
+              dest: 'css',
+              rename: { stripBase: 2 },
+            },
+            {
+              src: 'assets/icons/**/*',
+              dest: 'icons',
+              rename: { stripBase: 2 },
+            },
+            {
+              src: 'assets/images/**/*',
+              dest: 'images',
+              rename: { stripBase: 2 },
+            },
             {
               src: 'node_modules/@vscode/codicons/dist/codicon.{css,ttf}',
               dest: 'codicons',
+              rename: { stripBase: true },
             },
             {
               src: 'node_modules/jsbeeb/public/roms/**/*',
               dest: 'jsbeeb/roms',
+              rename: { stripBase: 4 },
             },
             {
               src: 'assets/jsbeeb/sounds/**/*',
               dest: 'jsbeeb/sounds',
+              rename: { stripBase: 3 },
             },
           ],
         }),

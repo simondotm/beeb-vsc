@@ -1,4 +1,5 @@
-import TelemetryReporter, {
+import {
+  TelemetryReporter,
   TelemetryEventProperties,
 } from '@vscode/extension-telemetry'
 import { ExtensionContext, env } from 'vscode'

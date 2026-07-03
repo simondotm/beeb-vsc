@@ -268,6 +268,9 @@ export class Emulator {
 
   resume() {
     if (this.emulatorRunning) return
+    this.audioHandler.tryResume().catch(() => {
+      // Autoplay policy failures are handled by jsbeeb and retried on user gestures.
+    })
     if (!this.isMutedWhenSuspended) {
       this.audioHandler.unmute()
     }
