@@ -50,7 +50,6 @@ export class CustomAudioHandler extends AudioHandler {
   private updateState() {
     const enabled = this.isEnabled()
     this.enabled$.next(enabled)
-    this.muted$.next(!enabled)
   }
 
   /**
@@ -58,7 +57,11 @@ export class CustomAudioHandler extends AudioHandler {
    * @returns true if the audio engine is enabled for the webview
    */
   isEnabled(): boolean {
-    return this.audioContext && this.audioContext.state === 'running'
+    return Boolean(this.audioContext && this.audioContext.state === 'running')
+  }
+
+  canOutputAudio(): boolean {
+    return Boolean(this.audioContext)
   }
 
   isMuted(): boolean {

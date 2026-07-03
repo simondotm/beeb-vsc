@@ -195,9 +195,12 @@ export class EmulatorToolBar {
       this.emulatorView.focusInput()
     }
   }
-  private onSoundClick() {
+  private async onSoundClick() {
     if (this.buttonSound) {
+      // User gestures are required by browser autoplay policies to resume audio.
+      await this.emulatorView.audioHandler.tryResume()
       this.emulatorView.audioHandler.toggleMute()
+      this.updateSoundButton()
     }
   }
   private onExpandClick() {
@@ -218,7 +221,9 @@ export class EmulatorToolBar {
 
   private updateSoundButton() {
     const audioEnabled = this.emulatorView.audioHandler.isEnabled()
-    const buttonEnabled = audioEnabled && this.emulatorView.emulatorRunning
+    const buttonEnabled =
+      this.emulatorView.emulatorRunning &&
+      this.emulatorView.audioHandler.canOutputAudio()
     this.buttonSound.appearance = audioEnabled ? 'secondary' : 'primary'
     this.setDisabled(this.buttonSound, !buttonEnabled)
   }
