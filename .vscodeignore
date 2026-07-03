@@ -19,3 +19,9 @@ eslint.config.mjs
 tsconfig.tsbuildinfo
 vite.config.mjs
 patches/**
+assets/jsbeeb/**
+assets/css/**
+assets/icons/**
+assets/images/**
+*.vsix
+beeb-vsc-*/**
