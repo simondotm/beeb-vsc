@@ -25,6 +25,7 @@ import {
   commands,
   Uri,
   debug,
+  tasks,
 } from 'vscode'
 import {
   LanguageClient,
@@ -36,10 +37,25 @@ import { EmulatorPanel } from './panels/emulator-panel'
 import { FeatureFlags, isFeatureEnabled } from '../types/shared/config'
 import { initialiseExtensionTelemetry } from './utils/extension-telemetry'
 import {
+  createLaunchConfig,
+  getCurrentDebugTarget,
   jsbeebDebugAdapterFactory,
   JSBeebConfigurationProvider,
+  saveLaunchConfig,
 } from './debugger/debugger'
 import { parse } from 'jsonc-parser'
+import {
+  checkTool,
+  getAssemblerPath,
+  getEmulatorArgs,
+  getEmulatorPath,
+} from './tools'
+import {
+  BeebVSCTaskProvider,
+  discoverSourceFiles,
+  PROBLEM_MATCHER,
+  TASK_TYPE,
+} from './tasks/task-provider'
 
 let client: LanguageClient
 
@@ -95,10 +111,6 @@ const fileExists = (path: string) =>
   fs.existsSync(path) && fs.statSync(path).isFile()
 const dirExists = (path: string) =>
   fs.existsSync(path) && fs.statSync(path).isDirectory()
-const getAssemblerPath = () =>
-  workspace.getConfiguration('beebvsc').get<string>('assembler') ?? './'
-const getEmulatorPath = () =>
-  workspace.getConfiguration('beebvsc').get<string>('emulator') ?? './'
 
 //----------------------------------------------------------------------------------------
 // the list of source filename extensions we recognize as assembler/source files
@@ -115,22 +127,10 @@ const supportedFileTypes = ['asm', '6502', 's']
 const targetExt = '.ssd'
 
 //----------------------------------------------------------------------------------------
-// the default ProblemMatcher for BeebAsm assembler output
-// ProblemMatcher's are used to parse output from compilers etc. to capture warnings/errors within the IDE
+// BeebAsm output is parsed by the '$beebasm' problem matcher contributed in package.json
 // BeebAsm output format is <filename>:<line>: <errortype>: <error details>
-// BeebAsm doesn't indicate column of the error, but BeebAsm usually emits the offending line with a '^' underneath pointing to the problem area
 //----------------------------------------------------------------------------------------
-const problemMatcher: VSProblemMatcher = {
-  owner: '6502',
-  fileLocation: ['relative', '${workspaceRoot}'],
-  pattern: {
-    regexp: '^(.*):(\\d+):\\s+(warning|error):\\s+(.*)$',
-    file: 1,
-    line: 2,
-    severity: 3,
-    message: 4,
-  },
-}
+const problemMatcher = [PROBLEM_MATCHER]
 
 //----------------------------------------------------------------------------------------
 // The default tasks.json file template, we will add specific tasks to this
@@ -147,6 +147,27 @@ export function activate(context: ExtensionContext) {
   console.log('path ' + getWorkspacePath())
 
   initialiseExtensionTelemetry(context)
+
+  // Provide build & run tasks without needing a tasks.json file
+  context.subscriptions.push(
+    tasks.registerTaskProvider(TASK_TYPE, new BeebVSCTaskProvider()),
+  )
+  // When one of our tasks starts, check its tool can be found (warns once if not)
+  context.subscriptions.push(
+    tasks.onDidStartTask((event) => {
+      const definition = event.execution.task.definition
+      if (definition.type !== TASK_TYPE) {
+        return
+      }
+      const scope = event.execution.task.scope
+      const folder = typeof scope === 'object' ? scope : undefined
+      checkTool(
+        definition.action === 'run' ? 'emulator' : 'assembler',
+        folder?.uri,
+        folder?.uri.fsPath,
+      )
+    }),
+  )
 
   // The command has been defined in the package.json file
   // Now provide the implementation of the command with registerCommand
@@ -232,7 +253,7 @@ export function activate(context: ExtensionContext) {
     context.subscriptions.push(
       commands.registerCommand(
         'beebvsc.createSourceMap',
-        async (args?: { sourceFile?: string }) => {
+        async (args?: { sourceFile?: string; quiet?: boolean }) => {
           let filePath = ''
           // If called from inputs in tasks.json (object with sourceFile)
           if (
@@ -260,7 +281,9 @@ export function activate(context: ExtensionContext) {
           const response = await client.sendRequest('custom/requestSourceMap', {
             text: filePath,
           })
-          window.showInformationMessage(`${response}`)
+          if (!args?.quiet) {
+            window.showInformationMessage(`${response}`)
+          }
         },
       ),
     )
@@ -288,7 +311,7 @@ export function activate(context: ExtensionContext) {
     )
 
     // register a configuration provider for 'jsbeebdebugger' debug type
-    const provider = new JSBeebConfigurationProvider()
+    const provider = new JSBeebConfigurationProvider(context.workspaceState)
     context.subscriptions.push(
       debug.registerDebugConfigurationProvider('jsbeebdebugger', provider),
     )
@@ -298,6 +321,27 @@ export function activate(context: ExtensionContext) {
     const factory = new jsbeebDebugAdapterFactory(context.extensionPath)
     context.subscriptions.push(
       debug.registerDebugAdapterDescriptorFactory('jsbeebdebugger', factory),
+    )
+
+    // Explicitly write a launch.json configuration for the current target
+    context.subscriptions.push(
+      commands.registerCommand('beebvsc.target.createLaunch', async () => {
+        const folder = workspace.workspaceFolders?.[0]
+        if (folder === undefined) {
+          window.showErrorMessage('BeebVSC: open a folder first')
+          return
+        }
+        const target = await getCurrentDebugTarget(folder)
+        if (target === undefined) {
+          window.showErrorMessage(
+            'BeebVSC: no 6502 source file found in this folder',
+          )
+          return
+        }
+        await saveLaunchConfig(folder, createLaunchConfig(target))
+        const launchUri = Uri.joinPath(folder.uri, '.vscode', 'launch.json')
+        await window.showTextDocument(launchUri)
+      }),
     )
   }
 
@@ -324,8 +368,8 @@ export function activate(context: ExtensionContext) {
     },
   }
 
-  // Warn if no sourceFile is set in settings.json
-  checkSourceFilesSpecified()
+  // Offer (once) to create a build target if no sourceFile is set in settings.json
+  checkSourceFilesSpecified(context)
 
   // Start the client. This will also launch the server
   client = new LanguageClient(
@@ -345,7 +389,11 @@ export function deactivate(): Thenable<void> | undefined {
 }
 
 // checkSourceFilesSpecified
-function checkSourceFilesSpecified() {
+function checkSourceFilesSpecified(context: ExtensionContext) {
+  // never write files automatically in a folder the user has not trusted
+  if (!workspace.isTrusted || !workspace.workspaceFolders) {
+    return
+  }
   let settingsIssue: boolean = false
   const settingsPath = path.join(getWorkspacePath(), '.vscode', 'settings.json')
   let fixable = false
@@ -376,16 +424,14 @@ function checkSourceFilesSpecified() {
     console.log('Error with settingsPath not existing ' + settingsPath)
   }
   if (settingsIssue && !fixable) {
-    window.showErrorMessage(
-      "BeebVSC: 'Could not find sourceFile in settings\nPlease add targets using the 'BeebVSC: Create New Build Target' command",
-    )
+    offerToCreateTarget(context)
   } else if (settingsIssue) {
     console.log('Trying to create settings.json from tasks.json')
-    const tasksObject = loadTasks()
+    // only migrate from an existing tasks.json, never create one here
+    const tasksObject = fileExists(getTasksPath()) ? loadTasks() : null
     if (tasksObject === null) {
-      console.log(
-        'Error loading tasks.json file - could not create settings.json',
-      )
+      console.log('No tasks.json file - could not create settings.json')
+      offerToCreateTarget(context)
       return
     }
     const tasks = tasksObject.tasks
@@ -393,6 +439,7 @@ function checkSourceFilesSpecified() {
       console.log(
         'No targets available in tasks.json file - could not create settings.json',
       )
+      offerToCreateTarget(context)
       return
     }
     const settings = tryGetSettingsFromTasks(tasksObject, tasks)
@@ -405,6 +452,42 @@ function checkSourceFilesSpecified() {
         settings.beebvsc.targetName,
       )
     }
+  }
+}
+
+//----------------------------------------------------------------------------------------
+// Politely offer, once per workspace, to create a build target when 6502 source files
+// are found but no target is configured. Build/run/debug work without one, but a target
+// tells the language server the INCLUDE order.
+//----------------------------------------------------------------------------------------
+const DONT_OFFER_TARGET_KEY = 'beebvsc.dontOfferToCreateTarget'
+
+async function offerToCreateTarget(context: ExtensionContext) {
+  const folder = workspace.workspaceFolders?.[0]
+  if (
+    folder === undefined ||
+    context.workspaceState.get<boolean>(DONT_OFFER_TARGET_KEY) ||
+    !workspace
+      .getConfiguration('beebvsc')
+      .get<boolean>('promptToCreateTarget', true)
+  ) {
+    return
+  }
+  const sources = await discoverSourceFiles(folder)
+  if (sources.length === 0) {
+    return
+  }
+  const create = 'Create Build Target'
+  const never = "Don't Ask Again"
+  const choice = await window.showInformationMessage(
+    'BeebVSC: found 6502 source files but no build target. Create one so code navigation follows your INCLUDE order?',
+    create,
+    never,
+  )
+  if (choice === create) {
+    createTargetCommand()
+  } else if (choice === never) {
+    await context.workspaceState.update(DONT_OFFER_TARGET_KEY, true)
   }
 }
 
@@ -456,33 +539,12 @@ function tryGetSettingsFromTasks(
 // returns true if configuration is ok or false otherwise.
 //----------------------------------------------------------------------------------------
 function checkConfiguration(): boolean {
-  // First check that the user has configured assembler & emulator settings
-  const assemblerPath = getAssemblerPath()
-  const emulatorPath = getEmulatorPath()
-
-  if (!assemblerPath || !emulatorPath) {
-    // config is not set properly, prompt user to set these first then return
-    window
-      .showErrorMessage(
-        'BeebVSC global assembler/emulator configurations not set. Set them now?',
-        'Yes',
-      )
-      .then((item) => {
-        if (item === 'Yes') {
-          // show settings (filtered to BeebVSC settings)
-          commands.executeCommand('workbench.action.openSettings', 'BeebVSC')
-          window.showInformationMessage(
-            "Add the 'beebvsc.assembler' and 'beebvsc.emulation' properties to your user or workspace settings file.",
-          )
-        } else {
-          console.log('checkConfiguration failed - missing configuration')
-        }
-      })
-    return false // Might have been set now but don't want to have to re-check, so return false and let user try task again
-  }
-
-  // TODO: check that the configured assembler & emulator can be 'reached', via path environment var or directly.
-  console.log('checkConfiguration passed')
+  // Tools default to platform specific names (beebasm/b-em or BeebAsm.exe/BeebEm.exe)
+  // when the settings are empty. Warn (once) if they can't be found, but carry on,
+  // since writing a target doesn't need the tools to be installed yet.
+  const folder = workspace.workspaceFolders?.[0]
+  checkTool('assembler', folder?.uri, folder?.uri.fsPath)
+  checkTool('emulator', folder?.uri, folder?.uri.fsPath)
   return true
 }
 
@@ -549,7 +611,7 @@ function setCurrentTarget(
     const task = tasks[i]
     if (typeof task.group === 'object' && task.group.kind === 'test') {
       foundTestTask = true
-      task.args = [targetFile]
+      task.args = getEmulatorArgs(targetFile)
       break
     }
   }
@@ -560,7 +622,7 @@ function setCurrentTarget(
       label: 'BeebVSC Test Target',
       type: 'shell',
       command: getEmulatorPath(),
-      args: [targetFile],
+      args: getEmulatorArgs(targetFile),
       group: { kind: 'test', isDefault: true },
     })
   }
@@ -879,10 +941,6 @@ function GetSAVECommands(ASMFilename: string): string[] {
 // if no tasks.json file exists, a default will be created.
 //----------------------------------------------------------------------------------------
 function loadTasks(): VSTasks | null {
-  if (!checkConfiguration()) {
-    return null
-  }
-
   // if no tasks.json file exists, create a default
   const tasksPath = getTasksPath()
   if (!fileExists(tasksPath)) {

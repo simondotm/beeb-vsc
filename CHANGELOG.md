@@ -2,6 +2,19 @@
 
 See [Releases on Github](https://github.com/simondotm/beeb-vsc/releases) for full release history.
 
+### Unreleased
+ - Build and run tasks are provided automatically (task type `beebvsc`), so `Ctrl+Shift+B` works without a `tasks.json`
+ - New `$beebasm` problem matcher for use in your own tasks
+ - Linux/macOS out of the box: empty `beebvsc.assembler`/`beebvsc.emulator` settings default to `beebasm`/`b-em` (`BeebAsm.exe`/`BeebEm.exe` on Windows), with a warning and "Open Setting" button if a tool can't be found
+ - New `beebvsc.emulatorArgs` setting for the external emulator's command line
+ - Keyboard shortcuts now only apply in 6502 source files and no longer override VS Code's own keys: `F7` build, `Shift+F7` select target, `Ctrl+F7` run. `F6`, `F9`, `F10`, `Ctrl+Shift+T` and `Ctrl+Shift+R` are no longer bound
+ - `F5` with no `launch.json` builds and debugs the current target, regenerates its source maps, and offers to save the configuration
+ - New `BeebVSC: Create launch.json for the current target` command
+ - Source maps are regenerated automatically when debugging (`createSourceMaps` launch option)
+ - Fix relative `diskImage` paths in launch configurations
+ - Polite, once-per-folder offer to create a build target replaces the error shown at startup (`beebvsc.promptToCreateTarget`)
+ - Activates when a folder contains `.6502` files; declares limited support for untrusted workspaces
+
 ### 0.3.10 (0.3.9 failed)
  - Integrate JSBeeb's rewind panel (press enter to activate thumbnail)
  - Better debug session management
