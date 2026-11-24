@@ -60,6 +60,13 @@ Provides a list of potential matches as you start to type.
 
 ![Screenshot](./docs/images/emulator-view.png?raw=true)
 
+## DFS Disk Image Viewer
+
+- Click an Acorn DFS disk image (`.ssd` or `.dsd`) in the Explorer to see its catalogue: disc title, boot option, cycle number and every file's load address, exec address, length, start sector and lock state
+- Select a file to see a hex and ASCII dump of its contents
+- Double-sided `.dsd` images show drives 0 and 2 separately
+- The viewer is read-only and never changes the image. To open a disk image in a different editor, use **Reopen Editor With...**; you can also run **BeebVSC: View DFS disk image** from the Command Palette or the Explorer context menu
+
 
 # Quick Setup
 

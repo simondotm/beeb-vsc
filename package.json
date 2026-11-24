@@ -138,10 +138,40 @@
       {
         "command": "beebvsc.createSourceMap",
         "title": "BeebVSC: Create source map"
+      },
+      {
+        "command": "beebvsc.dfsViewer.open",
+        "title": "BeebVSC: View DFS disk image"
+      }
+    ],
+    "customEditors": [
+      {
+        "viewType": "beebvsc.dfsViewer",
+        "displayName": "Acorn DFS Disk Viewer",
+        "selector": [
+          {
+            "filenamePattern": "*.ssd"
+          },
+          {
+            "filenamePattern": "*.dsd"
+          },
+          {
+            "filenamePattern": "*.SSD"
+          },
+          {
+            "filenamePattern": "*.DSD"
+          }
+        ],
+        "priority": "default"
       }
     ],
     "menus": {
       "explorer/context": [
+        {
+          "when": "resourceExtname =~ /^\\.(ssd|dsd)$/i",
+          "command": "beebvsc.dfsViewer.open",
+          "group": "navigation"
+        },
         {
           "when": "(resourceExtname == .ssd || resourceExtname == .dsd) && extension.feature.emulator",
           "command": "beebvsc.emulator.start",
@@ -296,11 +326,12 @@
     "lint": "eslint ./src --ext .ts,.tsx",
     "package": "vsce package",
     "test:server": "ts-mocha src/server/test/runTests.ts",
+    "test:dfs": "ts-mocha --ui tdd src/client/dfs/test/dfs.test.ts",
     "pretest:client": "npm run compile && npm run lint",
     "test_orig:client": "node ./client/out/test/runTest.js",
     "test:client": "node ./out/server/test/tests.js",
     "e2e": "tsc -b && node ./out/client/test/runTest.js",
-    "test": "npm run test:server && echo setup unit tests for the client at some point!"
+    "test": "npm run test:server && npm run test:dfs && echo setup unit tests for the client at some point!"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.5",

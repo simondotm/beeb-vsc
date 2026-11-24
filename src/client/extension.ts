@@ -33,6 +33,7 @@ import {
   TransportKind,
 } from 'vscode-languageclient/node'
 import { EmulatorPanel } from './panels/emulator-panel'
+import { registerDfsViewer } from './dfs/dfs-viewer'
 import { FeatureFlags, isFeatureEnabled } from '../types/shared/config'
 import { initialiseExtensionTelemetry } from './utils/extension-telemetry'
 import {
@@ -147,6 +148,9 @@ export function activate(context: ExtensionContext) {
   console.log('path ' + getWorkspacePath())
 
   initialiseExtensionTelemetry(context)
+
+  // Acorn DFS disk image viewer for .ssd and .dsd files
+  registerDfsViewer(context)
 
   // The command has been defined in the package.json file
   // Now provide the implementation of the command with registerCommand
