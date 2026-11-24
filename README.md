@@ -44,6 +44,7 @@ Provides a list of potential matches as you start to type.
 - `.6502`
 - `.asm`
 - `.s`
+- `.bas` (plain-text BBC BASIC, not tokenised): opened and saved as ISO-8859-1 so every byte, including &80-&FF characters such as Teletext control codes, is kept exactly. Control characters are shown in the editor.
 
 ## Build tools
 - Assemble & test 6502 projects all within Visual Studio Code

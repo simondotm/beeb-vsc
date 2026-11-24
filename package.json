@@ -72,8 +72,24 @@
           "6502/BeebAsm Assembly"
         ],
         "configuration": "./beeb-vsc.configuration.json"
+      },
+      {
+        "id": "bbcbasic",
+        "extensions": [
+          ".bas"
+        ],
+        "aliases": [
+          "BBC BASIC"
+        ]
       }
     ],
+    "configurationDefaults": {
+      "[bbcbasic]": {
+        "files.encoding": "iso88591",
+        "files.autoGuessEncoding": false,
+        "editor.renderControlCharacters": true
+      }
+    },
     "grammars": [
       {
         "language": "beebasm",
