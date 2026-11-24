@@ -13,6 +13,10 @@ import {
   CancellationToken,
   Disposable,
   Uri,
+  workspace,
+  commands,
+  ConfigurationTarget,
+  Memento,
 } from 'vscode'
 import {
   Breakpoint,
@@ -53,6 +57,15 @@ import {
 } from '../../types/shared/debugsource'
 import * as fs from 'fs'
 import path from 'path'
+import {
+  BeebVSCTaskDefinition,
+  discoverSourceFiles,
+  getConfiguredSourceFiles,
+  getConfiguredTargetName,
+  getCustomDiskImageFor,
+  getDiskImageFor,
+  TASK_TYPE,
+} from '../tasks/task-provider'
 
 export class jsbeebDebugAdapterFactory implements DebugAdapterDescriptorFactory {
   private extensionPath: string
@@ -69,24 +82,170 @@ export class jsbeebDebugAdapterFactory implements DebugAdapterDescriptorFactory 
   }
 }
 
+export const DEBUG_TYPE = 'jsbeebdebugger'
+const DONT_OFFER_SAVE_KEY = 'beebvsc.dontOfferToSaveLaunchConfig'
+
+interface DebugTarget {
+  sourceFile: string
+  diskImage: string
+}
+
+/**
+ * Works out the current build target (source file and disk image) for a folder,
+ * from beebvsc.sourceFile/targetName settings, or by discovering source files.
+ * If several candidates are found and none is configured, the user is asked to pick.
+ */
+export async function getCurrentDebugTarget(
+  folder: WorkspaceFolder,
+): Promise<DebugTarget | undefined> {
+  const configured = getConfiguredSourceFiles(folder)
+  const targetName = getConfiguredTargetName(folder)
+  if (configured.length > 0) {
+    // prefer the source file whose default disk image matches the target name
+    const sourceFile =
+      configured.find((file) => getDiskImageFor(file) === targetName) ??
+      configured[0]
+    return {
+      sourceFile,
+      diskImage:
+        getCustomDiskImageFor(folder, sourceFile) ??
+        getDiskImageFor(sourceFile),
+    }
+  }
+  const discovered = await discoverSourceFiles(folder)
+  if (discovered.length === 0) {
+    return undefined
+  }
+  let sourceFile: string | undefined = discovered[0]
+  if (discovered.length > 1) {
+    // use the active editor's file if it is one of the candidates
+    const active = window.activeTextEditor?.document.uri.fsPath
+    const activeRelative = active
+      ? path.relative(folder.uri.fsPath, active)
+      : undefined
+    if (activeRelative && discovered.includes(activeRelative)) {
+      sourceFile = activeRelative
+    } else {
+      sourceFile = await window.showQuickPick(discovered, {
+        placeHolder: 'BeebVSC: select the source file to build and debug',
+        ignoreFocusOut: true,
+      })
+    }
+  }
+  if (sourceFile === undefined) {
+    return undefined
+  }
+  return { sourceFile, diskImage: getDiskImageFor(sourceFile) }
+}
+
+/**
+ * Creates a launch configuration that builds the target, then debugs it in jsbeeb.
+ */
+export function createLaunchConfig(target: DebugTarget): DebugConfiguration {
+  const preLaunchTask: BeebVSCTaskDefinition = {
+    type: TASK_TYPE,
+    action: 'build',
+    sourceFile: target.sourceFile,
+  }
+  if (target.diskImage !== getDiskImageFor(target.sourceFile)) {
+    preLaunchTask.diskImage = target.diskImage
+  }
+  return {
+    type: DEBUG_TYPE,
+    request: 'launch',
+    name: `Debug ${target.diskImage} in jsbeeb`,
+    diskImage: '${workspaceFolder}/' + target.diskImage.replace(/\\/g, '/'),
+    sourceMapFiles: [target.sourceFile.replace(/\\/g, '/') + '.map'],
+    preLaunchTask,
+  }
+}
+
+/**
+ * Appends a configuration to the folder's launch.json (created if needed).
+ */
+export async function saveLaunchConfig(
+  folder: WorkspaceFolder,
+  config: DebugConfiguration,
+): Promise<void> {
+  const launch = workspace.getConfiguration('launch', folder.uri)
+  const configurations =
+    launch.get<DebugConfiguration[]>('configurations') ?? []
+  if (configurations.some((existing) => existing.name === config.name)) {
+    window.showInformationMessage(
+      `BeebVSC: launch.json already has a configuration named '${config.name}'`,
+    )
+    return
+  }
+  if (!launch.get<string>('version')) {
+    await launch.update('version', '0.2.0', ConfigurationTarget.WorkspaceFolder)
+  }
+  await launch.update(
+    'configurations',
+    [...configurations, config],
+    ConfigurationTarget.WorkspaceFolder,
+  )
+}
+
 export class JSBeebConfigurationProvider implements DebugConfigurationProvider {
-  resolveDebugConfiguration(
+  constructor(private readonly state?: Memento) {}
+
+  /**
+   * Called when the user creates a launch.json from the Run and Debug view.
+   */
+  async provideDebugConfigurations(
+    folder: WorkspaceFolder | undefined,
+  ): Promise<DebugConfiguration[]> {
+    const target = folder ? await getCurrentDebugTarget(folder) : undefined
+    if (target === undefined) {
+      return [
+        {
+          type: DEBUG_TYPE,
+          request: 'launch',
+          name: 'Debug in built-in jsbeeb emulator',
+          diskImage: '${workspaceFolder}/disk.ssd',
+          sourceMapFiles: [],
+        },
+      ]
+    }
+    return [createLaunchConfig(target)]
+  }
+
+  async resolveDebugConfiguration(
     folder: WorkspaceFolder | undefined,
     config: DebugConfiguration,
     _token?: CancellationToken,
-  ): ProviderResult<DebugConfiguration> {
-    const updatedConfig: ProviderResult<DebugConfiguration> = {
-      ...config,
+  ): Promise<DebugConfiguration | undefined> {
+    let updatedConfig: DebugConfiguration = { ...config }
+
+    // F5 with no launch.json: build a configuration for the current target
+    if (!config.type && !config.request && !config.name) {
+      const targetFolder = folder ?? workspace.workspaceFolders?.[0]
+      const target = targetFolder
+        ? await getCurrentDebugTarget(targetFolder)
+        : undefined
+      if (targetFolder === undefined || target === undefined) {
+        window.showInformationMessage(
+          'BeebVSC: no 6502 source file found to debug. Open a folder containing a .6502 file, or run "BeebVSC: Create new build target".',
+        )
+        return undefined
+      }
+      folder = targetFolder
+      updatedConfig = createLaunchConfig(target)
+      this.offerToSave(targetFolder, updatedConfig)
     }
+
     const isAttachRequest = updatedConfig.request === 'attach'
 
-    // if no disk image specified, use first .ssd file in the directory
+    // if no disk image specified, use the configured target or the first .ssd file in the directory
     if (!isAttachRequest && updatedConfig.diskImage === undefined) {
       if (folder) {
+        const targetName = getConfiguredTargetName(folder)
         const files = fs
           .readdirSync(folder.uri.fsPath)
           .filter((file) => file.endsWith('.ssd'))
-        if (files.length > 0) {
+        if (targetName) {
+          updatedConfig.diskImage = targetName
+        } else if (files.length > 0) {
           updatedConfig.diskImage = files[0]
         }
       }
@@ -106,6 +265,69 @@ export class JSBeebConfigurationProvider implements DebugConfigurationProvider {
     }
     updatedConfig.cwd = folder?.uri.fsPath ?? ''
     return updatedConfig
+  }
+
+  async resolveDebugConfigurationWithSubstitutedVariables(
+    folder: WorkspaceFolder | undefined,
+    config: DebugConfiguration,
+  ): Promise<DebugConfiguration> {
+    const cwd: string = config.cwd || folder?.uri.fsPath || ''
+    // the emulator panel needs an absolute disk image path
+    if (typeof config.diskImage === 'string' && cwd) {
+      if (!path.isAbsolute(config.diskImage)) {
+        config.diskImage = path.join(cwd, config.diskImage)
+      }
+    }
+    // regenerate source maps so they always match the code being debugged
+    if (
+      config.createSourceMaps !== false &&
+      Array.isArray(config.sourceMapFiles)
+    ) {
+      for (const mapFile of config.sourceMapFiles as string[]) {
+        if (!mapFile.endsWith('.map')) {
+          continue
+        }
+        const sourceFile = mapFile.slice(0, -'.map'.length)
+        const fullSource = path.isAbsolute(sourceFile)
+          ? sourceFile
+          : path.join(cwd, sourceFile)
+        if (!fs.existsSync(fullSource)) {
+          continue
+        }
+        try {
+          await commands.executeCommand('beebvsc.createSourceMap', {
+            sourceFile: fullSource,
+            quiet: true,
+          })
+        } catch (err) {
+          console.log(
+            `BeebVSC: could not create source map for ${sourceFile}: ${err}`,
+          )
+        }
+      }
+    }
+    return config
+  }
+
+  private offerToSave(folder: WorkspaceFolder, config: DebugConfiguration) {
+    if (this.state?.get<boolean>(DONT_OFFER_SAVE_KEY)) {
+      return
+    }
+    const save = 'Save to launch.json'
+    const never = "Don't Ask Again"
+    window
+      .showInformationMessage(
+        'BeebVSC: started debugging with an automatic configuration. Save it to launch.json so you can customise it?',
+        save,
+        never,
+      )
+      .then(async (choice) => {
+        if (choice === save) {
+          await saveLaunchConfig(folder, config)
+        } else if (choice === never) {
+          await this.state?.update(DONT_OFFER_SAVE_KEY, true)
+        }
+      })
   }
 }
 

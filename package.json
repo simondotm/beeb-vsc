@@ -57,8 +57,22 @@
   ],
   "main": "./dist/main.js",
   "activationEvents": [
-    "onDebugResolve:jsbeebdebugger"
+    "workspaceContains:**/*.6502",
+    "onLanguage:beebasm",
+    "onDebugResolve:jsbeebdebugger",
+    "onDebugInitialConfigurations"
   ],
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": "limited",
+      "description": "Syntax colouring and code navigation work in untrusted folders. Building, running and debugging need the folder to be trusted, and the assembler/emulator settings are only read from user settings.",
+      "restrictedConfigurations": [
+        "beebvsc.assembler",
+        "beebvsc.emulator",
+        "beebvsc.emulatorArgs"
+      ]
+    }
+  },
   "contributes": {
     "languages": [
       {
@@ -87,18 +101,36 @@
       "properties": {
         "beebvsc.assembler": {
           "type": "string",
-          "default": "BeebAsm.exe",
-          "description": "Your assembler executable (eg. BeebAsm.exe)."
+          "default": "",
+          "markdownDescription": "Your assembler executable, either a name on your `PATH` or a full path. Leave empty to use the platform default: `beebasm` on Linux/macOS, `BeebAsm.exe` on Windows.",
+          "scope": "machine-overridable"
         },
         "beebvsc.emulator": {
           "type": "string",
-          "default": "BeebEm.exe",
-          "description": "Your preferred emulator executable (eg. BeebEm.exe)."
+          "default": "",
+          "markdownDescription": "Your preferred external emulator executable, either a name on your `PATH` or a full path. Leave empty to use the platform default: `b-em` on Linux/macOS, `BeebEm.exe` on Windows.",
+          "scope": "machine-overridable"
+        },
+        "beebvsc.emulatorArgs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [
+            "${diskImage}"
+          ],
+          "markdownDescription": "Command line arguments for the external emulator. `${diskImage}` is replaced by the disk image to run; if it isn't used, the disk image is added as the last argument.",
+          "scope": "machine-overridable"
         },
         "beebvsc.enableInlayHints": {
           "type": "boolean",
           "default": false,
           "markdownDescription": "Enable inlay hints for cycle counts. Use in combination with `#editor.inlayHints.enabled#`"
+        },
+        "beebvsc.promptToCreateTarget": {
+          "type": "boolean",
+          "default": true,
+          "description": "Offer (once per folder) to create a build target when 6502 source files are found but no target is configured."
         }
       }
     },
@@ -118,6 +150,10 @@
       {
         "command": "beebvsc.target.build",
         "title": "BeebVSC: Build the currently selected target"
+      },
+      {
+        "command": "beebvsc.target.createLaunch",
+        "title": "BeebVSC: Create launch.json for the current target"
       },
       {
         "command": "beebvsc.emulator.start",
@@ -166,34 +202,78 @@
     },
     "keybindings": [
       {
-        "command": "beebvsc.target.create",
-        "key": "f10",
-        "mac": "f10"
+        "command": "beebvsc.target.build",
+        "key": "f7",
+        "mac": "f7",
+        "when": "editorLangId == beebasm && !isInDiffEditor"
       },
       {
         "command": "beebvsc.target.select",
-        "key": "f6",
-        "mac": "f6"
+        "key": "shift+f7",
+        "mac": "shift+f7",
+        "when": "editorLangId == beebasm && !isInDiffEditor"
       },
       {
         "command": "beebvsc.target.run",
-        "key": "Ctrl+Shift+T",
-        "mac": "Ctrl+Shift+T"
-      },
+        "key": "ctrl+f7",
+        "mac": "cmd+f7",
+        "when": "editorLangId == beebasm && !isInDiffEditor"
+      }
+    ],
+    "taskDefinitions": [
       {
-        "command": "beebvsc.target.run",
-        "key": "F9",
-        "mac": "F9"
-      },
+        "type": "beebvsc",
+        "required": [
+          "action"
+        ],
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "build",
+              "run"
+            ],
+            "description": "'build' assembles a source file with BeebAsm, 'run' opens a disk image in the external emulator."
+          },
+          "sourceFile": {
+            "type": "string",
+            "description": "Source file to assemble, relative to the workspace folder (eg. main.6502)."
+          },
+          "diskImage": {
+            "type": "string",
+            "description": "Disk image to create or run. Defaults to the source file name with a .ssd extension."
+          },
+          "bootFile": {
+            "type": "string",
+            "description": "DFS file to *RUN on boot. Defaults to the first SAVE name in the source file."
+          },
+          "extraArgs": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Additional BeebAsm command line arguments."
+          }
+        }
+      }
+    ],
+    "problemMatchers": [
       {
-        "command": "beebvsc.target.build",
-        "key": "F7",
-        "mac": "F7"
-      },
-      {
-        "command": "workbench.action.tasks.runTask",
-        "key": "Ctrl+Shift+R",
-        "mac": "Ctrl+Shift+R"
+        "name": "beebasm",
+        "label": "BeebAsm errors and warnings",
+        "owner": "beebasm",
+        "source": "beebasm",
+        "fileLocation": [
+          "autoDetect",
+          "${workspaceFolder}"
+        ],
+        "pattern": {
+          "regexp": "^(.*):(\\d+):\\s+(warning|error):\\s+(.*)$",
+          "file": 1,
+          "line": 2,
+          "severity": 3,
+          "message": 4
+        }
       }
     ],
     "breakpoints": [
@@ -227,6 +307,11 @@
                 "items": {
                   "type": "string"
                 }
+              },
+              "createSourceMaps": {
+                "type": "boolean",
+                "default": true,
+                "description": "Regenerate the source map files from the source code before debugging."
               }
             }
           },
