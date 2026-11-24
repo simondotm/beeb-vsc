@@ -2,6 +2,9 @@
 
 See [Releases on Github](https://github.com/simondotm/beeb-vsc/releases) for full release history.
 
+### Unreleased
+ - Add a read-only viewer for Acorn DFS disk images (`.ssd` and `.dsd`) showing the catalogue and a hex dump of each file
+
 ### 0.3.10 (0.3.9 failed)
  - Integrate JSBeeb's rewind panel (press enter to activate thumbnail)
  - Better debug session management
