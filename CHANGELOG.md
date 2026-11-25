@@ -2,6 +2,12 @@
 
 See [Releases on Github](https://github.com/simondotm/beeb-vsc/releases) for full release history.
 
+### Unreleased
+ - Open and save plain-text BBC BASIC (`.bas`) files as ISO-8859-1 so bytes &80-&FF (e.g. Teletext control codes) are kept exactly instead of being corrupted by UTF-8
+ - Syntax highlighting for plain-text BBC BASIC (`.bas`) files, including inline `[ ... ]` assembler
+ - BBC BASIC files restored in a different encoding after a reload are reopened as ISO-8859-1
+ - Warn when a BBC BASIC file is reopened in an encoding that would lose bytes &80-&FF on save (e.g. by `charset = utf-8` in `.editorconfig`), with an option to fix the `.editorconfig`; if it is saved anyway, a copy is kept and can be restored (`beebvsc.basicEncodingWarnings`)
+
 ### 0.3.10 (0.3.9 failed)
  - Integrate JSBeeb's rewind panel (press enter to activate thumbnail)
  - Better debug session management

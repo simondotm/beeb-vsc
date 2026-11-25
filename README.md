@@ -44,6 +44,14 @@ Provides a list of potential matches as you start to type.
 - `.6502`
 - `.asm`
 - `.s`
+- `.bas` (plain-text BBC BASIC, not tokenised): opened and saved as ISO-8859-1 so every byte, including &80-&FF characters such as Teletext control codes, is kept exactly. Control characters are shown in the editor. BBC BASIC keywords are highlighted the way the BBC BASIC tokeniser reads them, so crunched code such as `FORX=1TOLEN(A$)` is coloured correctly, and inline `[ ... ]` assembler is highlighted as 6502.
+  - If your project's `.editorconfig` sets `charset = utf-8` for all files, the EditorConfig extension will reopen `.bas` files as UTF-8 and saving them will lose those bytes. BeebVSC warns when this happens and can add this section to the `.editorconfig` for you:
+    ```ini
+    [*.bas]
+    charset = latin1
+    trim_trailing_whitespace = false
+    ```
+    If such a file is saved anyway, a copy from before the save is kept and you are offered to restore it. Turn the warnings off with `beebvsc.basicEncodingWarnings`.
 
 ## Build tools
 - Assemble & test 6502 projects all within Visual Studio Code

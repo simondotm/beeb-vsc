@@ -57,6 +57,7 @@
   ],
   "main": "./dist/main.js",
   "activationEvents": [
+    "onLanguage:bbcbasic",
     "onDebugResolve:jsbeebdebugger"
   ],
   "contributes": {
@@ -72,13 +73,38 @@
           "6502/BeebAsm Assembly"
         ],
         "configuration": "./beeb-vsc.configuration.json"
+      },
+      {
+        "id": "bbcbasic",
+        "extensions": [
+          ".bas"
+        ],
+        "aliases": [
+          "BBC BASIC"
+        ],
+        "configuration": "./bbcbasic.configuration.json"
       }
     ],
+    "configurationDefaults": {
+      "[bbcbasic]": {
+        "files.encoding": "iso88591",
+        "files.autoGuessEncoding": false,
+        "editor.renderControlCharacters": true
+      }
+    },
     "grammars": [
       {
         "language": "beebasm",
         "scopeName": "source.asm.6502",
         "path": "./syntaxes/6502.tmLanguage.json"
+      },
+      {
+        "language": "bbcbasic",
+        "scopeName": "source.bbcbasic",
+        "path": "./syntaxes/bbcbasic.tmLanguage.json",
+        "embeddedLanguages": {
+          "meta.embedded.block.asm.6502": "beebasm"
+        }
       }
     ],
     "configuration": {
@@ -99,6 +125,11 @@
           "type": "boolean",
           "default": false,
           "markdownDescription": "Enable inlay hints for cycle counts. Use in combination with `#editor.inlayHints.enabled#`"
+        },
+        "beebvsc.basicEncodingWarnings": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Warn when a BBC BASIC (`.bas`) file is open in an encoding that cannot read all of its bytes &80-&FF (for example UTF-8 forced by `charset` in `.editorconfig`), offer to fix `.editorconfig`, and keep a copy of the file if it is saved anyway."
         }
       }
     },

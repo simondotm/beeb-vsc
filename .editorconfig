@@ -11,3 +11,8 @@ trim_trailing_whitespace = true
 [*.md]
 max_line_length = off
 trim_trailing_whitespace = false
+
+# Plain-text BBC BASIC: keep bytes &80-&FF and trailing spaces exactly
+[*.bas]
+charset = latin1
+trim_trailing_whitespace = false
