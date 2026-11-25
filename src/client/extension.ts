@@ -33,6 +33,7 @@ import {
   TransportKind,
 } from 'vscode-languageclient/node'
 import { EmulatorPanel } from './panels/emulator-panel'
+import { registerBasicEncoding } from './basic/basic-encoding'
 import { FeatureFlags, isFeatureEnabled } from '../types/shared/config'
 import { initialiseExtensionTelemetry } from './utils/extension-telemetry'
 import {
@@ -147,6 +148,9 @@ export function activate(context: ExtensionContext) {
   console.log('path ' + getWorkspacePath())
 
   initialiseExtensionTelemetry(context)
+
+  // Reopen BBC BASIC files that were read with the wrong encoding
+  registerBasicEncoding(context)
 
   // The command has been defined in the package.json file
   // Now provide the implementation of the command with registerCommand
@@ -532,7 +536,7 @@ function setCurrentTarget(
             // no target file specified, so use the default target file
             targetFile = getTargetName(
               workspace.getConfiguration('beebvsc').get<string>('sourceFile') ??
-              'main.asm',
+                'main.asm',
             )
           }
         }
