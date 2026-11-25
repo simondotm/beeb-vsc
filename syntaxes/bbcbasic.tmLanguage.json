@@ -1,0 +1,206 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "BBC BASIC",
+  "scopeName": "source.bbcbasic",
+  "fileTypes": ["bas"],
+  "patterns": [
+    {
+      "include": "#line-number"
+    },
+    {
+      "include": "#statement"
+    }
+  ],
+  "repository": {
+    "line-number": {
+      "match": "^\\s*(\\d+)(?:\\s*(\\*.*$))?",
+      "captures": {
+        "1": {
+          "name": "constant.numeric.line-number.bbcbasic"
+        },
+        "2": {
+          "name": "string.unquoted.star-command.bbcbasic"
+        }
+      }
+    },
+    "statement": {
+      "patterns": [
+        {
+          "include": "#star-command"
+        },
+        {
+          "include": "#string"
+        },
+        {
+          "include": "#assembler"
+        },
+        {
+          "include": "#rem"
+        },
+        {
+          "include": "#data"
+        },
+        {
+          "include": "#procedure"
+        },
+        {
+          "include": "#keywords"
+        },
+        {
+          "include": "#variable"
+        },
+        {
+          "include": "#number"
+        },
+        {
+          "include": "#operator"
+        },
+        {
+          "include": "#punctuation"
+        }
+      ]
+    },
+    "star-command": {
+      "patterns": [
+        {
+          "match": "(?:^|(?<=:|THEN|ELSE))\\s*(\\*.*)$",
+          "captures": {
+            "1": {
+              "name": "string.unquoted.star-command.bbcbasic"
+            }
+          }
+        }
+      ]
+    },
+    "string": {
+      "name": "string.quoted.double.bbcbasic",
+      "begin": "\"",
+      "end": "\"(?!\")|$",
+      "patterns": [
+        {
+          "name": "constant.character.escape.bbcbasic",
+          "match": "\"\""
+        }
+      ]
+    },
+    "rem": {
+      "match": "(REM)(.*)$",
+      "captures": {
+        "1": {
+          "name": "keyword.other.rem.bbcbasic"
+        },
+        "2": {
+          "name": "comment.line.rem.bbcbasic"
+        }
+      }
+    },
+    "data": {
+      "match": "(DATA)(.*)$",
+      "captures": {
+        "1": {
+          "name": "keyword.other.data.bbcbasic"
+        },
+        "2": {
+          "name": "string.unquoted.data.bbcbasic"
+        }
+      }
+    },
+    "procedure": {
+      "match": "(PROC|FN)([A-Za-z0-9_`@]*)",
+      "captures": {
+        "1": {
+          "name": "keyword.control.bbcbasic"
+        },
+        "2": {
+          "name": "entity.name.function.bbcbasic"
+        }
+      }
+    },
+    "keywords": {
+      "patterns": [
+        {
+          "name": "keyword.control.bbcbasic",
+          "match": "(?:ENDPROC(?![A-Za-z0-9_`])|REPEAT|RETURN(?![A-Za-z0-9_`])|UNTIL|GOSUB|ERROR|LOCAL|CHAIN|THEN|ELSE|STEP|NEXT|GOTO|STOP(?![A-Za-z0-9_`])|FOR|END(?!PROC(?![A-Za-z0-9_`]))(?![A-Za-z0-9_`])|DEF|RUN(?![A-Za-z0-9_`])|IF|TO(?!P(?![A-Za-z0-9_`]))|ON)"
+        },
+        {
+          "name": "keyword.operator.word.bbcbasic",
+          "match": "(?:AND|EOR|NOT|DIV|MOD(?!E)|OR)"
+        },
+        {
+          "name": "support.function.bbcbasic",
+          "match": "(?:STRING\\$\\(|OPENOUT|RIGHT\\$\\(|INKEY\\$|INSTR\\(|LEFT\\$\\(|OPENIN|OPENUP|POINT\\(|ADVAL|COUNT(?![A-Za-z0-9_`])|INKEY(?!\\$)|MID\\$\\(|BGET(?![A-Za-z0-9_`])|CHR\\$|EVAL|GET\\$|STR\\$|VPOS(?![A-Za-z0-9_`])|ABS|ACS|ASC|ASN|ATN|COS|DEG|EOF(?![A-Za-z0-9_`])|ERL(?![A-Za-z0-9_`])|ERR(?!OR)(?![A-Za-z0-9_`])|EXP|EXT(?![A-Za-z0-9_`])|GET(?!\\$)|INT|LEN|LOG|POS(?![A-Za-z0-9_`])|RAD|RND(?![A-Za-z0-9_`])|SGN|SIN|SQR|TAN|USR|VAL|LN)"
+        },
+        {
+          "name": "constant.language.bbcbasic",
+          "match": "(?:FALSE(?![A-Za-z0-9_`])|TRUE(?![A-Za-z0-9_`])|PI(?![A-Za-z0-9_`]))"
+        },
+        {
+          "name": "variable.language.bbcbasic",
+          "match": "(?:HIMEM(?![A-Za-z0-9_`])|LOMEM(?![A-Za-z0-9_`])|PAGE(?![A-Za-z0-9_`])|TIME(?![A-Za-z0-9_`])|PTR(?![A-Za-z0-9_`])|TOP(?![A-Za-z0-9_`]))"
+        },
+        {
+          "name": "keyword.other.bbcbasic",
+          "match": "(?:ENVELOPE|RENUMBER|RESTORE|COLOUR|DELETE|REPORT(?![A-Za-z0-9_`])|CLEAR(?![A-Za-z0-9_`])|CLOSE|INPUT|OSCLI|PRINT|SOUND|TRACE|WIDTH|AUTO|BPUT|CALL|DRAW|GCOL|LINE|LIST|LOAD|MODE|MOVE|PLOT|READ|SAVE|TAB\\(|CLG(?![A-Za-z0-9_`])|CLS(?![A-Za-z0-9_`])|DIM|LET|NEW(?![A-Za-z0-9_`])|OFF|OLD(?![A-Za-z0-9_`])|SPC|VDU)"
+        }
+      ]
+    },
+    "variable": {
+      "name": "variable.other.bbcbasic",
+      "match": "[A-Za-z_`][A-Za-z0-9_`]*[$%]?|@%"
+    },
+    "number": {
+      "patterns": [
+        {
+          "name": "constant.numeric.hex.bbcbasic",
+          "match": "&[0-9A-Fa-f]+"
+        },
+        {
+          "name": "constant.numeric.decimal.bbcbasic",
+          "match": "(?:\\d+\\.?\\d*|\\.\\d+)(?:E[-+]?\\d+)?"
+        }
+      ]
+    },
+    "operator": {
+      "name": "keyword.operator.bbcbasic",
+      "match": "<>|<=|>=|<<|>>>|>>|[-+*/^=<>?!$|#]"
+    },
+    "punctuation": {
+      "patterns": [
+        {
+          "name": "punctuation.separator.statement.bbcbasic",
+          "match": ":"
+        },
+        {
+          "name": "punctuation.separator.bbcbasic",
+          "match": "[,;'~]"
+        }
+      ]
+    },
+    "assembler": {
+      "name": "meta.embedded.block.asm.6502",
+      "begin": "\\[",
+      "end": "\\]",
+      "beginCaptures": {
+        "0": {
+          "name": "punctuation.section.embedded.begin.bbcbasic"
+        }
+      },
+      "endCaptures": {
+        "0": {
+          "name": "punctuation.section.embedded.end.bbcbasic"
+        }
+      },
+      "patterns": [
+        {
+          "include": "#line-number"
+        },
+        {
+          "include": "#string"
+        },
+        {
+          "include": "source.asm.6502"
+        }
+      ]
+    }
+  }
+}

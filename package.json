@@ -80,7 +80,8 @@
         ],
         "aliases": [
           "BBC BASIC"
-        ]
+        ],
+        "configuration": "./bbcbasic.configuration.json"
       }
     ],
     "configurationDefaults": {
@@ -95,6 +96,14 @@
         "language": "beebasm",
         "scopeName": "source.asm.6502",
         "path": "./syntaxes/6502.tmLanguage.json"
+      },
+      {
+        "language": "bbcbasic",
+        "scopeName": "source.bbcbasic",
+        "path": "./syntaxes/bbcbasic.tmLanguage.json",
+        "embeddedLanguages": {
+          "meta.embedded.block.asm.6502": "beebasm"
+        }
       }
     ],
     "configuration": {
