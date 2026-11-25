@@ -125,6 +125,11 @@
           "type": "boolean",
           "default": false,
           "markdownDescription": "Enable inlay hints for cycle counts. Use in combination with `#editor.inlayHints.enabled#`"
+        },
+        "beebvsc.basicEncodingWarnings": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Warn when a BBC BASIC (`.bas`) file is open in an encoding that cannot read all of its bytes &80-&FF (for example UTF-8 forced by `charset` in `.editorconfig`), offer to fix `.editorconfig`, and keep a copy of the file if it is saved anyway."
         }
       }
     },
